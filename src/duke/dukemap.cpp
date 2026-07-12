@@ -3,7 +3,7 @@
 #include <mgdl/mgdl-vectorfunctions.h>
 #include "dukemath.h"
 #include "build-render.h"
-#include "player.h"
+#include "actor.h"
 Sector* Map_GetSector(DukeMap* map, s16 sectorNumber)
 {
     mgdl_assert_print((sectorNumber>= 0 && sectorNumber < map->sectorAmount),"Invalid sector for Map_GetSector");
@@ -32,11 +32,11 @@ Wall* Map_GetWallInSectorPtr(DukeMap* map, Sector* sector, s16 wi)
 }
 
 
-void Map_InitPlayers(DukeMap* map, Player* players, int playerAmount)
+void Map_InitActors(DukeMap* map, Actor* players, int playerAmount)
 {
     // When there are multiple players find starting sectors for all of them
     // Put player one in the official starting position
-    Map_InitPlayer(map, &players[0]);
+    Map_SetActorToStart(map, &players[0]);
     for (int pi = 1; pi < playerAmount; pi++)
     {
         MapSprite* startingPos = Map_FindSprite(map, SpriteLOTAG::LOTAG_Multiplayer_Start, pi);
@@ -44,20 +44,27 @@ void Map_InitPlayers(DukeMap* map, Player* players, int playerAmount)
         {
             Log_InfoF("Found starting position for player %d\n", pi);
             players[pi].position= startingPos->position;
-            players[pi].angleRad = Math_DukeAngleToRad(startingPos->ang);
+            players[pi].yawRad = Math_DukeAngleToRad(startingPos->ang);
             players[pi].sectorNumber = startingPos->sectnum;
-            players[pi].position.y = Map_GetSectorFloorHeight(map, players[pi].sectorNumber);
+            players[pi].position.y = Map_GetSectorFloorHeight(map, players[pi].sectorNumber) + players[pi].standingHeight;
         }
         else
         {
             // If no own position found, put to starting position
             Log_InfoF("No starting position for player %d\n", pi);
-            Map_InitPlayer(map, &players[pi]);
+            Map_InitActor(map, &players[pi]);
         }
     }
 }
+void Map_SetActorToStart(DukeMap* map, Actor* actor)
+{
+    actor->position= map->startPosition;
+    actor->yawRad = Math_DukeAngleToRad(map->startAngle - 512);
+    actor->sectorNumber = map->startingSector;
+    actor->position.y = Map_GetSectorFloorHeight(map, map->startingSector) + actor->standingHeight;
+}
 
-void Map_SetCameraToStart(DukeMap* map, CameraInfo* camera)
+void Map_SetCameraToStart(DukeMap* map, Viewpoint* camera)
 {
     camera->position= map->startPosition;
     camera->yawRad = Math_DukeAngleToRad(map->startAngle - 512);
@@ -65,12 +72,12 @@ void Map_SetCameraToStart(DukeMap* map, CameraInfo* camera)
     camera->position.y = Map_GetSectorFloorHeight(map, map->startingSector);
 }
 
-void Map_InitPlayer(DukeMap* map, Player* player)
+void Map_InitActor(DukeMap* map, Actor* player)
 {
     player->position= map->startPosition;
-    player->angleRad = Math_DukeAngleToRad(map->startAngle - 512);
+    player->yawRad = Math_DukeAngleToRad(map->startAngle - 512);
     player->sectorNumber = map->startingSector;
-    player->position.y = Map_GetSectorFloorHeight(map, map->startingSector);
+    player->position.y = Map_GetSectorFloorHeight(map, map->startingSector) + player->standingHeight;
 }
 
 void Map_FindIslandSectors(DukeMap* map)
@@ -352,6 +359,36 @@ MapSprite* Map_GetSprite(DukeMap* map, s16 spriteIndex)
     return &map->sprites[spriteIndex];
 }
 
+void Map_MoveActorInMap(DukeMap* map, float deltaTime, Actor* inoutActor)
+{
+    Vector3 current = inoutActor->position;
+    Vector3 destination = Actor_ApplyDrive(inoutActor, deltaTime);
+
+    if (Vector3Equals(current, destination))
+    {
+        return;
+    }
+
+	Vector2 point = Vector2New(current.x, current.z);
+	Vector2 endpoint = Vector2New(destination.x, destination.z);
+
+	Vector2 pointOut;
+	s16 sectorOut;
+	MoveResult result = Map_MovePointInMap(map, point, endpoint, inoutActor->sectorNumber, &pointOut, &sectorOut);
+
+	// Keep actor on floor and under the ceiling
+    float minY = Map_GetSectorFloorHeight(map, inoutActor->sectorNumber) + inoutActor->standingHeight;
+
+    // TODO Calculate this from rendering settings somehow
+    float ceilingToEyes = inoutActor->standingHeight * (1.0f - inoutActor->eyeHeightNormalized);
+    float maxY = Map_GetSectorCeilingHeight(map, inoutActor->sectorNumber) - ceilingToEyes;
+    float verticalPosition = Clamp(destination.y, minY, maxY);
+
+	inoutActor->position = Vector3New(pointOut.x, verticalPosition, pointOut.y);;
+	inoutActor->sectorNumber = sectorOut;
+    inoutActor->lastResult = result;
+}
+
 MoveResult Map_MovePointInMap(DukeMap* map, Vector2 start, Vector2 end, s16 sectorNumber, Vector2* positionOut, s16* sectorOut)
 {
 
@@ -444,7 +481,7 @@ MoveResult Map_MovePointInMap(DukeMap* map, Vector2 start, Vector2 end, s16 sect
             else
             {
                 Vector3 xzpos = Vector3New(start.x, 0.0f, start.y);
-                s16 playerSector = Map_FindPlayerSector(map, -1, xzpos);
+                s16 playerSector = Map_FindSector(map, -1, xzpos);
                 if (playerSector < 0)
                 {
                     // Put in center of sector
@@ -474,7 +511,7 @@ s16 Map_GetSectorNeighbor(DukeMap* map, s16 sectorNumber, s16 wallIndex)
     return -1;
 }
 
-s16 Map_FindPlayerSector(DukeMap* map, s16 startingSector, Vector3 position)
+s16 Map_FindSector(DukeMap* map, s16 startingSector, Vector3 position)
 {
     Vector2 position2D = Vector2New(position.x, position.z);
     if (startingSector >= 0)

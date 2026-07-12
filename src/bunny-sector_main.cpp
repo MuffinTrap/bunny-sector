@@ -5,13 +5,28 @@
 #include "duke/build-render.h"
 #include "duke/opengl-render.h"
 #include "duke/dukemath.h"
+#include "duke/actor.h"
 
 static DukeMap** mapsArray = nullptr;
 static const float MAP_AMOUNT = 4;
 
 static RenderSettingsOpenGL defaultOpenGL;
-static CameraInfo defaultCameraInfo;
-static Camera* defaultCamera;
+static Viewpoint defaultView;
+static Camera* defaultCamera = nullptr;
+static Actor demoActor;
+static Texture* defaultChecker = nullptr;
+
+static void s_AlignCameraToViewpoint(Viewpoint* info, Camera* camera)
+{
+	Vector3 cameraPosition = Vec3DukePosToOpenGL(info->position, &defaultOpenGL);
+	Vector3 rotations = Vector3New(info->pitchRad, info->yawRad, 0.0f);
+	Matrix rotation = MatrixRotateXYZ(rotations);
+	Vector3 forward = mgdl_GetGLWorldForward();
+	Vector3 cameraDir = Vector3Transform(forward, rotation);
+
+	Camera_SetPositionV(camera, cameraPosition);
+	Camera_SetDirection(camera, cameraDir);
+}
 
 bool BunnySector_Init()
 {
@@ -24,12 +39,18 @@ bool BunnySector_Init()
 		}
 	}
 
+	if (defaultChecker == nullptr)
+	{
+		defaultChecker = Texture_GenerateCheckerBoard();
+	}
+
 	OpenGLRender_Init();
-	OpenGLRender_RegisterTexture(RENDERER_PICNUM_DEFAULT, Texture_GenerateCheckerBoard());
+	OpenGLRender_RegisterTexture(RENDERER_PICNUM_DEFAULT, defaultChecker);
 	BuildRender_Init();
 	defaultOpenGL = GetDefaultRenderSettingsOpenGL();
-	defaultCameraInfo = GetDefaultCameraInfo();
+	defaultView = GetDefaultCameraInfo();
 	defaultCamera = GetDefaultCamera();
+	demoActor = Actor_CreateDefaultActor(0);
 	return true;
 }
 
@@ -78,21 +99,25 @@ void BunnySector_StartMap(MapId mapId)
 		DukeMap* map = mapsArray[mapId];
 		if (map != nullptr)
 		{
-			Map_SetCameraToStart(map, &defaultCameraInfo);
+			Map_SetActorToStart(map, &demoActor);
+			defaultView = Actor_GetViewpoint(&demoActor);
+			s_AlignCameraToViewpoint(&defaultView, defaultCamera);
 		}
 	}
 }
 
-static void s_SyncInfoToCamera(CameraInfo* info, Camera* camera)
-{
-	Vector3 cameraPosition = Vec3DukePosToOpenGL(info->position, &defaultOpenGL);
-	Vector3 rotations = Vector3New(info->pitchRad, info->yawRad, 0.0f);
-	Matrix rotation = MatrixRotateXYZ(rotations);
-	Vector3 forward = mgdl_GetGLWorldForward();
-	Vector3 cameraDir = Vector3Transform(forward, rotation);
 
-	Camera_SetPositionV(camera, cameraPosition);
-	Camera_SetDirection(camera, cameraDir);
+void BunnySector_UpdateMap(MapId mapId, float deltaTime)
+{
+	// Map move all actors and sprites etc...
+	if (mapId >=0 && mapId < MAP_AMOUNT)
+	{
+		DukeMap* map = mapsArray[mapId];
+		if (map != nullptr)
+		{
+			Map_MoveActorInMap(map, deltaTime, &demoActor);
+		}
+	}
 }
 
 void BunnySector_RenderMap(MapId mapId)
@@ -126,22 +151,24 @@ void BunnySector_RenderMap(MapId mapId)
                                     defaultCamera->nearZ,
                                     defaultCamera->farZ);
 
-			defaultCameraInfo.sector = Map_FindPlayerSector(map, defaultCameraInfo.sector, defaultCameraInfo.position);
-			s_SyncInfoToCamera(&defaultCameraInfo, defaultCamera);
+			demoActor.sectorNumber = Map_FindSector(map, demoActor.sectorNumber, demoActor.position);
+			defaultView = Actor_GetViewpoint(&demoActor);
+
+			s_AlignCameraToViewpoint(&defaultView, defaultCamera);
 			Camera_Apply(defaultCamera);
 
-			BuildRender_Draw3D(&defaultCameraInfo, map, &defaultOpenGL);
+			BuildRender_Draw3D(&defaultView, map, &defaultOpenGL);
 
 			glPopMatrix();
 		}
 	}
 }
 
-void BunnySector_ChangeCameraTransform(float right, float up, float forward, float yawRadiands, float pitchRadians)
+void BunnySector_SetActorDriveInput(int actorId, float forward, float strafe, float vertical, float turnYaw, float turnPitch)
 {
-	Vector3 translation = Vector3New(right, up, forward);
-	defaultCameraInfo.position = Vector3Add(defaultCameraInfo.position, translation);
-	defaultCameraInfo.pitchRad += pitchRadians;
-	defaultCameraInfo.yawRad += yawRadiands;
+	demoActor.forwardDrive = Clamp(forward, -1.0f, 1.0f);
+	demoActor.strafeDrive = Clamp(strafe, -1.0f, 1.0f);
+	demoActor.verticalDrive = Clamp(vertical, -1.0f, 1.0f);
+	demoActor.turnDrive = Clamp(turnYaw, -1.0f, 1.0f);
 }
 

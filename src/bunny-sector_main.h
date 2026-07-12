@@ -11,9 +11,9 @@ typedef int MapId;
 
 bool BunnySector_Init();
 void BunnySector_StartMap(MapId mapId);
+void BunnySector_UpdateMap(MapId mapId, float deltaTime);
 void BunnySector_RenderMap(MapId mapId);
-void BunnySector_ChangeCameraTransform(float right, float up, float forward, float yawRadiands, float pitchRadians)
-;
+void BunnySector_SetActorDriveInput(int actorId, float forward, float strafe, float vertical, float turnYaw, float turnPitch);
 
 
 #ifdef __cplusplus

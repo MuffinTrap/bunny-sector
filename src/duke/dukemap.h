@@ -1,10 +1,11 @@
 #pragma once
 		#include <mgdl/mgdl-vectorfunctions.h>
 		#include <mgdl/mgdl-types.h>
+#include "duke_types.h"
 // Forward def
-struct Player;
+struct Actor;
 struct Tesselator_BufferIndices;
-struct CameraInfo;
+struct Viewpoint;
 
 struct MapFloorVertexData
 {
@@ -114,40 +115,6 @@ struct DukeMap
 };
 typedef struct DukeMap DukeMap;
 
-enum MoveResult
-{
-    Move_Ok,
-    Move_HitWall,
-    Move_HitPortal,
-    Move_Cancel
-};
-typedef enum MoveResult MoveResult;
-
-enum SpriteAlignment
-{
-    Sprite_FACE, ///< Billboard
-    Sprite_WALL, ///< Not billboard, drawn like wall
-    Sprite_FLOOR ///< Flat on floor or ceiling
-};
-typedef enum SpriteAlignment SpriteAlignment;
-
-#define SPRITE_WALL_ALIGNED_BIT 4
-#define SPRITE_FLOOR_ALIGNED_BIT 5
-#define SPRITE_PIVOT_BIT 7
-#define SPRITE_INVISIBLE_BIT 15
-enum SpritePivot
-{
-    Sprite_PivotCenter, // Center is position
-    Sprite_PivotFoot    // center is position + height/2
-};
-typedef enum SpritePivot SpritePivot;
-
-enum SpriteLOTAG
-{
-    LOTAG_Multiplayer_Start = 90,
-    LOTAG_Level_End = 65535
-};
-typedef enum SpriteLOTAG SpriteLOTAG;
 
 #ifdef __cplusplus
 extern "C" {
@@ -160,9 +127,10 @@ extern "C" {
 void Map_ConvertToGameUnits(DukeMap* map);
 void Map_FindIslandSectors(DukeMap* map);
 void Map_PrintInfo(DukeMap* map);
-void Map_SetCameraToStart(DukeMap* map, CameraInfo* player);
-void Map_InitPlayer(DukeMap* map, Player* player);
-void Map_InitPlayers(DukeMap* map, Player* players, int playerAmount);
+void Map_SetCameraToStart(DukeMap* map, Viewpoint* view);
+void Map_SetActorToStart(DukeMap* map, Actor* actor);
+void Map_InitActor(DukeMap* map, Actor* player);
+void Map_InitActors(DukeMap* map, Actor* players, int playerAmount);
 
 Sector* Map_GetSector(DukeMap* map, s16 sectorNumber);
 s32 Map_GetSectorFloorHeight(DukeMap* map, s16 sectorNumber);
@@ -192,13 +160,14 @@ bool Map_IsPointInsideSectorRay(DukeMap* map, Vector2 point, int sectorNumber);
 bool Map_IsPointInsideWall(DukeMap* map, Vector2 point, Wall* wall);
 bool Map_FindIntersectionWithWall(DukeMap* map, Vector2 moveStart, Vector2 moveEnd, Wall* wall, Vector2* pointOUT);
 
-MoveResult Map_MovePointInMap(DukeMap* map, Vector2 start, Vector2 end, s16 sector, Vector2* positionOut, s16* sectorOut);
+void Map_MoveActorInMap(DukeMap* map, float deltaTime, Actor* inoutActor);
+MoveResult Map_MovePointInMap(DukeMap* map, Vector2 start, Vector2 end, s16 sectorNumber, Vector2* positionOut, s16* sectorOut);
 
 /**
 * @brief Looks for player recursively from neighbouring sectors, starting from startingSector
 * @returns The sector number where player is or -1 if not inside map
 */
-s16 Map_FindPlayerSector(DukeMap* map, s16 startingSector, Vector3 position);
+s16 Map_FindSector(DukeMap* map, s16 startingSector, Vector3 position);
 
 s16 Map_GetSectorNeighbor(DukeMap* map, s16 sectorNumber, s16 wallIndex);
 

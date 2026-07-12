@@ -2,23 +2,6 @@
 #include "dukemap.h"
 // Forward defs
 
-struct SectorRender
-{
-    s16 number;
-    float limitLeft; // Field of view limits or portal limits
-    float limitRight;
-};
-typedef struct SectorRender SectorRender;
-
-// TODO Use this instead of Player
-struct CameraInfo
-{
-    Vector3 position;
-    float yawRad;
-    float pitchRad;
-    s16 sector;
-};
-typedef struct CameraInfo CameraInfo;
 
 struct Camera;
 
@@ -87,22 +70,22 @@ void BuildRender_Init();
 RenderSettings2D GetDefaultRenderSettings2D();
 RenderSettingsOpenGL GetDefaultRenderSettingsOpenGL();
 Camera* GetDefaultCamera();
-CameraInfo GetDefaultCameraInfo();
+Viewpoint GetDefaultCameraInfo();
 
 /** @brief Draws the map wireframe and player(s) and other information defined in the settings
  */
-void BuildRender_DrawTopDown(CameraInfo* camera, DukeMap* map, RenderSettingsOpenGL* settings3D, RenderSettings2D* settings2D);
+void BuildRender_DrawTopDown(Viewpoint* camera, DukeMap* map, RenderSettingsOpenGL* settings3D, RenderSettings2D* settings2D);
 
 /** @brief Draws the map in 3D using OpenGL, using the functions below
  * @param player The player whose point of view is used
  * @param map The map.
  * @param settings Rendering settings
  */
-void BuildRender_Draw3D(CameraInfo* camera, DukeMap* map, RenderSettingsOpenGL* settings);
+void BuildRender_Draw3D(Viewpoint* camera, DukeMap* map, RenderSettingsOpenGL* settings);
 
-void BuildRender_DrawSectorWalls(CameraInfo* camera, DukeMap* map, RenderSettingsOpenGL* settings);
-void BuildRender_DrawSectorFloorsAndCeilings(CameraInfo* camera, DukeMap* map, RenderSettingsOpenGL* settings);
-void BuildRender_DrawSprites(DukeMap* map, CameraInfo* camera, RenderSettingsOpenGL* settings);
+void BuildRender_DrawSectorWalls(Viewpoint* camera, DukeMap* map, RenderSettingsOpenGL* settings);
+void BuildRender_DrawSectorFloorsAndCeilings(Viewpoint* camera, DukeMap* map, RenderSettingsOpenGL* settings);
+void BuildRender_DrawSprites(DukeMap* map, Viewpoint* camera, RenderSettingsOpenGL* settings);
 
 /**
  * @brief Visualize how the sectors and portals are drawn

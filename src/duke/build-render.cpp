@@ -8,6 +8,7 @@
 #include "build-render.h"
 #include "dukemap.h"
 #include "dukemath.h"
+#include "duke_types.h"
 #include "opengl-render.h"
 
 // Overlap:  Determine whether the two number ranges overlap.
@@ -44,9 +45,9 @@ Camera* GetDefaultCamera()
     return defaultCamera;
 }
 
-CameraInfo GetDefaultCameraInfo()
+Viewpoint GetDefaultCameraInfo()
 {
-    CameraInfo info;
+    Viewpoint info;
     info.position = Vector3Zero();
     info.pitchRad = 0.0f;
     info.yawRad = 0.0f;
@@ -128,7 +129,7 @@ void BuildRender_ExportCurrentMapToObj(DukeMap* map, const char* filename, Rende
     OpenGLRender_WriteToObj(map, filename, settings);
 }
 
-void BuildRender_DrawSprites(DukeMap* map, CameraInfo* player, RenderSettingsOpenGL* settings)
+void BuildRender_DrawSprites(DukeMap* map, Viewpoint* player, RenderSettingsOpenGL* settings)
 {
     // Draw all the sprites from renderer sectors
     for (int si = 0; si < map->spriteAmount; si++)
@@ -150,7 +151,7 @@ void BuildRender_DrawSprites(DukeMap* map, CameraInfo* player, RenderSettingsOpe
     }
 }
 
-void BuildRender_Draw3D(CameraInfo* camera, DukeMap* map, RenderSettingsOpenGL* settings)
+void BuildRender_Draw3D(Viewpoint* camera, DukeMap* map, RenderSettingsOpenGL* settings)
 {
         OpenGLRender_StartDrawingPolygons(settings->scale);
             mgdl_glSetAlphaTest(true);
@@ -242,7 +243,7 @@ static bool ShouldAddRequest(SectorRender* head, SectorRender* tail, Wall* w, fl
 }
 
 
-void BuildRender_DrawSectorWalls(CameraInfo* player, DukeMap* map, RenderSettingsOpenGL* settings)
+void BuildRender_DrawSectorWalls(Viewpoint* player, DukeMap* map, RenderSettingsOpenGL* settings)
 {
     for (int i = 0; i < map->sectorAmount ; i++)
     {
@@ -449,7 +450,7 @@ void BuildRender_DrawSectorWalls(CameraInfo* player, DukeMap* map, RenderSetting
     } while(head != tail); // Render until buffer is empty: if nothing was added, they are the same
 }
 
-void BuildRender_DrawSectorFloorsAndCeilings(CameraInfo* player, DukeMap* map, RenderSettingsOpenGL* settings)
+void BuildRender_DrawSectorFloorsAndCeilings(Viewpoint* player, DukeMap* map, RenderSettingsOpenGL* settings)
 {
     // Go through all sectors
     // Draw walls and ceilings of those
@@ -523,7 +524,7 @@ void BuildRender_DrawSectorRequests(RenderSettingsOpenGL* settings3D)
 }
 
 
-void BuildRender_DrawTopDown(CameraInfo* players, DukeMap* map, RenderSettingsOpenGL* settings3D, RenderSettings2D* settings2D)
+void BuildRender_DrawTopDown(Viewpoint* players, DukeMap* map, RenderSettingsOpenGL* settings3D, RenderSettings2D* settings2D)
 {
     Texture* df = DefaultFont_GetDefaultFont();
     int H = mgdl_GetScreenHeight();
@@ -816,7 +817,7 @@ void BuildRender_DrawTopDown(CameraInfo* players, DukeMap* map, RenderSettingsOp
     glPushMatrix();
         for (int pi = 0; pi < settings2D->drawPlayersAmount; pi++)
         {
-            CameraInfo* player = &players[pi];
+            Viewpoint* player = &players[pi];
             Vector2 playerPos2 = Vector2New(player->position.x, player->position.z);
 
             glScalef(settings3D->scale, settings3D->scale, 1);

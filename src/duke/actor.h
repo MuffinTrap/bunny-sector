@@ -1,5 +1,6 @@
 #pragma once
 #include <mgdl.h>
+#include "duke_types.h"
 
 struct DukeMap;
 struct RenderSettings2D;
@@ -9,42 +10,59 @@ struct RenderSettingsOpenGL;
  * @details It starts with the info loaded from the map
  * and then comes game specific stuff
  */
-struct Player
+struct Actor
 {
-    int playerNumber;
-
+    int idNumber;
     s16 sectorNumber;
 
-    // Position in duke units
-    Vector3 position; /**< Where player is */
-    Vector3 velocity; /**< Where player is trying to go */
-    Vector3 prevPosition; /**< Place to store position before moving */
-    // Direction as a normal Vector
-    Vector3 lookDirection;
+    // Drive: either from AI or input
+    // All [-1,1]
+    float forwardDrive; /**< Is going forwards or backwards */
+    float strafeDrive; /**< Is going sideways */
+    float turnDrive; /**< Is turning on yaw axis */
+    float verticalDrive; /**< Is going up or down */
 
+    // Position in duke units
+    Vector3 position; /**< Where actor is */
+    Vector3 prevPosition; /**< Place to store position before moving */
+
+    float turnVelocity; /*< How fast actor is turning */
+    Vector2 floorVelocity; /**< Where actor is trying to go */
+    float verticalVelocity;
+    // Directions as a normal vectors
+    Vector3 lookDirection; /**< Where player is looking */
+    Vector2 floorDirection; /**< Where player is headed */
+
+    // Rotations
     float yawRad; // Turning
     float pitchRad; // looking up and down
 
+
+    float turnAccelerationDegrees;
     float turnSpeedDegrees;
+
     // These are in dukes
     float moveSpeed;
-    float verticalSpeed;
-    float fallingSpeed;
+    float moveAcceleration;
+    float verticalSpeedUp;
+    float verticalSpeedDown;
+    float verticalAccelerationUp;
+    float verticalAccelerationDown;
     float standingHeight; ///< How much above ground when standing
     float kneelingHeight; ///< How much above ground when kneeling/crouching
+    float eyeHeightNormalized; ///< Eye height of active height
 
     float radius;
 
-    // Shooting
-    float shootTimer;
-    float shootRate;
-    bool shotThisFrame;
-    Vector3 shotOrigin;
-    Vector3 shotDirection;
+    MoveResult lastResult;
 };
-typedef struct Player Player;
+typedef struct Actor Actor;
 
-const float CONTROLLER_DEADZONE = 0.4f;
+Actor Actor_CreateFromViewPoint(Viewpoint point);
+Actor Actor_Create(int idNumber, s16 sector, Vector3 position, float yawRad, float moveSpeed, float moveAcceleration, float turnSpeed, float turnAccelerationDeg, float standingHeight);
+Actor Actor_CreateDefaultActor(int idNumber);
 
-void Player_UpdateMove(Player* player, WiiController* controller, RenderSettings2D* settings2D, RenderSettingsOpenGL* settingsGL, DukeMap* map, int amountPlayers);
+Vector3 Actor_ApplyDrive(Actor* actor, float deltaTime);
+void Player_UpdateMove(Actor* player, WiiController* controller, RenderSettings2D* settings2D, RenderSettingsOpenGL* settingsGL, DukeMap* map, int amountPlayers);
 bool IsPointInsideRect(RectF rect, Vector2 point);
+Viewpoint Actor_GetViewpoint(Actor* actor);
