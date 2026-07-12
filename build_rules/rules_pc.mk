@@ -1,0 +1,6 @@
+
+# PC RULES
+
+MGDL_DIR	=$(HOME)/libmgdl
+MGDL_INCLUDE	= -I$(MGDL_DIR)/include
+INCLUDES += $(MGDL_INCLUDE)

@@ -1,0 +1,27 @@
+// Only used when in Script mode.
+// When used as CPP the actual CPP function is called
+#if USE_ANGEL_AS_SCRIPT
+
+void mgdl_DrawTextV(zstr text, Vector2 topleft, float fontSize, color32 color)
+{
+	mgdl_DrawText(text, topleft.x, topleft.y, fontSize, color);
+}
+
+void mgdl_DrawTextureV(TextureHandle handle, Vector2 topleft)
+{
+	mgdl_DrawTexture(handle, topleft.x, topleft.y);
+}
+
+void mgdl_DrawSceneV(SceneHandle handle, Vector3 position, float scale, color32 color)
+{
+	mgdl_DrawScene(handle, position.x, position.y, position.z, scale, color);
+}
+void mgdl_DrawModelV(ModelHandle handle, Vector3 position, float scale, color32 color)
+{
+	mgdl_DrawModel(handle, position.x, position.y, position.z, scale, color);
+}
+void mgdl_DrawModelRotatedV(ModelHandle handle, Vector3 position, Vector3 rotationDeg, float scale, color32 color)
+{
+	mgdl_DrawModelRotated(handle, position.x, position.y, position.z, rotationDeg.x, rotationDeg.y, rotationDeg.z, scale, color);
+}
+#endif
