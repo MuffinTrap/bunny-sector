@@ -40,3 +40,7 @@ Material
 	Texture 
 	OR
 	Rendering function
+	
+# TODO
+Load textures with mipmapping
+

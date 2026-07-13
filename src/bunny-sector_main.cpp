@@ -41,7 +41,9 @@ bool BunnySector_Init()
 
 	if (defaultChecker == nullptr)
 	{
-		defaultChecker = Texture_GenerateCheckerBoard();
+		defaultChecker = Texture_GenerateCheckerBoard(false);
+		Texture_SetFilterModeMag(defaultChecker, Nearest);
+		Texture_SetFilterModeMin(defaultChecker, Linear);
 	}
 
 	OpenGLRender_Init();

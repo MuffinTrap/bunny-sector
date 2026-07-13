@@ -17,7 +17,7 @@ ShellGrass* CreateGrass(u16 widthPixels, u16 heightPixels, u8 shellAmount, float
 			wp +=1;
 		}
 	}
-	g->texture = Texture_CreateFromArray(widthPixels, heightPixels, wa, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE);
+	g->texture = Texture_CreateFromArray(Nearest, widthPixels, heightPixels, wa, GL_LUMINANCE_ALPHA, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, true);
 	g->shellAmount = shellAmount;
 	g->uvRepeat = uvRepeat;
 	g->height = height;
