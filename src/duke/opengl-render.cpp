@@ -339,6 +339,24 @@ void OpenGLRender_Init()
     }
 }
 
+/*
+XML structure
+<materials>
+	<folder>
+	<material>
+		Mandatory:
+		<picnum>
+		One of:
+			<texture> & <mipmaps>
+			<material type>
+			<function id>
+			
+		Optional:
+		<color>
+		<self luminance>
+
+*/
+
 void OpenGLRender_ReadMaterialsXML(const char* materialsfile)
 {
 	if (mgdl_DoesFileExist(materialsfile) == false)
@@ -353,34 +371,58 @@ void OpenGLRender_ReadMaterialsXML(const char* materialsfile)
 	}
 	
 	// First child is <materials>
-	tinyxml2::XMLElement* textureFolder = materials.FirstChildElement()->FirstChildElement("folder");
-	if (textureFolder)
+	tinyxml2::XMLElement* folderElement = materials.FirstChildElement()->FirstChildElement("folder");
+	if (folderElement)
 	{
-		Log_InfoF("Textures are in folder: %s\n", textureFolder->GetText());
+		Log_InfoF("Textures are in folder: %s\n", folderElement->GetText());
 	}
 	else
 	{
 		Log_Error("Did not find <folder> from xml\n");
 	}
 	
-	tinyxml2::XMLElement* picnuminfo = materials.FirstChildElement()->FirstChildElement("picnum");
-	if (picnuminfo)
+	int materialindex = 0;
+	tinyxml2::XMLElement* materialElement = materials.FirstChildElement()->FirstChildElement("material");
+	if (materialElement == nullptr)
 	{
-		
-		tinyxml2::XMLElement* picid = picnuminfo->FirstChildElement("id");
-		if (picid)
+		Log_Error("Did not find any <material> from xml\n");
+	}
+	while(materialElement)
+	{
+		int picnum;
+		tinyxml2::XMLElement* picnumElement = materialElement->FirstChildElement("picnum");
+		if (picnumElement)
 		{
-			int idvalue;
-			picid->QueryIntText(&idvalue);
-			Log_InfoF("First picnum has id %d\n", idvalue);	
+			picnumElement->QueryIntText(&picnum);
+			Log_InfoF("material %d has picnum %d\n", materialindex, picnum);	
 		}
 	
-		tinyxml2::XMLElement* texturefile = picnuminfo->FirstChildElement("texture");
-		Log_InfoF("First picnum has texture \"%s\"\n", texturefile->GetText());
-	}
-	else
-	{
-		Log_Error("Did not find picnum from xml\n");
+		tinyxml2::XMLElement* textureElement = materialElement->FirstChildElement("texture");
+		if (textureElement)
+		{
+			Log_InfoF("material %d has texture \"%s\"\n", materialindex, textureElement->GetText());
+			
+			// TODO Check for mipmaps
+		
+		
+			mgdl_BufferPrintf("%s/%s", folderElement->GetText(), textureElement->GetText());
+			TextureHandle textureH = AssetManager_LoadTexture(mgdl_GetPrintfBuffer(), false);
+			if (Handle_IsValid(textureH))
+			{
+				Texture* texture = AssetManager_GetTexture(textureH);
+				OpenGLRender_RegisterTexture(picnum, texture);
+			}
+		}
+		// TODO Check for material type
+		
+		// TODO check for function id
+		
+		// TODO check others
+		
+		
+		
+		materialElement = materialElement->NextSiblingElement("material");
+		materialindex += 1;
 	}
 }
 

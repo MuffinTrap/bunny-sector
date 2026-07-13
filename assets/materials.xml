@@ -1,7 +1,11 @@
 <materials>
 	<folder>assets</folder>
-	<picnum>
-		<id>4</id>
+	<material>
+		<picnum>4</picnum>
 		<texture>blue.png</texture>
-	</picnum>
+	</material>
+	<material>
+		<picnum>234</picnum>
+		<texture>purple.png</texture>
+	</material>
 </materials>
