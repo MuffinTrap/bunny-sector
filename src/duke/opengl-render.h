@@ -9,7 +9,6 @@ struct DukeMap;
 struct Sector;
 struct Wall;
 struct Texture;
-struct Sprite;
 
 #define RENDERER_PICNUM_DEFAULT 0
 
@@ -19,11 +18,11 @@ extern "C" {
 
 enum MapMaterialType
 {
-	Material_Texture, // Normal texture material
-	Material_Grass,  // Draw multiple shells of grass
-	Material_Function, // Use a custom function to draw on the area
-	Material_SpriteModel, // Draw a mesh instead of a texture for a sprite
-	Material_SpriteAnimated // Animate a sprite sheet on sprite
+	Material_Texture = 0, // Normal texture material
+	Material_Grass = 1,  // Draw multiple shells of grass
+	Material_Function = 2, // Use a custom function to draw on the area
+	Material_SpriteModel = 3, // Draw a mesh instead of a texture for a sprite
+	Material_SpriteAnimated = 4 // Animate a sprite sheet on sprite
 };
 typedef enum MapMaterialType MapMaterialType;
 
@@ -32,23 +31,22 @@ struct MapMaterial
 {
 	Material* mgdlMaterial;
 	MapMaterialType type;
-	union MaterialDataPtr
+
+	union MaterialData
 	{
-		union
-		{
-			s32 functionName; // If type is function, frame index if type is Animated sprite
-			s32 spriteFrame;
-		};
+		s32 functionName; // If type is function, frame index if type is Animated sprite
+		s32 spriteFrame;
 		Mesh* meshPtr;		// If type is SpriteModel
-		Sprite* spritePtr; // If type is Sprite
 	};
-	MaterialDataPtr data;
+
 	union MaterialParameter
 	{
 		float grassLength; // If type is grass
 		float frameDuration; // If type is Animated sprite
 		float meshScale; // If type is Sprite Mesh
 	};
+
+	MaterialData data;
 	MaterialParameter parameter;
 };
 typedef struct MapMaterial MapMaterial;
