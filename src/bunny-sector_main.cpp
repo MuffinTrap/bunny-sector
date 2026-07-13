@@ -48,6 +48,8 @@ bool BunnySector_Init()
 
 	OpenGLRender_Init();
 	OpenGLRender_RegisterTexture(RENDERER_PICNUM_DEFAULT, defaultChecker);
+	// Get rest of the textures from file
+	OpenGLRender_ReadMaterialsXML("assets/materials.xml");
 	BuildRender_Init();
 	defaultOpenGL = GetDefaultRenderSettingsOpenGL();
 	defaultView = GetDefaultCameraInfo();

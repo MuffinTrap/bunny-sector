@@ -7,6 +7,8 @@
 #include "dukemath.h"
 #include "tesselator.h"
 #include "obj-export.h"
+#include "../tinyxml2/tinyxml2.h"
+
 
 // Used when drawing grass materials
 static ShellGrass* m_grass = nullptr;
@@ -335,6 +337,51 @@ void OpenGLRender_Init()
             materialPtrArray[i] = nullptr;
         }
     }
+}
+
+void OpenGLRender_ReadMaterialsXML(const char* materialsfile)
+{
+	if (mgdl_DoesFileExist(materialsfile) == false)
+	{
+		return;
+	}
+	tinyxml2::XMLDocument materials;
+	tinyxml2::XMLError loadresult = materials.LoadFile(materialsfile);
+	if (loadresult != tinyxml2::XML_SUCCESS)
+	{
+		Log_Error("Failed to load xml file\n");
+	}
+	
+	// First child is <materials>
+	tinyxml2::XMLElement* textureFolder = materials.FirstChildElement()->FirstChildElement("folder");
+	if (textureFolder)
+	{
+		Log_InfoF("Textures are in folder: %s\n", textureFolder->GetText());
+	}
+	else
+	{
+		Log_Error("Did not find <folder> from xml\n");
+	}
+	
+	tinyxml2::XMLElement* picnuminfo = materials.FirstChildElement()->FirstChildElement("picnum");
+	if (picnuminfo)
+	{
+		
+		tinyxml2::XMLElement* picid = picnuminfo->FirstChildElement("id");
+		if (picid)
+		{
+			int idvalue;
+			picid->QueryIntText(&idvalue);
+			Log_InfoF("First picnum has id %d\n", idvalue);	
+		}
+	
+		tinyxml2::XMLElement* texturefile = picnuminfo->FirstChildElement("texture");
+		Log_InfoF("First picnum has texture \"%s\"\n", texturefile->GetText());
+	}
+	else
+	{
+		Log_Error("Did not find picnum from xml\n");
+	}
 }
 
 void OpenGLRender_Deinit()

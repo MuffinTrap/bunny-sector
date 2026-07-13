@@ -68,7 +68,7 @@ void OpenGLRender_Deinit();
  * @returns True if registering succeeded: there was space in array
  */
 bool OpenGLRender_RegisterTexture(s16 picnum, Texture* texture);
-
+void OpenGLRender_ReadMaterialsXML(const char* materialsfile);
 bool OpenGLRender_RegisterMaterial(s16 picnum, Material* material, MapMaterialType materialType);
 bool OpenGLRender_RegisterMapMaterial(s16 picnum, MapMaterial* material);
 
