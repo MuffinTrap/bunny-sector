@@ -70,7 +70,11 @@ DukeMap* ReadMapFromFile(const char* mapfilename)
     {
         Wall* w = &m.walls[s];
         w->x = ReadInt32();
+
+        // NOTE In mapster the origo is in the middle of the map
+        // and Y increases down.
         w->z = ReadInt32();
+
         w->point2 = ReadInt16();
         w->nextwall = ReadInt16();
         w->nextsector = ReadInt16();
@@ -95,9 +99,9 @@ DukeMap* ReadMapFromFile(const char* mapfilename)
         MapSprite* s = &m.sprites[i];
 
         s32 x = ReadInt32();
-        s32 y = ReadInt32();
-        s32 z = ReadInt32()/ HeightToWidth * -1;
-        s->position = Vector3New(x, z, y);
+        s32 z = ReadInt32();
+        s32 y = ReadInt32()/ HeightToWidth * -1;
+        s->position = Vector3New(x, y, z);
 
         s->cstat = ReadInt16();
         s->picnum = ReadInt16();

@@ -8,6 +8,7 @@
 #include "duke/actor.h"
 
 static DukeMap** mapsArray = nullptr;
+static DukeMap* activeMap = nullptr;
 static const float MAP_AMOUNT = 4;
 
 static RenderSettingsOpenGL defaultOpenGL;
@@ -86,10 +87,10 @@ int BunnySector_LoadMap(const zstr& mapfilename)
 		}
 	}
 
-	DukeMap* loaded = ReadMapFromFile(mapfilename);
-	if (loaded != nullptr)
+	activeMap = ReadMapFromFile(mapfilename);
+	if (activeMap  != nullptr)
 	{
-		mapsArray[firstFree] = loaded;
+		mapsArray[firstFree] = activeMap ;
 		return firstFree;
 	}
 	return -1;
@@ -176,3 +177,40 @@ void BunnySector_SetActorDriveInput(int actorId, float forward, float strafe, fl
 	demoActor.turnDrive = Clamp(turnYaw, -1.0f, 1.0f);
 }
 
+Sector* buns_GetSector(s16 sectorNumber)
+{
+	return Map_GetSector(activeMap, sectorNumber);
+}
+Wall* buns_GetWall(s16 wallIndex)
+{
+	return Map_GetWall(activeMap, wallIndex);
+}
+Wall* buns_GetWallEnd(Wall* wall)
+{
+	return Map_GetWallEnd(activeMap, wall);
+}
+s16 buns_GetSectorAmount()
+{
+	return activeMap->sectorAmount;
+}
+void buns_GetActorPositionV2(int actorId, buns_Vec2& out_pos)
+{
+	out_pos.x = demoActor.position.x;
+	out_pos.y = demoActor.position.z;
+}
+void buns_GetActorFloorDir(int actorId, buns_Vec2& out_dir)
+{
+	out_dir.x = demoActor.floorDirection.x;
+	out_dir.y = demoActor.floorDirection.y;
+}
+void buns_GetActorPositionV3(int actorId, buns_Vec3& out_pos)
+{
+	out_pos.x = demoActor.position.x;
+	out_pos.y = demoActor.position.y;
+	out_pos.z = demoActor.position.z;
+}
+
+Actor* buns_GetActor(int actorId)
+{
+	return &demoActor;
+}

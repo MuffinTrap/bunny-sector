@@ -1,5 +1,9 @@
 #include "mgdl.angel"
 #include "raymath.angel"
+#include "render2d.cpp"
+
+//#include "../src/bunny-sector_main.h"
+//#include <mgdl.h>
 
 #if USE_ANGEL_AS_CPP
 #	include <mgdl.h>
@@ -26,7 +30,7 @@ void angelscript_init()
 	int screenHeight = mgdl_GetScreenHeight();
 
 	BunnySector_Init();
-	testMapId = BunnySector_LoadMap("assets/liminal.map");
+	testMapId = BunnySector_LoadMap("assets/test_room.map");
 	BunnySector_StartMap(testMapId);
 
     glEnable(GL_DEPTH_TEST);
@@ -104,8 +108,7 @@ void DrawDebugs()
 	DrawDrive(116, 82+16, vertical);
 }
 
-
-void angelscript_frame(float deltatime)
+void movePlayer(float deltatime)
 {
 	if (mgdl_IsButtonDown(0, ButtonUp))
 	{
@@ -139,9 +142,22 @@ void angelscript_frame(float deltatime)
 
 	BunnySector_SetActorDriveInput(0, forward, strafe, vertical, turn, 0.0f);
 	BunnySector_UpdateMap(testMapId, deltatime);
+
+}
+
+void render3d(float deltatime)
+{
 	BunnySector_RenderMap(testMapId);
 
 	DrawDebugs();
+
+}
+
+
+void angelscript_frame(float deltatime)
+{
+	//movePlayer(deltatime);
+	RenderMap(deltatime);
 }
 
 #if USE_ANGEL_AS_CPP
