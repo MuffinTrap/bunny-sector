@@ -4,6 +4,7 @@ int SCREEN_HEIGHT = 480;
 
 float DEBUG_SCALE = 6.0f;
 
+float HFOV_MULTIPLIER = 0.82f;
 float PLAYER_HALF_FOV_DEG = 45.0f;
 Vector2 FORWARD_2D = Vector2(1, 0);
 Vector2 RIGHT_2D = Vector2Rotate(FORWARD_2D, DEG2RAD * 90);
@@ -73,8 +74,8 @@ int requestWrite = 0;
 
 void ResetRequests()
 {
-	int requestRead = 0;
-	int requestWrite = 0;
+	requestRead = 0;
+	requestWrite = 0;
 }
 
 void PushRequest(int sectornumber, int left, int right)
@@ -272,10 +273,14 @@ void MovePlayer(float deltatime)
 	forward = -wasd.y;
 	turn = wasd.x;
 
-	playerAngle += turn * DEG2RAD * 15.0f * deltatime;
+	playerAngle += turn * DEG2RAD * 25.0f * deltatime;
 	playerDir = Vector2Rotate(FORWARD_2D, playerAngle);
 
-	player = Vector2Add(player, Vector2Scale(playerDir, 100 * forward * deltatime));
+	player = Vector2Add(player, Vector2Scale(playerDir, 400 * forward * deltatime));
+
+
+	HFOV = HFOV_MULTIPLIER * SCREEN_HEIGHT; // TODO FIGURE out how to get this from FOV ANGLE
+	VFOV = (1- HFOV_MULTIPLIER) * SCREEN_HEIGHT;
 
 }
 
@@ -404,12 +409,9 @@ void RenderMuffin()
 	float screen_half_width = SCREEN_WIDTH / 2.0f;
 	float screen_half_height = SCREEN_HEIGHT / 2.0f;
 
-	float gScale = 0.5f;
+	float gScale = 0.1f;
 
-	SectorRequest now = PopRequest();
 
-	Sector@ sector = buns_GetSector(now.number);
-	float sectorHeight = sector.ceilingy - sector.floory;
 
 	// NOTE These need to match with the FOV
 	Vector2 pnl = Vector2(0.001f, -0.001f);
@@ -418,185 +420,235 @@ void RenderMuffin()
 	Vector2 pfl = Vector2Rotate(FORWARD_2D, -PLAYER_HALF_FOV_DEG);
 	Vector2 pfr = Vector2Rotate(FORWARD_2D, PLAYER_HALF_FOV_DEG);
 
-	for (s16 wallIndex = 0; wallIndex < sector.wallnum; wallIndex++)
+	SectorRequest now = PopRequest();
+	/*
+	while (RequestLeft())
 	{
-		if (wallIndex >= WALL_LIMIT && WALL_LIMIT > 0)
+		Sector@ sector = buns_GetSector(now.number);
+		*/
+	s16 sectorAmount = buns_GetSectorAmount();
+	for (s16 i = 0; i < sectorAmount; i++)
+	{
+		Sector@ sector = buns_GetSector(i);
+		float sectorHeight = sector.ceilingy - sector.floory;
+
+		for (s16 wallIndex = 0; wallIndex < sector.wallnum; wallIndex++)
 		{
-			break;
-		}
-		Wall@ start = buns_GetWall(sector.wallptr + wallIndex);
-		Wall@ end = buns_GetWallEnd(start);
+			Wall@ start = buns_GetWall(sector.wallptr + wallIndex);
+			Wall@ end = buns_GetWallEnd(start);
 
-		Vector2 wall1 = Vector2(start.x, start.z);
-		Vector2 wall2 = Vector2(end.x, end.z);
+			Vector2 wall1 = Vector2(start.x, start.z);
+			Vector2 wall2 = Vector2(end.x, end.z);
 
-		// TOP DOWN
-		//////////////
-		glPushMatrix();
+			// TOP DOWN
+			//////////////
+			glPushMatrix();
 
-		glTranslatef(screen_half_width/2, screen_half_height, 0);
-		glScalef(gScale/2, gScale/2, 1);
+			glTranslatef(screen_half_width/2, screen_half_height, 0);
+			glScalef(gScale/2, gScale/2, 1);
 
-		mgdl_DrawLine(wall1.x, wall1.y, wall2.x, wall2.y, Debug_DarkGray);
-		Vector2 pend = Vector2Add(player, Vector2Scale(playerDir, 5.0f));
-		mgdl_DrawLine(player.x, player.y,  pend.x, pend.y, Debug_Green);
-		mgdl_DrawLine(player.x, player.y,  player.x+1, player.y+1, Debug_White);
+			mgdl_DrawLine(wall1.x, wall1.y, wall2.x, wall2.y, Debug_DarkGray);
+			Vector2 pend = Vector2Add(player, Vector2Scale(playerDir, 5.0f));
+			mgdl_DrawLine(player.x, player.y,  pend.x, pend.y, Debug_Green);
+			mgdl_DrawLine(player.x, player.y,  player.x+1, player.y+1, Debug_White);
 
-		glPopMatrix();
+			glPopMatrix();
 
-		// TOP DOWN ROTATED
-		// Player is always at (0,0)
-		//////////////
+			// TOP DOWN ROTATED
+			// Player is always at (0,0)
+			//////////////
 
 
-		// Transform wall points
-		Vector2 wall1trans = Vector2Subtract(wall1, player);
-		Vector2 wall2trans = Vector2Subtract(wall2, player);
+			// Transform wall points
+			Vector2 wall1trans = Vector2Subtract(wall1, player);
+			Vector2 wall2trans = Vector2Subtract(wall2, player);
 
-		// My code
-		Vector2 trans1 = Vector2Rotate(wall1trans, -playerAngle); // NOTE Around player means to opposite direction
-		Vector2 trans2 = Vector2Rotate(wall2trans, -playerAngle); // NOTE Around player means to opposite direction
+			// My code
+			Vector2 trans1 = Vector2Rotate(wall1trans, -playerAngle); // NOTE Around player means to opposite direction
+			Vector2 trans2 = Vector2Rotate(wall2trans, -playerAngle); // NOTE Around player means to opposite direction
 
-		bool front1 = Vector2DotProduct(trans1, FORWARD_2D) > 0;
-		bool front2 = Vector2DotProduct(trans2, FORWARD_2D) > 0;
+			// Save them for the minimap
+			Vector2 mini1 = trans1;
+			Vector2 mini2 = trans2;
 
-		// PERSPECTIVE
+			bool front1 = Vector2DotProduct(trans1, FORWARD_2D) > 0;
+			bool front2 = Vector2DotProduct(trans2, FORWARD_2D) > 0;
 
-		glPushMatrix();
+			// PERSPECTIVE
 
-		glTranslatef(screen_half_width, screen_half_height, 0);
-		glScalef(gScale, gScale, 1);
+			glPushMatrix();
 
-		bool behind = false;
+			glTranslatef(screen_half_width, screen_half_height, 0);
 
-		// My code
-		if (front1 || front2)
-		{
+			bool behind = false;
+			bool clipped = false;
 
-
-			Vector2 clip1 = WikiIntersect(trans1, trans2, pnl, pfl);
-			Vector2 clip2 = WikiIntersect(trans1, trans2, pnr, pfr);
-
-			if ( !front1)
+			// My code
+			if (front1 || front2)
 			{
-				if (Vector2DotProduct(clip1, FORWARD_2D) > 0)
+
+
+				Vector2 clip1 = WikiIntersect(trans1, trans2, pnl, pfl);
+				Vector2 clip2 = WikiIntersect(trans1, trans2, pnr, pfr);
+
+				float dotclip1 = Vector2DotProduct(clip1, FORWARD_2D);
+				float dotclip2 = Vector2DotProduct(clip2, FORWARD_2D);
+
+				if ( !front1)
 				{
-					trans1 = clip1;
+					if (dotclip1 > 0)
+					{
+						trans1 = clip1;
+					}
+					else
+					{
+						trans1 = clip2; // INVALID Result on purpose
+					}
+					clipped = true;
 				}
-				else
+				// If the right wall point is behind and left clip is in front ???
+
+				//  I dont understand this one
+				if (!front2)
 				{
-					trans1 = clip2; // INVALID Result on purpose
+					// Sometimes it clips to left which is really
+					// far away.
+					// If both clips are in front, clip to closest
+					if (dotclip1 > 0 && dotclip2 > 0)
+					{
+						if (dotclip2 < dotclip1)
+						{
+							trans2 = clip2;
+						}
+					}
+					else if (dotclip1 > 0)
+					{
+						trans2 = clip1;
+					}
+					else
+					{
+						trans2 = clip2;
+					}
+
+					clipped = true;
 				}
 			}
-			// If the right wall point is behind and left clip is in front ???
-
-			//  I dont understand this one
-			if (!front2)
+			else
 			{
-				if (Vector2DotProduct(clip1, FORWARD_2D) > 0)
+				behind = true;
+			}
+			float z1 =  Vector2DotProduct(trans1, FORWARD_2D);
+			float z2 =  Vector2DotProduct(trans2, FORWARD_2D);
+			float x1 =  Vector2DotProduct(trans1, RIGHT_2D);
+			float x2 =  Vector2DotProduct(trans2, RIGHT_2D);
+
+			// Perspective transform
+			// fov effect
+			float zoom1x = HFOV / z1;
+			float zoom1y = VFOV / z1;
+			float zoom2x = HFOV / z2;
+			float zoom2y = VFOV / z2;
+
+			float screen1x = x1 * zoom1x;
+
+			float screen2x = x2 * zoom2x;
+
+			// Important bit. Check if fits into drawing window
+			bool backface = false;
+			bool outsideWindow = false;
+			if (screen1x >= screen2x)
+			{
+				backface = true;
+			}
+			if( screen2x < now.left || screen1x > now.right)
+			{
+				outsideWindow = true;
+			}
+
+			if (!outsideWindow && !backface && !behind)
+			{
+				// Draw this wall.
+				// Is it a portal?
+				color32 wallcolor = Debug_Blue;
+
+
+				bool isportal = start.nextsector >= 0;
+				if (isportal)
 				{
-					trans2 = clip1;
+					wallcolor = Debug_Red;
+
 				}
-				else
+
+				float ceilingy = sector.ceilingy - playerY;
+				float floory = sector.floory - playerY;
+
+				// Wall heights
+				float screen1yb = floory * zoom1y; // Bottom
+				float screen1yt = ceilingy* zoom1y; // Top
+				float screen2yb = floory * zoom2y; // Bottom
+				float screen2yt = ceilingy* zoom2y; // Top
+
+				mgdl_DrawLine(screen1x, screen1yt, screen2x, screen2yt, wallcolor); // Top
+				mgdl_DrawLine(screen1x, screen1yb, screen2x, screen2yb, wallcolor); // Bottom
+				mgdl_DrawLine(screen1x, screen1yt, screen1x, screen1yb, Debug_White); // left
+				mgdl_DrawLine(screen2x, screen2yt, screen2x, screen2yb, wallcolor); // right
+
+				float beginx = fmaxf(screen1x, now.left);
+				float endx = fminf(screen2x, now.right);
+				if (isportal && endx > beginx)
 				{
-					trans2 = clip2;
+					//PushRequest(start.nextsector,  beginx, endx);
 				}
 			}
+
+			glPopMatrix();
+
+			// Rejection debug
+
+			glPushMatrix();
+			glTranslatef(screen_half_width, screen_half_height, 0);
+			glScalef(gScale/2, gScale/2, 1);
+
+			if (!front1 && !front2)
+			{
+				// Behind
+				mgdl_DrawLine(mini1.x, mini1.y,
+							  mini2.x, mini2.y, Debug_Red);
+			}
+			else if (backface)
+			{
+				mgdl_DrawLine(mini1.x, mini1.y,
+							  mini2.x, mini2.y, Debug_Magenta);
+
+			}
+			else if (outsideWindow)
+			{
+				mgdl_DrawLine(mini1.x, mini1.y,
+							  mini2.x, mini2.y, Debug_Yellow);
+
+			}
+			else
+			{
+				mgdl_DrawLine(mini1.x, mini1.y,
+							  mini2.x, mini2.y, Debug_White);
+
+			}
+			if (clipped)
+			{
+				mgdl_DrawLine(trans1.x, trans1.y,
+							  trans2.x, trans2.y, Debug_Green);
+
+			}
+
+
+			Vector2 pend2 = Vector2Scale(FORWARD_2D, 5.0f);
+			mgdl_DrawLine(0,0,  pend2.x, pend2.y, Debug_Green);
+			mgdl_DrawLine(0,0,  2, 2, Debug_White);
+			mgdl_DrawLine(0,0, pfl.x * 600, pfl.y * 600, Debug_Yellow);
+			mgdl_DrawLine(0,0, pfr.x * 600, pfr.y * 600, Debug_Yellow);
+
+			glPopMatrix();
 		}
-		else
-		{
-			behind = true;
-		}
-		float z1 =  Vector2DotProduct(trans1, FORWARD_2D);
-		float z2 =  Vector2DotProduct(trans2, FORWARD_2D);
-		float x1 =  Vector2DotProduct(trans1, RIGHT_2D);
-		float x2 =  Vector2DotProduct(trans2, RIGHT_2D);
-
-		// Perspective transform
-		// fov effect
-		float zoom1x = HFOV / z1;
-		float zoom1y = VFOV / z1;
-		float zoom2x = HFOV / z2;
-		float zoom2y = VFOV / z2;
-
-		float screen1x = x1 * zoom1x;
-
-		float screen2x = x2 * zoom2x;
-
-		// Important bit. Check if fits into drawing window
-		mgdl_DrawTextInt("Left", int(now.left), -screen_half_width, -screen_half_height - 32, 16.0f, Debug_Yellow);
-		mgdl_DrawTextInt("Right", int(now.right), -screen_half_width, -screen_half_height - 16, 16.0f, Debug_Yellow);
-		mgdl_DrawTextFloat("Screen1x", screen1x, -screen_half_width, -screen_half_height + 32 * wallIndex, 16.0f, Debug_Yellow);
-		mgdl_DrawTextFloat("Screen2x", screen2x, -screen_half_width, -screen_half_height + 32 * wallIndex + 16, 16.0f, Debug_Yellow);
-		bool backface = false;
-		bool outsideWindow = false;
-		if (screen1x >= screen2x)
-		{
-			backface = true;
-		}
-		if( screen2x < now.left || screen1x > now.right)
-		{
-			outsideWindow = true;
-		}
-
-		if (!outsideWindow && !backface && !behind)
-		{
-			float ceilingy = sector.ceilingy - playerY;
-			float floory = sector.floory - playerY;
-
-			// Wall heights
-			float screen1yb = floory * zoom1y; // Bottom
-			float screen1yt = ceilingy* zoom1y; // Top
-			float screen2yb = floory * zoom2y; // Bottom
-			float screen2yt = ceilingy* zoom2y; // Top
-
-			mgdl_DrawLine(screen1x, screen1yt, screen2x, screen2yt, Debug_Blue); // Top
-			mgdl_DrawLine(screen1x, screen1yb, screen2x, screen2yb, Debug_Blue); // Bottom
-			mgdl_DrawLine(screen1x, screen1yt, screen1x, screen1yb, Debug_White); // left
-			mgdl_DrawLine(screen2x, screen2yt, screen2x, screen2yb, Debug_Blue); // right
-		}
-
-		glPopMatrix();
-
-		// Rejection debug
-
-		glPushMatrix();
-		glTranslatef(screen_half_width, screen_half_height, 0);
-		glScalef(gScale/2, gScale/2, 1);
-
-		if (!front1 && !front2)
-		{
-			// Behind
-			mgdl_DrawLine(trans1.x, trans1.y,
-						  trans2.x, trans2.y, Debug_Red);
-		}
-		else if (backface)
-		{
-			mgdl_DrawLine(trans1.x, trans1.y,
-						  trans2.x, trans2.y, Debug_Magenta);
-
-		}
-		else if (outsideWindow)
-		{
-			mgdl_DrawLine(trans1.x, trans1.y,
-						  trans2.x, trans2.y, Debug_Yellow);
-
-		}
-		else
-		{
-			mgdl_DrawLine(trans1.x, trans1.y,
-						  trans2.x, trans2.y, Debug_White);
-
-		}
-
-
-		Vector2 pend2 = Vector2Scale(FORWARD_2D, 5.0f);
-		mgdl_DrawLine(0,0,  pend2.x, pend2.y, Debug_Green);
-		mgdl_DrawLine(0,0,  2, 2, Debug_White);
-		mgdl_DrawLine(0,0, pfl.x * 600, pfl.y * 600, Debug_Yellow);
-		mgdl_DrawLine(0,0, pfr.x * 600, pfr.y * 600, Debug_Yellow);
-
-		glPopMatrix();
 	}
 
 }

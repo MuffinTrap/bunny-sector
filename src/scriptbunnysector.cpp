@@ -20,6 +20,7 @@ void RegisterBunnySector(mgdl_AngelScript* angel)
 	as_engine->RegisterObjectType("Wall", 0, asOBJ_REF|asOBJ_NOCOUNT);
 	as_engine->RegisterObjectProperty("Wall", "s32 x", asOFFSET(Wall, x));
 	as_engine->RegisterObjectProperty("Wall", "s32 z", asOFFSET(Wall, z));
+	as_engine->RegisterObjectProperty("Wall", "s16 nextsector", asOFFSET(Wall, nextsector));
 
 	as_engine->RegisterObjectType("Sector", 0, asOBJ_REF|asOBJ_NOCOUNT);
 	as_engine->RegisterObjectProperty("Sector", "s16 wallptr", asOFFSET(Sector, wallptr));
