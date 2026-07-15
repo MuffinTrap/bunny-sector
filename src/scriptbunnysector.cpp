@@ -39,6 +39,7 @@ void RegisterBunnySector(mgdl_AngelScript* angel)
 
 	as_engine->RegisterObjectType("Actor", 0, asOBJ_REF|asOBJ_NOCOUNT);
 	as_engine->RegisterObjectProperty("Actor", "float yawRad", asOFFSET(Actor, yawRad));
+	as_engine->RegisterObjectProperty("Actor", "s16 sectorNumber", asOFFSET(Actor, sectorNumber));
 
 
 	// Register functions to access map data

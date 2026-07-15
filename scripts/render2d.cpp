@@ -18,10 +18,83 @@ int WALL_LIMIT = -1;
 	Vector2 player = Vector2(50,50);
 	float playerAngle = 0.0f;
 	Vector2 playerDir = Vector2(1, 0);
+	float playerY = 0.0f;
+
+// Fov
+int HFOV = 0.82f * SCREEN_HEIGHT; // TODO FIGURE out how to get this from FOV ANGLE
+int VFOV = 0.2f * SCREEN_HEIGHT;
 
 // Arrays for storing top and bottom limits
 int[] TOP_LIMITS(SCREEN_WIDTH);
 int[] BOTTOM_LIMITS(SCREEN_WIDTH);
+
+
+// Sector draw requests
+class SectorRequest
+{
+	int number;
+	int left;
+	int right;
+
+	SectorRequest()
+	{
+		number = -1;
+		left = SCREEN_WIDTH;
+		right = 0;
+	}
+
+	SectorRequest(int pnum, int pleft, int pright)
+	{
+		number = pnum;
+		left = pleft;
+		right = pright;
+	}
+}
+
+// List of drawn sectors
+int SECTOR_MAX = 4096;
+int[] SectorDrawTimes(SECTOR_MAX);
+
+void ResetDrawTimes()
+{
+	for (int i = 0; i < SECTOR_MAX; i++)
+	{
+		SectorDrawTimes[i] = 0;
+	}
+}
+
+
+// Sector draw requests
+int REQUEST_AMOUNT = 64;
+SectorRequest[] requests(REQUEST_AMOUNT);
+
+int requestRead = 0;
+int requestWrite = 0;
+
+void ResetRequests()
+{
+	int requestRead = 0;
+	int requestWrite = 0;
+}
+
+void PushRequest(int sectornumber, int left, int right)
+{
+	requests[requestWrite] = SectorRequest(sectornumber, left, right);
+	requestWrite = (requestWrite + 1) % REQUEST_AMOUNT;
+}
+
+SectorRequest PopRequest()
+{
+	SectorRequest R = requests[requestRead];
+	requestRead = (requestRead + 1) % REQUEST_AMOUNT;
+	return R;
+}
+
+bool RequestLeft()
+{
+	return requestRead != requestWrite;
+}
+
 
 int PlayerSeesPoint(Vector2 point)
 {
@@ -134,13 +207,33 @@ void DrawGizmo()
 	mgdl_DrawLineGradient(16, 16, 16 + positiveAngle.x * coordSize, 16 + positiveAngle.y * coordSize, Debug_Red, Debug_White);
 }
 
+bool firstFrame = true;
+
 void StartFrame()
 {
 	for (int i = 0; i < SCREEN_WIDTH; i++)
 	{
 		TOP_LIMITS[i] = 0;
-		BOTTOM_LIMITS[i] = SCREEN_HEIGHT;
+		BOTTOM_LIMITS[i] = SCREEN_HEIGHT-1;
 	}
+	ResetDrawTimes();
+	ResetRequests();
+
+	// Only on first frame
+	if (firstFrame)
+	{
+		buns_Vec3 outPlayerPos;
+		buns_GetActorPositionV3(0, outPlayerPos);
+		player= Vector2(outPlayerPos.x, outPlayerPos.z);
+		playerY = outPlayerPos.y;
+		firstFrame = false;
+	}
+
+	// Get player sector
+	Actor@ player = buns_GetActor(0);
+	// NOTE TODO
+	PushRequest(player.sectorNumber, -SCREEN_WIDTH, SCREEN_WIDTH-1);
+
 }
 
 void MovePlayer(float deltatime)
@@ -179,7 +272,7 @@ void MovePlayer(float deltatime)
 	forward = -wasd.y;
 	turn = wasd.x;
 
-	playerAngle += turn * DEG2RAD * 90.0f * deltatime;
+	playerAngle += turn * DEG2RAD * 15.0f * deltatime;
 	playerDir = Vector2Rotate(FORWARD_2D, playerAngle);
 
 	player = Vector2Add(player, Vector2Scale(playerDir, 100 * forward * deltatime));
@@ -311,24 +404,50 @@ void RenderMuffin()
 	float screen_half_width = SCREEN_WIDTH / 2.0f;
 	float screen_half_height = SCREEN_HEIGHT / 2.0f;
 
-	// One wall in front of player
-	Vector2 wall1 = Vector2(70, 20);
-	Vector2 wall2 = Vector2(70, 70);
+	float gScale = 0.5f;
 
-	// TOP DOWN
-	//////////////
+	SectorRequest now = PopRequest();
 
-	mgdl_DrawLine(wall1.x, wall1.y, wall2.x, wall2.y, Debug_Yellow);
-	Vector2 pend = Vector2Add(player, Vector2Scale(playerDir, 5.0f));
-	mgdl_DrawLine(player.x, player.y,  pend.x, pend.y, Debug_Green);
-	mgdl_DrawLine(player.x, player.y,  player.x+1, player.y+1, Debug_White);
+	Sector@ sector = buns_GetSector(now.number);
+	float sectorHeight = sector.ceilingy - sector.floory;
 
-	// TOP DOWN ROTATED
-	// Player is always at (0,0)
-	//////////////
+	// NOTE These need to match with the FOV
+	Vector2 pnl = Vector2(0.001f, -0.001f);
+	Vector2 pnr = Vector2(0.001f, 0.001f);
 
-	glPushMatrix();
-		glTranslatef(screen_half_width, 50, 0);
+	Vector2 pfl = Vector2Rotate(FORWARD_2D, -PLAYER_HALF_FOV_DEG);
+	Vector2 pfr = Vector2Rotate(FORWARD_2D, PLAYER_HALF_FOV_DEG);
+
+	for (s16 wallIndex = 0; wallIndex < sector.wallnum; wallIndex++)
+	{
+		if (wallIndex >= WALL_LIMIT && WALL_LIMIT > 0)
+		{
+			break;
+		}
+		Wall@ start = buns_GetWall(sector.wallptr + wallIndex);
+		Wall@ end = buns_GetWallEnd(start);
+
+		Vector2 wall1 = Vector2(start.x, start.z);
+		Vector2 wall2 = Vector2(end.x, end.z);
+
+		// TOP DOWN
+		//////////////
+		glPushMatrix();
+
+		glTranslatef(screen_half_width/2, screen_half_height, 0);
+		glScalef(gScale/2, gScale/2, 1);
+
+		mgdl_DrawLine(wall1.x, wall1.y, wall2.x, wall2.y, Debug_DarkGray);
+		Vector2 pend = Vector2Add(player, Vector2Scale(playerDir, 5.0f));
+		mgdl_DrawLine(player.x, player.y,  pend.x, pend.y, Debug_Green);
+		mgdl_DrawLine(player.x, player.y,  player.x+1, player.y+1, Debug_White);
+
+		glPopMatrix();
+
+		// TOP DOWN ROTATED
+		// Player is always at (0,0)
+		//////////////
+
 
 		// Transform wall points
 		Vector2 wall1trans = Vector2Subtract(wall1, player);
@@ -338,85 +457,148 @@ void RenderMuffin()
 		Vector2 trans1 = Vector2Rotate(wall1trans, -playerAngle); // NOTE Around player means to opposite direction
 		Vector2 trans2 = Vector2Rotate(wall2trans, -playerAngle); // NOTE Around player means to opposite direction
 
-		mgdl_DrawLine(trans1.x, trans1.y,
-					  trans2.x, trans2.y, Debug_Yellow);
+		bool front1 = Vector2DotProduct(trans1, FORWARD_2D) > 0;
+		bool front2 = Vector2DotProduct(trans2, FORWARD_2D) > 0;
 
+		// PERSPECTIVE
 
+		glPushMatrix();
 
-		Vector2 pend2 = Vector2Scale(FORWARD_2D, 5.0f);
-		mgdl_DrawLine(0,0,  pend2.x, pend2.y, Debug_Green);
-		mgdl_DrawLine(0,0,  2, 2, Debug_White);
+		glTranslatef(screen_half_width, screen_half_height, 0);
+		glScalef(gScale, gScale, 1);
 
+		bool behind = false;
 
-
-	glPopMatrix();
-
-	// PERSPECTIVE
-
-	glPushMatrix();
-	glTranslatef(screen_half_width * 1.5f, 50,0);
-
-		// fov effect
-		float zoom = 16.0f;
-
-	// My code
-	bool front1 = Vector2DotProduct(trans1, FORWARD_2D) > 0;
-	bool front2 = Vector2DotProduct(trans2, FORWARD_2D) > 0;
-	if (front1 || front2)
-	{
-		Vector2 pnl = Vector2(0.001f, -0.001f);
-		Vector2 pnr = Vector2(0.001f, 0.001f);
-
-		Vector2 pfl = Vector2(5.0f, -20.001f);
-		Vector2 pfr = Vector2(5.0f, 20.001f);
-		Vector2 clip1 = WikiIntersect(trans1, trans2, pnl, pfl);
-		Vector2 clip2 = WikiIntersect(trans1, trans2, pnr, pfr);
-
-		if ( !front1)
+		// My code
+		if (front1 || front2)
 		{
-			if (Vector2DotProduct(clip1, FORWARD_2D) > 0)
+
+
+			Vector2 clip1 = WikiIntersect(trans1, trans2, pnl, pfl);
+			Vector2 clip2 = WikiIntersect(trans1, trans2, pnr, pfr);
+
+			if ( !front1)
 			{
-				trans1 = clip1;
+				if (Vector2DotProduct(clip1, FORWARD_2D) > 0)
+				{
+					trans1 = clip1;
+				}
+				else
+				{
+					trans1 = clip2; // INVALID Result on purpose
+				}
 			}
-			else
+			// If the right wall point is behind and left clip is in front ???
+
+			//  I dont understand this one
+			if (!front2)
 			{
-				trans1 = clip2; // INVALID Result on purpose
+				if (Vector2DotProduct(clip1, FORWARD_2D) > 0)
+				{
+					trans2 = clip1;
+				}
+				else
+				{
+					trans2 = clip2;
+				}
 			}
 		}
-		// If the right wall point is behind and left clip is in front ???
-
-		//  I dont understand this one
-		if (!front2)
+		else
 		{
-			if (Vector2DotProduct(clip1, FORWARD_2D) > 0)
-			{
-				trans2 = clip1;
-			}
-			else
-			{
-				trans2 = clip2;
-			}
+			behind = true;
 		}
 		float z1 =  Vector2DotProduct(trans1, FORWARD_2D);
 		float z2 =  Vector2DotProduct(trans2, FORWARD_2D);
 		float x1 =  Vector2DotProduct(trans1, RIGHT_2D);
 		float x2 =  Vector2DotProduct(trans2, RIGHT_2D);
 
-		float screen1x = x1 * zoom / z1;
-		float screen1yb = 50/ z1; // Bottom
-		float screen1yt = -50/ z1; // Top
+		// Perspective transform
+		// fov effect
+		float zoom1x = HFOV / z1;
+		float zoom1y = VFOV / z1;
+		float zoom2x = HFOV / z2;
+		float zoom2y = VFOV / z2;
 
-		float screen2x = x2 * zoom/ z2;
-		float screen2yb = 50/ z2; // Bottom
-		float screen2yt = -50/ z2; // Top
+		float screen1x = x1 * zoom1x;
 
-		mgdl_DrawLine(screen1x, screen1yt, screen2x, screen2yt, Debug_Blue); // Top
-		mgdl_DrawLine(screen1x, screen1yb, screen2x, screen2yb, Debug_Blue); // Bottom
-		mgdl_DrawLine(screen1x, screen1yt, screen1x, screen1yb, Debug_White); // left
-		mgdl_DrawLine(screen2x, screen2yt, screen2x, screen2yb, Debug_Blue); // right
+		float screen2x = x2 * zoom2x;
+
+		// Important bit. Check if fits into drawing window
+		mgdl_DrawTextInt("Left", int(now.left), -screen_half_width, -screen_half_height - 32, 16.0f, Debug_Yellow);
+		mgdl_DrawTextInt("Right", int(now.right), -screen_half_width, -screen_half_height - 16, 16.0f, Debug_Yellow);
+		mgdl_DrawTextFloat("Screen1x", screen1x, -screen_half_width, -screen_half_height + 32 * wallIndex, 16.0f, Debug_Yellow);
+		mgdl_DrawTextFloat("Screen2x", screen2x, -screen_half_width, -screen_half_height + 32 * wallIndex + 16, 16.0f, Debug_Yellow);
+		bool backface = false;
+		bool outsideWindow = false;
+		if (screen1x >= screen2x)
+		{
+			backface = true;
+		}
+		if( screen2x < now.left || screen1x > now.right)
+		{
+			outsideWindow = true;
+		}
+
+		if (!outsideWindow && !backface && !behind)
+		{
+			float ceilingy = sector.ceilingy - playerY;
+			float floory = sector.floory - playerY;
+
+			// Wall heights
+			float screen1yb = floory * zoom1y; // Bottom
+			float screen1yt = ceilingy* zoom1y; // Top
+			float screen2yb = floory * zoom2y; // Bottom
+			float screen2yt = ceilingy* zoom2y; // Top
+
+			mgdl_DrawLine(screen1x, screen1yt, screen2x, screen2yt, Debug_Blue); // Top
+			mgdl_DrawLine(screen1x, screen1yb, screen2x, screen2yb, Debug_Blue); // Bottom
+			mgdl_DrawLine(screen1x, screen1yt, screen1x, screen1yb, Debug_White); // left
+			mgdl_DrawLine(screen2x, screen2yt, screen2x, screen2yb, Debug_Blue); // right
+		}
+
+		glPopMatrix();
+
+		// Rejection debug
+
+		glPushMatrix();
+		glTranslatef(screen_half_width, screen_half_height, 0);
+		glScalef(gScale/2, gScale/2, 1);
+
+		if (!front1 && !front2)
+		{
+			// Behind
+			mgdl_DrawLine(trans1.x, trans1.y,
+						  trans2.x, trans2.y, Debug_Red);
+		}
+		else if (backface)
+		{
+			mgdl_DrawLine(trans1.x, trans1.y,
+						  trans2.x, trans2.y, Debug_Magenta);
+
+		}
+		else if (outsideWindow)
+		{
+			mgdl_DrawLine(trans1.x, trans1.y,
+						  trans2.x, trans2.y, Debug_Yellow);
+
+		}
+		else
+		{
+			mgdl_DrawLine(trans1.x, trans1.y,
+						  trans2.x, trans2.y, Debug_White);
+
+		}
+
+
+		Vector2 pend2 = Vector2Scale(FORWARD_2D, 5.0f);
+		mgdl_DrawLine(0,0,  pend2.x, pend2.y, Debug_Green);
+		mgdl_DrawLine(0,0,  2, 2, Debug_White);
+		mgdl_DrawLine(0,0, pfl.x * 600, pfl.y * 600, Debug_Yellow);
+		mgdl_DrawLine(0,0, pfr.x * 600, pfr.y * 600, Debug_Yellow);
+
+		glPopMatrix();
 	}
 
-	glPopMatrix();
 }
 
 void RenderMap(float deltatime)
@@ -432,10 +614,10 @@ void RenderMap(float deltatime)
 
 	MovePlayer(deltatime);
 
-	RenderBisqwit();
+	//RenderBisqwit();
 
 	glPushMatrix();
-	glTranslatef(0, 100, 0);
+	//glTranslatef(0, 100, 0);
 	RenderMuffin();
 	glPopMatrix();
 
