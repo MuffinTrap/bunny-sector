@@ -156,7 +156,7 @@ void BunnySector_RenderMap(MapId mapId)
                                     defaultCamera->nearZ,
                                     defaultCamera->farZ);
 
-			demoActor.sectorNumber = Map_FindSector(map, demoActor.sectorNumber, demoActor.position);
+			demoActor.sectorNumber = Map_FindSectorV2(map, demoActor.sectorNumber, demoActor.position);
 			defaultView = Actor_GetViewpoint(&demoActor);
 
 			s_AlignCameraToViewpoint(&defaultView, defaultCamera);
@@ -198,7 +198,7 @@ s16 buns_GetSectorAmount()
 void buns_GetActorPositionV2(int actorId, buns_Vec2& out_pos)
 {
 	out_pos.x = demoActor.position.x;
-	out_pos.y = demoActor.position.z;
+	out_pos.y = demoActor.position.y;
 }
 void buns_GetActorFloorDir(int actorId, buns_Vec2& out_dir)
 {
@@ -208,8 +208,8 @@ void buns_GetActorFloorDir(int actorId, buns_Vec2& out_dir)
 void buns_GetActorPositionV3(int actorId, buns_Vec3& out_pos)
 {
 	out_pos.x = demoActor.position.x;
-	out_pos.y = demoActor.position.y;
-	out_pos.z = demoActor.position.z;
+	out_pos.y = demoActor.elevation;
+	out_pos.z = demoActor.position.y;
 }
 
 Actor* buns_GetActor(int actorId)

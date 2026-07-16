@@ -5,15 +5,14 @@ extern const Vector3 WORLD_UP;
 extern const Vector3 WORLD_RIGHT;
 extern const Vector3 WORLD_FORWARD;
 
+extern const Vector2 FLOOR_RIGHT;
+extern const Vector2 FLOOR_FORWARD;
+
 struct RenderSettingsOpenGL;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-/**
- * @brief Returns the Y of the cross product of 2 2D XZ vectors. used for line point check
- */
-float Vec2XZCrossToY(Vector2 a, Vector2 b);
 
 /**
  * @brief Returns the cross product xy of a x WORLD_UP

@@ -23,14 +23,14 @@ struct Actor
     float verticalDrive; /**< Is going up or down */
 
     // Position in duke units
-    Vector3 position; /**< Where actor is */
-    Vector3 prevPosition; /**< Place to store position before moving */
+    Vector2 position; /**< Where actor is */
+    float elevation;
+    Vector2 prevPosition; /**< Place to store position before moving */
 
     float turnVelocity; /*< How fast actor is turning */
     Vector2 floorVelocity; /**< Where actor is trying to go */
     float verticalVelocity;
     // Directions as a normal vectors
-    Vector3 lookDirection; /**< Where player is looking */
     Vector2 floorDirection; /**< Where player is headed */
 
     // Rotations
@@ -62,7 +62,7 @@ Actor Actor_CreateFromViewPoint(Viewpoint point);
 Actor Actor_Create(int idNumber, s16 sector, Vector3 position, float yawRad, float moveSpeed, float moveAcceleration, float turnSpeed, float turnAccelerationDeg, float standingHeight);
 Actor Actor_CreateDefaultActor(int idNumber);
 
-Vector3 Actor_ApplyDrive(Actor* actor, float deltaTime);
+Vector2 Actor_ApplyDrive(Actor* actor, float deltaTime);
 void Player_UpdateMove(Actor* player, WiiController* controller, RenderSettings2D* settings2D, RenderSettingsOpenGL* settingsGL, DukeMap* map, int amountPlayers);
 bool IsPointInsideRect(RectF rect, Vector2 point);
 Viewpoint Actor_GetViewpoint(Actor* actor);

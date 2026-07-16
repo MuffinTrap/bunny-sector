@@ -98,7 +98,8 @@ struct DukeMap
 {
     zstr mapfile;
     s32 version;
-    Vector3 startPosition;
+    Vector2 startPosition;
+    float startElevation;
     s16 startAngle;
 
     s16 startingSector;
@@ -169,6 +170,7 @@ MoveResult Map_MovePointInMap(DukeMap* map, Vector2 start, Vector2 end, s16 sect
 * @returns The sector number where player is or -1 if not inside map
 */
 s16 Map_FindSector(DukeMap* map, s16 startingSector, Vector3 position);
+s16 Map_FindSectorV2(DukeMap* map, s16 startingSector, Vector2 position);
 
 s16 Map_GetSectorNeighbor(DukeMap* map, s16 sectorNumber, s16 wallIndex);
 

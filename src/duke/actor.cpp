@@ -16,13 +16,13 @@ Actor Actor_CreateDefaultActor(int idNumber)
 	a.turnDrive = 0.0f;
 	a.verticalDrive = 0.0f;
 
-	a.position = Vector3Zero();
-	a.prevPosition = Vector3Zero();
+	a.position = Vector2Zero();
+	a.prevPosition = Vector2Zero();
 
 	a.turnVelocity = 0.0f;
 	a.floorVelocity = Vector2Zero();
 	a.verticalVelocity = 0.0f;
-	a.lookDirection = mgdl_GetGLWorldForward();
+	//a.lookDirection = mgdl_GetGLWorldForward();
 	a.floorDirection = Vector2New(0, -1);
 
 	a.yawRad = 0.0f;
@@ -32,7 +32,7 @@ Actor Actor_CreateDefaultActor(int idNumber)
 	a.turnSpeedDegrees = 150.0f; // NOTE set
 
 	a.moveSpeed = 2048.0f; // NOTE Set
-	a.moveAcceleration = 1024.0f;
+	a.moveAcceleration = 2024.0f;
 
 	a.verticalSpeedUp = 1400.0f;
 	a.verticalSpeedDown = -32000.0f; // DANGER
@@ -53,7 +53,7 @@ Actor Actor_CreateDefaultActor(int idNumber)
 Viewpoint Actor_GetViewpoint(Actor* actor)
 {
 	Viewpoint p;
-	p.position = actor->position;
+	p.position = Vector3New(actor->position.x, actor->elevation, actor->position.y);
 	p.sector = actor->sectorNumber;
 	p.yawRad = actor->yawRad;
 	p.pitchRad = actor->pitchRad;
@@ -62,19 +62,56 @@ Viewpoint Actor_GetViewpoint(Actor* actor)
 
 static const float deadzone = 0.1f;
 
-Vector3 Actor_ApplyDrive(Actor* actor, float deltaTime)
+Vector2 Actor_ApplyDrive(Actor* actor, float deltaTime)
+{
+
+	// Apply turn drive
+	if (abs(actor->turnDrive) > deadzone)
+	{
+		float accRad = Deg2Rad(actor->turnAccelerationDegrees);
+		actor->turnVelocity += actor->turnDrive * accRad * deltaTime;
+	}
+	else
+	{
+		actor->turnVelocity *= 0.9f;
+		if (abs(actor->turnVelocity) < deadzone)
+		{
+			actor->turnVelocity = 0.0f;
+		}
+	}
+
+	float tsd = Deg2Rad(actor->turnSpeedDegrees);
+	if (actor->turnVelocity > tsd)
+	{
+		actor->turnVelocity = tsd;
+	}
+	if (actor->turnVelocity < -tsd)
+	{
+		actor->turnVelocity = -tsd;
+	}
+
+	// Rotate
+	actor->yawRad += actor->turnVelocity * deltaTime;
+	// calculate current floor direction
+	Vector2 forward = FLOOR_FORWARD;
+	actor->floorDirection = Vector2Rotate(forward, actor->yawRad);
+
+	Vector2 floorDestination = Vector2Add(actor->position, Vector2Scale(actor->floorDirection, actor->forwardDrive *actor->moveSpeed * deltaTime));
+
+	Vector2 destination = floorDestination;
+	return destination;
+}
+
+Vector3 Actor_ApplyDrive2(Actor* actor, float deltaTime)
 {
 	// calculate current floor direction
-	Vector2 forward = Vector2New(WORLD_FORWARD.x, WORLD_FORWARD.z);
-	actor->floorDirection = Vec2XZRotateY(forward, actor->yawRad);
-	Vector2 strafeDirection = Vec2XZRotateY(actor->floorDirection, Deg2Rad(-90.0f));
+	Vector2 forward = FLOOR_FORWARD;
+	actor->floorDirection = Vector2Rotate(forward, actor->yawRad);
+	Vector2 strafeDirection = Vector2Rotate(actor->floorDirection, Deg2Rad(90.0f));
 
-	Vector2 floorDrive = Vector2New(actor->strafeDrive, actor->forwardDrive);
-	floorDrive = Vector2Normalize(floorDrive);
-	if (Vector2Length(floorDrive) > deadzone)
+	if (abs(actor->forwardDrive) > deadzone)
 	{
-		Vector2 floorAcceleration = Vector2Scale(strafeDirection, floorDrive.x * actor->moveAcceleration);
-		floorAcceleration = Vector2Add(floorAcceleration, Vector2Scale(actor->floorDirection, floorDrive.y * actor->moveAcceleration));
+		Vector2 floorAcceleration = Vector2Scale(actor->floorDirection, actor->forwardDrive * actor->moveAcceleration * deltaTime);
 		actor->floorVelocity = Vector2Add(actor->floorVelocity, Vector2Scale(floorAcceleration, deltaTime));
 	}
 	else
@@ -97,7 +134,7 @@ Vector3 Actor_ApplyDrive(Actor* actor, float deltaTime)
 	// Calculate new position
 	Vector2 floorDestination = Vector2New(
 		actor->position.x + actor->floorVelocity.x * deltaTime,
-		actor->position.z + actor->floorVelocity.y * deltaTime
+		actor->position.y + actor->floorVelocity.y * deltaTime
 	);
 
 	// Apply turn drive

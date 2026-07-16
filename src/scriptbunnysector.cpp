@@ -17,16 +17,25 @@ void RegisterBunnySector(mgdl_AngelScript* angel)
 	as_engine->RegisterGlobalFunction("void BunnySector_SetActorDriveInput(int actorId, float forward, float strafe, float vertical, float turnYaw, float turnPitch)", asFUNCTION(BunnySector_SetActorDriveInput), asCALL_CDECL);
 
 	// Register Map types as uninstantiable reference types
+
+	// WALL
 	as_engine->RegisterObjectType("Wall", 0, asOBJ_REF|asOBJ_NOCOUNT);
 	as_engine->RegisterObjectProperty("Wall", "s32 x", asOFFSET(Wall, x));
 	as_engine->RegisterObjectProperty("Wall", "s32 z", asOFFSET(Wall, z));
 	as_engine->RegisterObjectProperty("Wall", "s16 nextsector", asOFFSET(Wall, nextsector));
 
+	// SECTOR
 	as_engine->RegisterObjectType("Sector", 0, asOBJ_REF|asOBJ_NOCOUNT);
 	as_engine->RegisterObjectProperty("Sector", "s16 wallptr", asOFFSET(Sector, wallptr));
 	as_engine->RegisterObjectProperty("Sector", "s16 wallnum", asOFFSET(Sector, wallnum));
 	as_engine->RegisterObjectProperty("Sector", "s32 ceilingy", asOFFSET(Sector, ceilingy));
 	as_engine->RegisterObjectProperty("Sector", "s32 floory", asOFFSET(Sector, floory));
+
+	// ACTOR
+	as_engine->RegisterObjectType("Actor", 0, asOBJ_REF|asOBJ_NOCOUNT);
+	as_engine->RegisterObjectProperty("Actor", "float yawRad", asOFFSET(Actor, yawRad));
+	as_engine->RegisterObjectProperty("Actor", "s16 sectorNumber", asOFFSET(Actor, sectorNumber));
+	as_engine->RegisterObjectProperty("Actor", "float elevation", asOFFSET(Actor, elevation));
 
 	// Register other types
 	as_engine->RegisterObjectType("buns_Vec2", sizeof(buns_Vec2), asOBJ_VALUE|asOBJ_POD);
@@ -38,9 +47,6 @@ void RegisterBunnySector(mgdl_AngelScript* angel)
 	as_engine->RegisterObjectProperty("buns_Vec3", "float y", asOFFSET(buns_Vec3, y));
 	as_engine->RegisterObjectProperty("buns_Vec3", "float z", asOFFSET(buns_Vec3, z));
 
-	as_engine->RegisterObjectType("Actor", 0, asOBJ_REF|asOBJ_NOCOUNT);
-	as_engine->RegisterObjectProperty("Actor", "float yawRad", asOFFSET(Actor, yawRad));
-	as_engine->RegisterObjectProperty("Actor", "s16 sectorNumber", asOFFSET(Actor, sectorNumber));
 
 
 	// Register functions to access map data

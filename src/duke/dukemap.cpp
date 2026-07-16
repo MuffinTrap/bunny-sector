@@ -43,7 +43,7 @@ void Map_InitActors(DukeMap* map, Actor* players, int playerAmount)
         if (startingPos)
         {
             Log_InfoF("Found starting position for player %d\n", pi);
-            players[pi].position= startingPos->position;
+            players[pi].position= Vector2New(startingPos->position.x, startingPos->position.z);
             players[pi].yawRad = Math_DukeAngleToRad(startingPos->ang);
             players[pi].sectorNumber = startingPos->sectnum;
             players[pi].position.y = Map_GetSectorFloorHeight(map, players[pi].sectorNumber) + players[pi].standingHeight;
@@ -66,7 +66,7 @@ void Map_SetActorToStart(DukeMap* map, Actor* actor)
 
 void Map_SetCameraToStart(DukeMap* map, Viewpoint* camera)
 {
-    camera->position= map->startPosition;
+    camera->position= Vector3New(map->startPosition.x, map->startElevation, map->startPosition.y);
     camera->yawRad = Math_DukeAngleToRad(map->startAngle - 512);
     camera->sector = map->startingSector;
     camera->position.y = Map_GetSectorFloorHeight(map, map->startingSector);
@@ -114,11 +114,11 @@ void Map_FindIslandSectors(DukeMap* map)
 
 void Map_PrintInfo(DukeMap* map)
 {
-    Log_InfoF("Duke Map Version:%d Start pos:(%.2f,%.2f,%.2f), Start angle:%d Start Sector:%d\n",
+    Log_InfoF("Duke Map Version:%d Start pos:(%.2f,%.2f), Start elevation %.2f Start angle:%d Start Sector:%d\n",
               map->version,
               map->startPosition.x,
               map->startPosition.y,
-              map->startPosition.z,
+              map->startElevation,
               map->startAngle,
               map->startingSector);
     Log_InfoF("Duke Map Sectors:%d Walls:%d, Sprites:%d\n", map->sectorAmount, map->wallAmount, map->spriteAmount);
@@ -280,7 +280,7 @@ Vector2 Map_GetWallNormal(DukeMap* map, Wall* w)
     Vector2 start = Vector2New(w->x, w->z);
     Vector2 end = Vector2New(wend->x, wend->z);
     Vector2 wallVector = Vector2Subtract(end, start);
-    return Vector2Normalize(Vec2XZCrossWithY(wallVector));
+    return Vector2Normalize(Vector2Rotate(wallVector, DEG2RAD*90));
 }
 Wall* Map_GetWallEnd(DukeMap* map, Wall* w)
 {
@@ -296,7 +296,7 @@ bool Map_IsPointInsideWall(DukeMap* map, Vector2 point, Wall* wall)
     Vector2 end = Vector2New(wend->x, wend->z);
 
     Vector2 wallVector = Vector2Subtract(end, start);
-    float crossY = Vec2XZCrossToY(wallVector, Vector2Subtract(point, start));
+    float crossY = Vector2CrossProduct(wallVector, Vector2Subtract(point, start));
     // DANGER Again, this code works differently TM
     return crossY < 0.0f;
 }
@@ -361,16 +361,16 @@ MapSprite* Map_GetSprite(DukeMap* map, s16 spriteIndex)
 
 void Map_MoveActorInMap(DukeMap* map, float deltaTime, Actor* inoutActor)
 {
-    Vector3 current = inoutActor->position;
-    Vector3 destination = Actor_ApplyDrive(inoutActor, deltaTime);
+    Vector2 current = inoutActor->position;
+    Vector2 destination = Actor_ApplyDrive(inoutActor, deltaTime);
 
-    if (Vector3Equals(current, destination))
+    if (Vector2Equals(current, destination))
     {
         return;
     }
 
-	Vector2 point = Vector2New(current.x, current.z);
-	Vector2 endpoint = Vector2New(destination.x, destination.z);
+	Vector2 point = current;
+	Vector2 endpoint = destination;
 
 	Vector2 pointOut;
 	s16 sectorOut;
@@ -384,7 +384,7 @@ void Map_MoveActorInMap(DukeMap* map, float deltaTime, Actor* inoutActor)
     float maxY = Map_GetSectorCeilingHeight(map, inoutActor->sectorNumber) - ceilingToEyes;
     float verticalPosition = Clamp(destination.y, minY, maxY);
 
-	inoutActor->position = Vector3New(pointOut.x, verticalPosition, pointOut.y);;
+	inoutActor->position = pointOut;
 	inoutActor->sectorNumber = sectorOut;
     inoutActor->lastResult = result;
 }
@@ -514,6 +514,11 @@ s16 Map_GetSectorNeighbor(DukeMap* map, s16 sectorNumber, s16 wallIndex)
 s16 Map_FindSector(DukeMap* map, s16 startingSector, Vector3 position)
 {
     Vector2 position2D = Vector2New(position.x, position.z);
+    return Map_FindSectorV2(map, startingSector, position2D);
+
+}
+s16 Map_FindSectorV2(DukeMap* map, s16 startingSector, Vector2 position2D)
+{
     if (startingSector >= 0)
     {
         if (Map_IsPointInsideSectorOG(map, position2D, startingSector))

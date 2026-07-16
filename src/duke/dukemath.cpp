@@ -9,21 +9,8 @@ const Vector3 WORLD_RIGHT = 	Vector3New(1, 0, 0);
 const Vector3 WORLD_UP = 		Vector3New(0,1,0);
 const Vector3 WORLD_FORWARD = 	Vector3New(0, 0, -1);
 
-float Vec2XZCrossToY(Vector2 a, Vector2 b)
-{
-	float ax = a.x;
-	float az = a.y;
-	//float ay = 0.0f;
-	float bx = b.x;
-	float bz = b.y;
-	//float by = 0.0f;
-
-	// The A
-	// float x = ay*bz - az*by;
-	float y = az*bx - ax*bz;
-	// // float z = ax*by - ay*bx;
-	return y;
-}
+const Vector2 FLOOR_FORWARD = Vector2New(1.0f, 0.0f);
+const Vector2 FLOOR_RIGHT = 	Vector2New(0, 1);
 
 Vector2 Vec2XZCrossWithY(Vector2 a)
 {
@@ -92,9 +79,8 @@ float Math_DukeAngleToRad(s16 angleInt)
 
 	// How many radians to turn
     float ratio = (float)angleInt / (float)2048;
-	float radians = -ratio * M_PI * 2.0f;
-	// Adjust by PI
-    return radians - M_PI;
+	float radians = ratio * M_PI * 2.0f;
+    return radians;
 }
 
 Vector3 Vec3DukePosToOpenGL(Vector3 dukepos, RenderSettingsOpenGL* settings3D)

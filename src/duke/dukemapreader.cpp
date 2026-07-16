@@ -27,7 +27,8 @@ DukeMap* ReadMapFromFile(const char* mapfilename)
     s32 start_x = ReadInt32(); // X coordinate
     s32 start_z = ReadInt32(); // Z Coordinate
     s32 start_y = ReadInt32() * -1 / HeightToWidth; // Y Coordinate, flipped
-    m.startPosition = Vector3New(start_x, start_y, start_z);
+    m.startPosition = Vector2New(start_x, start_z);
+    m.startElevation = start_y;
 
     m.startAngle = ReadInt16();
     m.startingSector = ReadInt16();

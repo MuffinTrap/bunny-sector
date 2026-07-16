@@ -18,12 +18,6 @@
 
 MapId testMapId;
 
-//Actor drives
-	float forward = 0;
-	float strafe = 0.0f;
-	float turn = 0.0f;
-	float vertical = 0.0f;
-
 void angelscript_init()
 {
 	int screenWidth = mgdl_GetScreenWidth();
@@ -90,26 +84,33 @@ void DrawDrive(int x, int y, float amount)
 
 void DrawDebugs()
 {
-	glClearColor(0.2f, 0.2f, 0.1f, 1.0f);
-	mgdl_InitOrthoProjection(1.0f);
 	int screenWidth = mgdl_GetScreenWidth();
 	int screenHeight = mgdl_GetScreenHeight();
 
-	mgdl_DrawText("Forward", 16, 16, 16, Debug_Yellow);
-	DrawDrive(116, 16+16, forward);
+	Actor@ player = buns_GetActor(0);
+	float playerAngle = player.yawRad;
 
-	mgdl_DrawText("Strafe", 16, 48, 16, Debug_Yellow);
-	DrawDrive(116, 48+16, strafe);
+	buns_Vec2 outPlayerDir;
+	buns_GetActorFloorDir(0, outPlayerDir);
 
-	mgdl_DrawText("Turn", 16, 64, 16, Debug_Yellow);
-	DrawDrive(116, 64+16, turn);
+	buns_Vec2 outPlayerPos;
+	buns_GetActorPositionV2(0, outPlayerPos);
+	Vector2 playerPos = Vector2(outPlayerPos.x, outPlayerPos.y);
 
-	mgdl_DrawText("Vertical", 16, 82, 16, Debug_Yellow);
-	DrawDrive(116, 82+16, vertical);
+	mgdl_DrawTextFloat("Player x: ", outPlayerPos.x, 16, 16, 16, Debug_Yellow);
+	mgdl_DrawTextFloat("Player y: ", outPlayerPos.y, 16, 32, 16, Debug_Yellow);
+	mgdl_DrawTextFloat("Player d: ", RAD2DEG * playerAngle, 16, 48, 16, Debug_Yellow);
+	mgdl_DrawTextFloat("Player fx: ", outPlayerDir.x, 16, 48+16, 16, Debug_Yellow);
+	mgdl_DrawTextFloat("Player fy: ", outPlayerDir.y, 16, 48+32, 16, Debug_Yellow);
 }
 
 void movePlayer(float deltatime)
 {
+
+	float forward = 0;
+	float strafe = 0.0f;
+	float turn = 0.0f;
+	float vertical = 0.0f;
 	if (mgdl_IsButtonDown(0, ButtonUp))
 	{
 		vertical = 1.0f;
@@ -125,11 +126,11 @@ void movePlayer(float deltatime)
 
 	if (mgdl_IsButtonDown(0, ButtonLeft))
 	{
-		turn = 1.0f;
+		turn = -1.0f;
 	}
 	else if (mgdl_IsButtonDown(0, ButtonRight))
 	{
-		turn = -1.0f;
+		turn = 1.0f;
 	}
 	else
 	{
@@ -138,11 +139,10 @@ void movePlayer(float deltatime)
 
 	Vector2 wasd = mgdl_GetJoystick(0, Joystick_Nunchuk);
 	forward = -wasd.y;
-	strafe = wasd.x;
+	turn = wasd.x;
 
 	BunnySector_SetActorDriveInput(0, forward, strafe, vertical, turn, 0.0f);
 	BunnySector_UpdateMap(testMapId, deltatime);
-
 }
 
 void render3d(float deltatime)
@@ -156,8 +156,11 @@ void render3d(float deltatime)
 
 void angelscript_frame(float deltatime)
 {
-	//movePlayer(deltatime);
+	movePlayer(deltatime);
 	RenderMap(deltatime);
+	RenderTopDown();
+
+	DrawDebugs();
 }
 
 #if USE_ANGEL_AS_CPP
