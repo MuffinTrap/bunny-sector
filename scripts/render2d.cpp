@@ -4,7 +4,12 @@ int SCREEN_HEIGHT = 480;
 
 float DEBUG_SCALE = 6.0f;
 
-float HFOV_MULTIPLIER = 0.82f;
+// Fov
+float HFOV_MULTIPLIER = 0.41;
+float VFOV_MULTIPLIER = 0.2;
+int HFOV = HFOV_MULTIPLIER * SCREEN_HEIGHT;
+int VFOV = 0.2f * SCREEN_HEIGHT;
+
 float PLAYER_HALF_FOV_DEG = 45.0f;
 Vector2 FORWARD_2D = Vector2(1, 0);
 Vector2 RIGHT_2D = Vector2Rotate(FORWARD_2D, DEG2RAD * 90);
@@ -14,6 +19,7 @@ int SEE_RIGHT = 1;
 int SEE_FRONT = 0;
 
 int WALL_LIMIT = -1;
+int REQUEST_LIMIT = 1;
 
 //Actor drives
 	Vector2 player = Vector2(50,50);
@@ -21,9 +27,6 @@ int WALL_LIMIT = -1;
 	Vector2 playerDir = Vector2(1, 0);
 	float playerY = 0.0f;
 
-// Fov
-int HFOV = 0.82f * SCREEN_HEIGHT; // TODO FIGURE out how to get this from FOV ANGLE
-int VFOV = 0.2f * SCREEN_HEIGHT;
 
 // Arrays for storing top and bottom limits
 int[] TOP_LIMITS(SCREEN_WIDTH);
@@ -40,7 +43,7 @@ class SectorRequest
 	SectorRequest()
 	{
 		number = -1;
-		left = SCREEN_WIDTH;
+		left = SCREEN_WIDTH-1;
 		right = 0;
 	}
 
@@ -66,8 +69,9 @@ void ResetDrawTimes()
 
 
 // Sector draw requests
-int REQUEST_AMOUNT = 64;
+int REQUEST_AMOUNT = 8;
 SectorRequest[] requests(REQUEST_AMOUNT);
+int requestFill = 0; // How many unread
 
 int requestRead = 0;
 int requestWrite = 0;
@@ -76,24 +80,37 @@ void ResetRequests()
 {
 	requestRead = 0;
 	requestWrite = 0;
+	requestFill = 0;
+	for (int i = 0; i < REQUEST_AMOUNT; i++)
+	{
+		requests[i].number = -1; // Make all requests invalid
+	}
 }
 
 void PushRequest(int sectornumber, int left, int right)
 {
 	requests[requestWrite] = SectorRequest(sectornumber, left, right);
 	requestWrite = (requestWrite + 1) % REQUEST_AMOUNT;
+	requestFill += 1;
 }
 
 SectorRequest PopRequest()
 {
 	SectorRequest R = requests[requestRead];
 	requestRead = (requestRead + 1) % REQUEST_AMOUNT;
+	requestFill -= 1;
 	return R;
 }
 
 bool RequestLeft()
 {
-	return requestRead != requestWrite;
+	return requestRead != requestWrite && requestFill > 0;
+}
+
+// Can push if write will not go past read
+bool CanPushRequest()
+{
+	return requestFill < REQUEST_AMOUNT;
 }
 
 
@@ -134,6 +151,7 @@ Vector2 WikiIntersect(Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4)
 
 }
 
+// NOTE Not used
 Vector2 Intersect(Vector2 start1, Vector2 end1, Vector2 start2, Vector2 end2)
 {
 	float x = Vector2CrossProduct(start1, end1);
@@ -147,6 +165,7 @@ Vector2 Intersect(Vector2 start1, Vector2 end1, Vector2 start2, Vector2 end2)
 	return Vector2(x,y);
 }
 
+// NOTE Not used
 Vector2 ClipBehindPlayer(float ax, float ay, float bx, float by)
 {
 	// Near plane of camera
@@ -183,18 +202,8 @@ bool isBehind(Vector2 point)
 
 void Init2D_YDown()
 {
-    glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-    // Y increases down: 2D default
-	int screenWidth = mgdl_GetScreenWidth();
-	int screenHeight = mgdl_GetScreenHeight();
-    glOrtho(0.0, screenWidth, screenHeight,0.0, -1.0f, 1.0f);
+    mgdl_InitOrthoProjection(-1.0f);
 
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	// NOTE: This is from the OpenGL red book. The purpose is to have the vertices
-	// in the middle of the screen pixels
-	glTranslatef(0.375f, 0.375f, 0.0f);
 }
 
 void DrawGizmo()
@@ -233,7 +242,7 @@ void StartFrame()
 	// Get player sector
 	Actor@ player = buns_GetActor(0);
 	// NOTE TODO
-	PushRequest(player.sectorNumber, -SCREEN_WIDTH, SCREEN_WIDTH-1);
+	PushRequest(player.sectorNumber, -SCREEN_WIDTH/2, SCREEN_WIDTH/2-1);
 
 }
 
@@ -280,16 +289,10 @@ void MovePlayer(float deltatime)
 
 
 	HFOV = HFOV_MULTIPLIER * SCREEN_HEIGHT; // TODO FIGURE out how to get this from FOV ANGLE
-	VFOV = (1- HFOV_MULTIPLIER) * SCREEN_HEIGHT;
+	VFOV = VFOV_MULTIPLIER * SCREEN_HEIGHT;
 
 }
 
-// NOTE Negative is behind
-bool isbehindz(float z)
-{
-	return z < 0;
-
-}
 
 void RenderBisqwit()
 {
@@ -404,12 +407,21 @@ void RenderBisqwit()
 	glPopMatrix();
 }
 
+bool DEBUG_PRINT = false;
+
+void LogReq()
+{
+	mgdl_LogTextInt("  Read:", requestRead);
+	mgdl_LogTextInt("  Write:", requestWrite);
+	mgdl_LogTextInt("  Fill:", requestFill);
+}
+
 void RenderMuffin()
 {
 	float screen_half_width = SCREEN_WIDTH / 2.0f;
 	float screen_half_height = SCREEN_HEIGHT / 2.0f;
 
-	float gScale = 0.1f;
+	float gScale = 0.5f;
 
 
 
@@ -420,16 +432,71 @@ void RenderMuffin()
 	Vector2 pfl = Vector2Rotate(FORWARD_2D, -PLAYER_HALF_FOV_DEG);
 	Vector2 pfr = Vector2Rotate(FORWARD_2D, PLAYER_HALF_FOV_DEG);
 
-	SectorRequest now = PopRequest();
-	/*
+	if (DEBUG_PRINT)
+	{
+		mgdl_LogText("---------Start");
+		LogReq();
+	}
+
+	// NOTE Failsafe
+	int requestCount = 0;
+	s16 sectorAmount = buns_GetSectorAmount();
 	while (RequestLeft())
 	{
+		// Debug draw request situation
+		float rdx = 16;
+		float rdy = 16;
+		float rds = 16;
+		float rfs = 16;
+		color32 rc = Debug_Yellow;
+
+		for(int ri = 0; ri < REQUEST_AMOUNT; ri++)
+		{
+			SectorRequest R = requests[ri];
+			if (requestRead >= ri)
+			{
+				rc = Debug_Red;
+			}
+			else
+			{
+				rc = Debug_White;
+			}
+			if (R.number >= 0)
+			{
+				mgdl_DrawInt(R.number, rdx, rdy, rfs, rc);
+			}
+			else
+			{
+				mgdl_DrawText("-", rdx, rdy, rfs, rc);
+			}
+			rdx += rds;
+		}
+		rdx = 16;
+		mgdl_DrawText("R", rdx + rds * requestRead, rdy+rfs, rfs, Debug_Red);
+		mgdl_DrawText("W", rdx + rds * requestWrite, rdy+rfs*2, rfs, Debug_White);
+
+		if (requestCount >= REQUEST_AMOUNT ||
+			requestCount > sectorAmount ||
+			(REQUEST_LIMIT > 0 && requestCount >= REQUEST_LIMIT)
+		)
+		{
+			if (DEBUG_PRINT)
+			{
+				mgdl_LogText("Hit limit");
+			}
+			break;
+		}
+		requestCount += 1;
+
+		SectorRequest now = PopRequest();
 		Sector@ sector = buns_GetSector(now.number);
-		*/
-	s16 sectorAmount = buns_GetSectorAmount();
-	for (s16 i = 0; i < sectorAmount; i++)
-	{
-		Sector@ sector = buns_GetSector(i);
+
+		if (DEBUG_PRINT)
+		{
+			mgdl_LogTextInt("Pop", now.number);
+			LogReq();
+		}
+
 		float sectorHeight = sector.ceilingy - sector.floory;
 
 		for (s16 wallIndex = 0; wallIndex < sector.wallnum; wallIndex++)
@@ -441,6 +508,7 @@ void RenderMuffin()
 			Vector2 wall2 = Vector2(end.x, end.z);
 
 			// TOP DOWN
+			/*
 			//////////////
 			glPushMatrix();
 
@@ -453,26 +521,26 @@ void RenderMuffin()
 			mgdl_DrawLine(player.x, player.y,  player.x+1, player.y+1, Debug_White);
 
 			glPopMatrix();
+			*/
 
 			// TOP DOWN ROTATED
 			// Player is always at (0,0)
 			//////////////
 
+				// Transform wall points
+				Vector2 wall1trans = Vector2Subtract(wall1, player);
+				Vector2 wall2trans = Vector2Subtract(wall2, player);
 
-			// Transform wall points
-			Vector2 wall1trans = Vector2Subtract(wall1, player);
-			Vector2 wall2trans = Vector2Subtract(wall2, player);
+				// My code
+				Vector2 trans1 = Vector2Rotate(wall1trans, -playerAngle); // NOTE Around player means to opposite direction
+				Vector2 trans2 = Vector2Rotate(wall2trans, -playerAngle); // NOTE Around player means to opposite direction
 
-			// My code
-			Vector2 trans1 = Vector2Rotate(wall1trans, -playerAngle); // NOTE Around player means to opposite direction
-			Vector2 trans2 = Vector2Rotate(wall2trans, -playerAngle); // NOTE Around player means to opposite direction
+				// Save them for the minimap
+				Vector2 mini1 = trans1;
+				Vector2 mini2 = trans2;
 
-			// Save them for the minimap
-			Vector2 mini1 = trans1;
-			Vector2 mini2 = trans2;
-
-			bool front1 = Vector2DotProduct(trans1, FORWARD_2D) > 0;
-			bool front2 = Vector2DotProduct(trans2, FORWARD_2D) > 0;
+				bool front1 = Vector2DotProduct(trans1, FORWARD_2D) > 0;
+				bool front2 = Vector2DotProduct(trans2, FORWARD_2D) > 0;
 
 			// PERSPECTIVE
 
@@ -487,6 +555,7 @@ void RenderMuffin()
 			if (front1 || front2)
 			{
 
+				// TODO After clipping, wall cannot become longer than it was!
 
 				Vector2 clip1 = WikiIntersect(trans1, trans2, pnl, pfl);
 				Vector2 clip2 = WikiIntersect(trans1, trans2, pnr, pfr);
@@ -549,9 +618,10 @@ void RenderMuffin()
 			float zoom2x = HFOV / z2;
 			float zoom2y = VFOV / z2;
 
-			float screen1x = x1 * zoom1x;
+			int screen1x = int(x1 * zoom1x);
 
-			float screen2x = x2 * zoom2x;
+			int screen2x = int(x2 * zoom2x);
+
 
 			// Important bit. Check if fits into drawing window
 			bool backface = false;
@@ -576,11 +646,14 @@ void RenderMuffin()
 				if (isportal)
 				{
 					wallcolor = Debug_Red;
-
+					if (DEBUG_PRINT)
+					{
+						mgdl_LogTextInt("Found portal to ", start.nextsector);
+					}
 				}
 
-				float ceilingy = sector.ceilingy - playerY;
-				float floory = sector.floory - playerY;
+				s32 ceilingy = sector.ceilingy - playerY;
+				s32 floory = sector.floory - playerY;
 
 				// Wall heights
 				float screen1yb = floory * zoom1y; // Bottom
@@ -588,16 +661,50 @@ void RenderMuffin()
 				float screen2yb = floory * zoom2y; // Bottom
 				float screen2yt = ceilingy* zoom2y; // Top
 
-				mgdl_DrawLine(screen1x, screen1yt, screen2x, screen2yt, wallcolor); // Top
-				mgdl_DrawLine(screen1x, screen1yb, screen2x, screen2yb, wallcolor); // Bottom
-				mgdl_DrawLine(screen1x, screen1yt, screen1x, screen1yb, Debug_White); // left
-				mgdl_DrawLine(screen2x, screen2yt, screen2x, screen2yb, wallcolor); // right
+				int beginx = int(fmaxf(screen1x, now.left));
+				int endx = int(fminf(screen2x, now.right));
 
-				float beginx = fmaxf(screen1x, now.left);
-				float endx = fminf(screen2x, now.right);
-				if (isportal && endx > beginx)
+				// Linear interpolation
+				for (int dx = beginx; dx <= endx; dx++)
 				{
-					//PushRequest(start.nextsector,  beginx, endx);
+					int limitx = screen_half_width+dx;
+
+					int yt = (dx - screen1x) * (screen2yt - screen1yt) / (screen2x - screen1x) + screen1yt;
+					int yb = (dx - screen1x) * (screen2yb - screen1yb) / (screen2x - screen1x) + screen1yb;
+
+					float limit_top =yt + screen_half_height;
+					float limit_bot = yb + screen_half_height;
+
+					int cyt = Clamp(limit_top, TOP_LIMITS[limitx], BOTTOM_LIMITS[limitx]);
+					int cyb = Clamp(limit_bot, TOP_LIMITS[limitx], BOTTOM_LIMITS[limitx]);
+
+					mgdl_DrawLine(dx, cyt- screen_half_height, dx, cyb -screen_half_height, wallcolor);
+					mgdl_DrawLine(dx, cyt- screen_half_height, dx, cyb -screen_half_height, wallcolor);
+				}
+
+				mgdl_DrawLine(beginx, screen1yt, endx, screen2yt, wallcolor); // Top
+				mgdl_DrawLine(beginx, screen1yb, endx, screen2yb, wallcolor); // Bottom
+				mgdl_DrawLine(beginx, screen1yt, beginx, screen1yb, Debug_White); // left
+				mgdl_DrawLine(endx, screen2yt, screen2x, screen2yb, wallcolor); // right
+				if (isportal)
+				{
+
+					mgdl_DrawTextInt("Screen1x: ", screen1x, 0, 128, 16, Debug_Yellow);
+					mgdl_DrawTextInt("Screen2x: ", screen2x, 0, 128 + 16, 16, Debug_Yellow);
+					mgdl_DrawTextInt("Beginx: ", beginx, 0, 128 + 16*2, 16, Debug_Yellow);
+					mgdl_DrawTextInt("Endx: ", endx, 0, 128 + 16*3, 16, Debug_Yellow);
+				}
+
+
+				if (isportal && endx > beginx && CanPushRequest())
+				{
+					PushRequest(start.nextsector,  beginx, endx);
+
+					if (DEBUG_PRINT)
+					{
+						mgdl_LogTextInt("Pushed", start.nextsector);
+						LogReq();
+					}
 				}
 			}
 
@@ -650,6 +757,10 @@ void RenderMuffin()
 			glPopMatrix();
 		}
 	}
+	if (DEBUG_PRINT)
+	{
+		mgdl_LogText("------End");
+	}
 
 }
 
@@ -678,7 +789,7 @@ void RenderMap(float deltatime)
 
 
 
-	mgdl_InitOrthoProjection();
+	mgdl_InitOrthoProjection(1.0f);
 	//mgdl_DrawTextInt("Player x")
 	//mgdl_DrawTextInt("Player x")
 }

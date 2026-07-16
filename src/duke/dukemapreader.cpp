@@ -42,8 +42,10 @@ DukeMap* ReadMapFromFile(const char* mapfilename)
 
         // NOTE These are changed to have the same unit as width and depth
 
-        s->ceilingy = ReadInt32()/HeightToWidth * -1; // NOTE Y is up, originally was -Z
-        s->floory = ReadInt32()/HeightToWidth * -1; // NOTE Y is up, originally was -Z
+        s->ceilingy = (ReadInt32()/HeightToWidth) * -1;  // NOTE Y is up, originally was -Z
+        s->floory = (ReadInt32()/HeightToWidth) * -1; // NOTE Y is up, originally was -Z
+        printf("Ceilingy %d\n", s->ceilingy);
+        printf("Floory %d\n", s->floory);
         s->ceilingstat = ReadInt16();
         s->floorstat = ReadInt16();
         s->ceilingpicnum = ReadInt16();

@@ -179,6 +179,8 @@ void BunnySector_SetActorDriveInput(int actorId, float forward, float strafe, fl
 
 Sector* buns_GetSector(s16 sectorNumber)
 {
+	Sector* sp = Map_GetSector(activeMap, sectorNumber);
+	//Log_InfoF("Get sector %d floory %d ceilingy %d\n", sectorNumber, sp->floory, sp->ceilingy);
 	return Map_GetSector(activeMap, sectorNumber);
 }
 Wall* buns_GetWall(s16 wallIndex)

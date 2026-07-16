@@ -71,7 +71,8 @@ struct Sector
     // From file
     s16 wallptr; /**< Index of first wall */
     s16 wallnum; /**< and amount of walls in this sector */
-    s32 ceilingy, floory; ///< Y of ceiling and floor of first point
+    s32 ceilingy;
+    s32 floory; ///< Y of ceiling and floor of first point
     u16 ceilingstat, floorstat; ///< Stats about ceiling and floor
     s16 ceilingpicnum; ///< Texture of ceiling
     s16 ceilingheinum; ///< Sloping angle 0:flat, 4096: 45 degrees

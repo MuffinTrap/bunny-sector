@@ -30,7 +30,7 @@ void angelscript_init()
 	int screenHeight = mgdl_GetScreenHeight();
 
 	BunnySector_Init();
-	testMapId = BunnySector_LoadMap("assets/liminal.map");
+	testMapId = BunnySector_LoadMap("assets/test_room.map");
 	BunnySector_StartMap(testMapId);
 
     glEnable(GL_DEPTH_TEST);
@@ -91,7 +91,7 @@ void DrawDrive(int x, int y, float amount)
 void DrawDebugs()
 {
 	glClearColor(0.2f, 0.2f, 0.1f, 1.0f);
-	mgdl_InitOrthoProjection();
+	mgdl_InitOrthoProjection(1.0f);
 	int screenWidth = mgdl_GetScreenWidth();
 	int screenHeight = mgdl_GetScreenHeight();
 
