@@ -158,7 +158,6 @@ void angelscript_frame(float deltatime)
 {
 	movePlayer(deltatime);
 	RenderMap(deltatime);
-	RenderTopDown();
 
 	DrawDebugs();
 }

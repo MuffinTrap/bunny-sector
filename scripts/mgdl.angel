@@ -12,6 +12,11 @@ void mgdl_DrawTextureV(TextureHandle handle, Vector2 topleft)
 	mgdl_DrawTexture(handle, topleft.x, topleft.y);
 }
 
+void mgdl_DrawLineV(Vector2 A, Vector2 B, color32 color)
+{
+	mgdl_DrawLine(A.x, A.y, B.x, B.y, color);
+}
+
 void mgdl_DrawSceneV(SceneHandle handle, Vector3 position, float scale, color32 color)
 {
 	mgdl_DrawScene(handle, position.x, position.y, position.z, scale, color);

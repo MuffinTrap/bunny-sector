@@ -2,15 +2,9 @@
 int SCREEN_WIDTH = 640;
 int SCREEN_HEIGHT = 480;
 
+bool DEBUG_PRINT = false;
 float DEBUG_SCALE = 6.0f;
 
-// Fov
-float HFOV_MULTIPLIER = 0.41;
-float VFOV_MULTIPLIER = 0.2;
-int HFOV = HFOV_MULTIPLIER * SCREEN_HEIGHT;
-int VFOV = 0.2f * SCREEN_HEIGHT;
-
-float PLAYER_HALF_FOV_DEG = 45.0f;
 Vector2 FORWARD_2D = Vector2(1, 0);
 Vector2 RIGHT_2D = Vector2Rotate(FORWARD_2D, DEG2RAD * 90);
 
@@ -24,6 +18,80 @@ int REQUEST_LIMIT = -1;
 // Arrays for storing top and bottom limits
 int[] TOP_LIMITS(SCREEN_WIDTH);
 int[] BOTTOM_LIMITS(SCREEN_WIDTH);
+
+// Fov
+int HFOVRAD = DEG2RAD * 105.0f;
+int VFOVRAD = DEG2RAD * 60.0f;
+Vector2 ViewPortSize = Vector2New(1,1); // Viewport in world units
+Vector2 CanvasSize = Vector2New(SCREEN_WIDTH, SCREEN_HEIGHT); // Canvas is where we draw
+Vector2 CameraToCanvasConvert = Vector2New(1,1); // Transforms from Camera to Canvas. Divide by Z!
+
+// Near and far plane
+float NEARZ = 0.01f;
+float FARZ = 1024.0f * 200; // 1024 dukes is 1 meter
+
+Vector2 ViewportToCanvas(Vector2 point)
+{
+	return Vector2New(point.x * CanvasSize.x/ViewPortSize.x,
+					  point.y * CanvasSize.y/ViewPortSize.y);
+}
+
+Vector2 CameraToViewport(Vector2 point, float z)
+{
+	if (z < NEARZ) {z = NEARZ;}
+	return Vector2New( (point.x*NEARZ)/z,
+		   (point.y*NEARZ)/z);
+}
+
+Vector2 ViewportSizeFromFovAndNearZ()
+{
+	float viewHeight = tan(VFOVRAD/2.0f)*NEARZ;
+	float viewWidth = tan(HFOVRAD/2.0f)*NEARZ;
+	return Vector2New(viewHeight*2.0f, viewWidth*2.0f);
+}
+
+// Translate and rotate point to camera space
+Vector2 WorldToCamera(Vector2 point, Vector2 CameraPosition, float cameraYaw)
+{
+	return Vector2Rotate( Vector2Subtract(point, CameraPosition), -cameraYaw);
+
+}
+
+Vector2 GetConvertXY()
+{
+	float aspect=CanvasSize.x/CanvasSize.y;
+	HFOVRAD=VFOVRAD*aspect;
+	ViewPortSize = ViewportSizeFromFovAndNearZ();
+	return Vector2New(
+		NEARZ*CanvasSize.x/ViewPortSize.x,
+		NEARZ*CanvasSize.y/ViewPortSize.y
+	);
+}
+
+
+// Array for storing Z buffer
+int[] ZBuffer(SCREEN_WIDTH);
+int zBufferIndexOffset = SCREEN_WIDTH/2;
+
+void ClearZBuffer()
+{
+	for(int i = 0; i < SCREEN_WIDTH; i++)
+	{
+		ZBuffer[i] = FARZ;
+	}
+}
+
+// Layouting
+int text_y = 8;
+void ResetTextY()
+{
+	text_y = 8;
+}
+int NextY()
+{
+	text_y += 8;
+	return text_y;
+}
 
 
 // NOTE
@@ -137,14 +205,13 @@ bool CanPushRequest()
 	return requestFill < REQUEST_AMOUNT;
 }
 
-
 int PlayerSeesPoint(Vector2 point)
 {
 	float dotF = Vector2DotProduct(Vector2Normalize(point), FORWARD_2D);
 	if (dotF > 0)
 	{
 		float angle = cos(dotF);
-		if (RAD2DEG * angle < PLAYER_HALF_FOV_DEG)
+		if (RAD2DEG * angle < HFOVRAD/2.0f)
 		{
 			return SEE_FRONT;
 		}
@@ -160,7 +227,8 @@ int PlayerSeesPoint(Vector2 point)
 	}
 }
 
-Vector2 WikiIntersect(Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4)
+// NOTE This is wonky!
+Vector2 Wonky_Intersect(Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4)
 {
 	float xtop = Vector2CrossProduct(p1, p2)*(p3.x - p4.x) - (p1.x - p2.x) * Vector2CrossProduct(p3, p4);
 	float ytop = Vector2CrossProduct(p1, p2)*(p3.y - p4.y) - (p1.y - p2.y) * Vector2CrossProduct(p3, p4);
@@ -175,16 +243,26 @@ Vector2 WikiIntersect(Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4)
 
 }
 
-// NOTE Not used
+// NOTE This works!
 Vector2 Intersect(Vector2 start1, Vector2 end1, Vector2 start2, Vector2 end2)
 {
-	float x = Vector2CrossProduct(start1, end1);
-	float y = Vector2CrossProduct(start2, end2);
+	float AxA = Vector2CrossProduct(start1, end1);
+	float BxB = Vector2CrossProduct(start2, end2);
 	Vector2 line1 = Vector2Subtract(start1, end1);
 	Vector2 line2 = Vector2Subtract(start2, end2);
 	float det = Vector2CrossProduct( line1 , line2);
-	x = Vector2CrossProduct( Vector2(x, line1.x), Vector2(y, line2.x)) / det;
-	y = Vector2CrossProduct( Vector2(x, line1.y), Vector2(y, line2.y)) / det;
+	if (det == 0.0f)
+	{
+		 return Vector2Zero();
+	}
+	float x = Vector2CrossProduct(
+			Vector2(AxA, line1.x),
+			Vector2(BxB, line2.x)
+		) / det;
+	float y = Vector2CrossProduct(
+			Vector2(AxA, line1.y),
+			Vector2(y, line2.y)
+		) / det;
 
 	return Vector2(x,y);
 }
@@ -240,22 +318,19 @@ void DrawGizmo()
 	mgdl_DrawLineGradient(16, 16, 16 + positiveAngle.x * coordSize, 16 + positiveAngle.y * coordSize, Debug_Red, Debug_White);
 }
 
-
 void StartFrame()
 {
-
-	HFOV = HFOV_MULTIPLIER * SCREEN_HEIGHT; // TODO FIGURE out how to get this from FOV ANGLE
-	VFOV = VFOV_MULTIPLIER * SCREEN_HEIGHT;
 	for (int i = 0; i < SCREEN_WIDTH; i++)
 	{
 		TOP_LIMITS[i] = 0;
 		BOTTOM_LIMITS[i] = SCREEN_HEIGHT-1;
 	}
+	ClearZBuffer();
 	ResetDrawTimes();
 	ResetRequests();
+
+	ResetTextY();
 }
-
-
 
 /*
 void RenderBisqwit()
@@ -375,7 +450,6 @@ void RenderBisqwit()
 }
 */
 
-bool DEBUG_PRINT = false;
 
 void LogReq()
 {
@@ -389,12 +463,11 @@ void RenderTopDown()
 	float screen_half_width = SCREEN_WIDTH / 2.0f;
 	float screen_half_height = SCREEN_HEIGHT / 2.0f;
 
-	float gScale = 0.5f;
 
 	glPushMatrix();
 
 		glTranslatef(screen_half_width, screen_half_height, 0);
-		glScalef(gScale/2, gScale/2, 1);
+		glScalef(0.25f, 0.25f, 1.0f);
 
 
 	Actor@ player = buns_GetActor(0);
@@ -408,9 +481,8 @@ void RenderTopDown()
 	// NOTE These need to match with the FOV
 	Vector2 pnl = Vector2(0.001f, -0.001f);
 	Vector2 pnr = Vector2(0.001f, 0.001f);
-
-	Vector2 pfl = Vector2Rotate(FORWARD_2D, -PLAYER_HALF_FOV_DEG);
-	Vector2 pfr = Vector2Rotate(FORWARD_2D, PLAYER_HALF_FOV_DEG);
+	Vector2 pfl = Vector2Scale(Vector2Rotate(FORWARD_2D, -HFOVRAD/2.0f), 600.0f);
+	Vector2 pfr = Vector2Scale(Vector2Rotate(FORWARD_2D, HFOVRAD/2.0f), 600.0f);
 
 	s16 sectorAmount = buns_GetSectorAmount();
 
@@ -424,6 +496,9 @@ void RenderTopDown()
 
 			Vector2 wall1 = Vector2(start.x, start.z);
 			Vector2 wall2 = Vector2(end.x, end.z);
+
+			wall1 = Vector2Scale(wall1, 1.f);
+			wall2 = Vector2Scale(wall2, 1.f);
 
 			// TOP DOWN ROTATED
 			// Player is always at (0,0)
@@ -454,10 +529,62 @@ void RenderTopDown()
 	Vector2 pend2 = Vector2Scale(FORWARD_2D, 5.0f);
 	mgdl_DrawLine(0,0,  pend2.x, pend2.y, Debug_Green);
 	mgdl_DrawLine(0,0,  2, 2, Debug_White);
-	mgdl_DrawLine(0,0, pfl.x * 800, pfl.y * 800, Debug_Yellow);
-	mgdl_DrawLine(0,0, pfr.x * 800, pfr.y * 800, Debug_Yellow);
+	mgdl_DrawLine(0,0, pfl.x, pfl.y, Debug_Green);
+	mgdl_DrawLine(0,0, pfr.x, pfr.y, Debug_Blue);
 
 	glPopMatrix();
+}
+
+Vector2 FillWall(int ax, int ayt, int ayb, float az,
+			  int bx, int byt, int byb, float bz,
+			  int limitLeft, int limitRight,
+			  color32 color)
+{
+	int x1 = int( fmaxf(ax, limitLeft));
+	int x2 = int( fminf(bx, limitRight));
+	int ytop1 = ayt;
+	int ytop2 = byt;
+	int ybot1 = ayb;
+	int ybot2 = byb;
+	float z1 = az;
+	float z2 = bz;
+
+	// How much y and z change from a to b
+	float xchange = (bx-ax); // Whole x change, not clipped
+	float ytopchange = (ytop2-ytop1)/xchange;
+	float ybotchange = (ybot2-ybot1)/xchange;
+	float zchange = (z2-z1)/xchange;
+
+	// If part of wall is not on screen, need to advance y and z
+	// accordingly
+	float ytop=ytop1;
+	float ybot=ybot1;
+	float z=z1;
+	if (ax < x1) // Wall starts outside screen
+	{
+		float xoutside = x1-ax;
+		ytop += xoutside*ytopchange;
+		ybot += xoutside*ybotchange;
+		z += xoutside*zchange;
+	}
+	float ytopleft=ytop;
+	float ybotleft=ybot;
+	for (int x = x1; x<x2; x++)
+	{
+		if (z < ZBuffer[zBufferIndexOffset+x])
+		{
+			mgdl_DrawLine(x,ytop,x,ybot,color);
+			ZBuffer[zBufferIndexOffset+x]=z;
+		}
+		ytop		+=ytopchange;
+		ybot		+=ybotchange;
+		z		+=zchange;
+	}
+	mgdl_DrawLine(x1,ytopleft, x2, ytop, Debug_White);
+	mgdl_DrawLine(x1,ybotleft, x2, ybot, Debug_White);
+	mgdl_DrawLine(x1,ybotleft, x1, ybotleft, Debug_White);
+	mgdl_DrawLine(x2,ytop, x2, ybot, Debug_White);
+	return Vector2New(x1,x2);
 }
 
 void DrawRequestDebug()
@@ -521,11 +648,11 @@ void RenderMuffin()
 
 
 	// NOTE These need to match with the FOV
+
 	Vector2 pnl = Vector2(0.001f, -0.001f);
 	Vector2 pnr = Vector2(0.001f, 0.001f);
-
-	Vector2 pfl = Vector2Rotate(FORWARD_2D, -PLAYER_HALF_FOV_DEG);
-	Vector2 pfr = Vector2Rotate(FORWARD_2D, PLAYER_HALF_FOV_DEG);
+	Vector2 pfl = Vector2Scale(Vector2Rotate(FORWARD_2D, -HFOVRAD/2.0f), 600.0f);
+	Vector2 pfr = Vector2Scale(Vector2Rotate(FORWARD_2D, HFOVRAD/2.0f), 600.0f);
 
 	if (DEBUG_PRINT)
 	{
@@ -542,7 +669,6 @@ void RenderMuffin()
 
 	while (RequestLeft())
 	{
-
 		if (requestCount >= REQUEST_AMOUNT ||
 			requestCount > sectorAmount ||
 			(REQUEST_LIMIT > 0 && requestCount >= REQUEST_LIMIT)
@@ -557,7 +683,6 @@ void RenderMuffin()
 		requestCount += 1;
 
 		// Take request
-
 		SectorRequest now = PopRequest();
 		Sector@ sector = buns_GetSector(now.number);
 
@@ -568,135 +693,110 @@ void RenderMuffin()
 		}
 
 		// Start drawing sector
-
-		float sectorHeight = sector.ceilingy - sector.floory;
+		float sectorHeight = (sector.ceilingy - sector.floory)/4.0f;
 
 		for (s16 wallIndex = 0; wallIndex < sector.wallnum; wallIndex++)
 		{
+			if (wallIndex >= WALL_LIMIT && WALL_LIMIT > 0)
+			{
+				break;
+			}
 			Wall@ start = buns_GetWall(sector.wallptr + wallIndex);
 			Wall@ end = buns_GetWallEnd(start);
 
 			Vector2 wall1 = Vector2(start.x, start.z);
 			Vector2 wall2 = Vector2(end.x, end.z);
 
-
 			// Transform wall points
-			Vector2 wall1trans = Vector2Subtract(wall1, playerPos);
-			Vector2 wall2trans = Vector2Subtract(wall2, playerPos);
+			/*
+			 * Vector2 wall1trans = Vector2Subtract(wall1, playerPos);
+			 * Vector2 wall2trans = Vector2Subtract(wall2, playerPos);
+			 *
+			 * Vector2 trans1 = Vector2Rotate(wall1trans, -playerAngle); // NOTE Around player means to opposite direction
+			 * Vector2 trans2 = Vector2Rotate(wall2trans, -playerAngle); // NOTE Around player means to opposite direction
+			 */
 
-			Vector2 trans1 = Vector2Rotate(wall1trans, -playerAngle); // NOTE Around player means to opposite direction
-			Vector2 trans2 = Vector2Rotate(wall2trans, -playerAngle); // NOTE Around player means to opposite direction
+			Vector2 trans1 = WorldToCamera(wall1, playerPos, playerAngle);
+			Vector2 trans2 = WorldToCamera(wall2, playerPos, playerAngle);
 
-			// Save them for the minimap
-			Vector2 mini1 = trans1;
-			Vector2 mini2 = trans2;
+			mgdl_DrawTextInt("Wall", wallIndex, 8, NextY(), 8, Debug_Yellow);
+			mgdl_DrawTextFloat("A.x", trans1.x, 8, NextY(), 8, Debug_Yellow);
+			mgdl_DrawTextFloat("B.x", trans2.x, 8, NextY(), 8, Debug_Yellow);
 
 			bool front1 = Vector2DotProduct(trans1, FORWARD_2D) > 0;
 			bool front2 = Vector2DotProduct(trans2, FORWARD_2D) > 0;
 
-
+			bool draw = true;
 			bool behind = false;
 			bool clipped = false;
 			bool backface = false;
 			bool outsideWindow = false;
 
-			float sqlength = Vector2LengthSqr(Vector2Subtract(trans1, trans2));
+			Vector2 clip1 = Intersect(trans1, trans2, pnl, pfl);
+			Vector2 clip2 = Intersect(trans1, trans2, pnr, pfr);
+
+			float dotclip1 = Vector2DotProduct(clip1, FORWARD_2D);
+			float dotclip2 = Vector2DotProduct(clip2, FORWARD_2D);
+
+
 			// Clip if needed
-			if (front1 || front2)
+			if (!front1 && !front2)
 			{
-				// TODO After clipping, wall cannot become longer than it was!
-
-				Vector2 clip1 = WikiIntersect(trans1, trans2, pnl, pfl);
-				Vector2 clip2 = WikiIntersect(trans1, trans2, pnr, pfr);
-
-				float dotclip1 = Vector2DotProduct(clip1, FORWARD_2D);
-				float dotclip2 = Vector2DotProduct(clip2, FORWARD_2D);
-
-				if ( !front1)
+				behind = true;
+				draw = false;
+			}
+			// Clip if needed
+			else if (front1 || front2)
+			{
+				if (!front1)
 				{
 					if (dotclip1 > 0)
 					{
+						mgdl_DrawLineV(trans1,clip1,Debug_Green);
+						DrawCross(clip1.x, clip1.y, Debug_Green);
+						mgdl_DrawTextFloat("A to Clip1 x", clip1.x, 8,NextY(),8,Debug_Green);
 						trans1 = clip1;
 					}
 					else
 					{
-						trans1 = clip2; // INVALID Result on purpose
+						clipped = true;
+						draw = false;
 					}
-					clipped = true;
 				}
-				// If the right wall point is behind and left clip is in front ???
-
-				//  I dont understand this one
 				if (!front2)
 				{
 					// Sometimes it clips to left which is really
 					// far away.
 					// If both clips are in front, clip to closest
-					if (dotclip1 > 0 && dotclip2 > 0)
+					if (dotclip2 > 0)
 					{
-						if (dotclip2 < dotclip1)
-						{
-							trans2 = clip2;
-						}
-					}
-					else if (dotclip1 > 0)
-					{
-						trans2 = clip1;
+						mgdl_DrawLineV(trans2,clip2,Debug_Green);
+						mgdl_DrawTextFloat("B to Clip2 x", clip1.x, 8,NextY(),8,Debug_White);
+						DrawCross(clip2.x, clip2.y, Debug_Blue);
+						trans2 = clip2;
 					}
 					else
 					{
-						trans2 = clip2;
+						clipped = true;
+						draw = false;
 					}
-					clipped = true;
 				}
-			}
-			else
+			} // clip test
+
+			if (draw)
 			{
-				behind = true;
-			}
+				// Normalize to the front of player; Z is forward
+				float az =  Vector2DotProduct(trans1, FORWARD_2D);
+				float bz =  Vector2DotProduct(trans2, FORWARD_2D);
+				float ax =  Vector2DotProduct(trans1, RIGHT_2D);
+				float bx =  Vector2DotProduct(trans2, RIGHT_2D);
+				// Make sure z is not zero
+				if (az < NEARZ) { az = NEARZ;}
+				if (bz < NEARZ) { bz = NEARZ;}
 
-			float sqlengthClip = Vector2LengthSqr(Vector2Subtract(trans1, trans2));
-
-			if (sqlengthClip > sqlength)
-			{
-				backface = true;
-			}
-
-			// Normalize to the front of player; Z is forward
-			float z1 =  Vector2DotProduct(trans1, FORWARD_2D);
-			float z2 =  Vector2DotProduct(trans2, FORWARD_2D);
-			float x1 =  Vector2DotProduct(trans1, RIGHT_2D);
-			float x2 =  Vector2DotProduct(trans2, RIGHT_2D);
-
-			// Perspective transform
-			// fov effect
-			float zoom1x = HFOV / z1;
-			float zoom1y = VFOV / z1;
-			float zoom2x = HFOV / z2;
-			float zoom2y = VFOV / z2;
-
-			// Project to screen coordinates
-			//
-			int screen1x = int(x1 * zoom1x);
-			int screen2x = int(x2 * zoom2x);
-
-
-			if (screen1x >= screen2x)
-			{
-				backface = true;
-			}
-			if( screen2x < now.left || screen1x > now.right)
-			{
-				outsideWindow = true;
-			}
-
-			if (!outsideWindow && !backface && !behind)
-			{
 				// Draw this wall.
 				// Is it a portal?
 				bool isportal = start.nextsector >= 0;
-
-
 				color32 wallcolor = Debug_Blue;
 				if (isportal)
 				{
@@ -707,124 +807,111 @@ void RenderMuffin()
 					}
 				}
 
-				// Player elevation affects ceiling
-				s32 ceilingy = sector.ceilingy - playerY;
-				s32 floory = sector.floory - playerY;
+				// Player elevation affects ceiling and floor y
+				s32 ceilingy = (sector.ceilingy - playerY)/2.0f;
+				s32 floory = (sector.floory - playerY)/2.0f;
 
-				// Wall heights
-				float screen1yt = -ceilingy* zoom1y; // Top
-				float screen1yb = -floory * zoom1y; // Bottom
+				// TODO Use convert when this works
+				Vector2 Atop = CameraToViewport(Vector2New(ax,ceilingy),az);
+				Vector2 Abot = CameraToViewport(Vector2New(ax,floory),az);
 
-				float screen2yt = -ceilingy* zoom2y; // Top
-				float screen2yb = -floory * zoom2y; // Bottom
+				Vector2 Btop = CameraToViewport(Vector2New(bx,ceilingy),bz);
+				Vector2 Bbot = CameraToViewport(Vector2New(bx,floory),bz);
 
-				// Limit wall to drawing window
-				int beginx = int(fmaxf(screen1x, now.left));
-				int endx = int(fminf(screen2x, now.right));
+				Atop = ViewportToCanvas(Atop);
+				Abot = ViewportToCanvas(Abot);
 
-				if (isportal && endx > beginx && CanPushRequest())
+				Btop = ViewportToCanvas(Btop);
+				Bbot = ViewportToCanvas(Bbot);
+
+				if (Atop.x > Btop.x)
 				{
-					PushRequest(start.nextsector,  beginx, endx);
-
-					if (DEBUG_PRINT)
-					{
-						mgdl_LogTextInt("Pushed", start.nextsector);
-						LogReq();
-					}
+					backface = true;
+					draw = false;
+				}
+				// Limits are in canvas units
+				if( Btop.x < now.left || Atop.x > now.right)
+				{
+					outsideWindow = true;
+					draw = false;
 				}
 
-				int last_top;
-				int last_bot;
-				int begin_top;
-				int begin_bot;
-
-				// Linear interpolation
-				for (int dx = beginx; dx <= endx; dx++)
+				if (draw)
 				{
+					// Need to return the actual draw area
+					Vector2 startAndEndX = FillWall(Atop.x, Atop.y, Abot.y, az,
+													Btop.x, Btop.y, Bbot.y, bz,
+													now.left, now.right,
+													wallcolor);
 
-					int yt = (dx - screen1x) * (screen2yt - screen1yt) / (screen2x - screen1x) + screen1yt;
-					int yb = (dx - screen1x) * (screen2yb - screen1yb) / (screen2x - screen1x) + screen1yb;
-
-					// Our coordinates go to negative  but limit array values start from 0
-					float limit_top = yt + screen_half_height;
-					float limit_bot = yb + screen_half_height;
-
-					// Our coordinates go to negative, but limit array starts from 0
-					int limitx = screen_half_width + dx;
-
-					int cyt = Clamp(limit_top, TOP_LIMITS[limitx], BOTTOM_LIMITS[limitx]);
-					int cyb = Clamp(limit_bot, TOP_LIMITS[limitx], BOTTOM_LIMITS[limitx]);
-
-					// TODO update limits
-
-					// Move back to negative
-					cyt = cyt - screen_half_height;
-					cyb = cyb - screen_half_height;
-					if (!isportal)
+					float beginx = startAndEndX.x;
+					float endx = startAndEndX.y;
+					if (isportal && endx > beginx && CanPushRequest())
 					{
-						mgdl_DrawLine(dx, cyt, dx, cyb, wallcolor);
-						mgdl_DrawLine(dx, cyt, dx, cyb, wallcolor);
-					}
-					else
-					{
-						if (dx == endx)
+						PushRequest(start.nextsector,  beginx, endx);
+
+						if (DEBUG_PRINT)
 						{
-							last_top = cyt;
-							last_bot = cyb;
+							mgdl_LogTextInt("Pushed", start.nextsector);
+							LogReq();
 						}
-						if (dx == beginx)
-						{
-							begin_top = cyt;
-							begin_bot = cyb;
-						}
-					}
-				}
-
-				if (isportal)
-				{
-					mgdl_DrawLine(beginx, begin_top, endx, last_top, wallcolor); // Top
-					mgdl_DrawLine(beginx, begin_bot, endx, last_bot, wallcolor); // Bottom
-				}
-
-				//mgdl_DrawLine(beginx, screen1yt, endx, screen2yt, wallcolor); // Top
-				//mgdl_DrawLine(beginx, screen1yb, endx, screen2yb, wallcolor); // Bottom
-				//mgdl_DrawLine(beginx, screen1yt, beginx, screen1yb, Debug_White); // left
-				//mgdl_DrawLine(endx, screen2yt, screen2x, screen2yb, wallcolor); // right
-
-				if (isportal)
-				{
-					mgdl_DrawTextInt("Screen1x: ", screen1x, 0, 128, 16, Debug_Yellow);
-					mgdl_DrawTextInt("Screen2x: ", screen2x, 0, 128 + 16, 16, Debug_Yellow);
-					mgdl_DrawTextInt("Beginx: ", beginx, 0, 128 + 16*2, 16, Debug_Yellow);
-					mgdl_DrawTextInt("Endx: ", endx, 0, 128 + 16*3, 16, Debug_Yellow);
-				}
-			}
-
-
-		}
-	}
+					} // is portal
+				} // if draw
+			} // if draw
+		} // walls loop
+	} // while request left
 
 	glPopMatrix();
 	if (DEBUG_PRINT)
 	{
 		mgdl_LogText("------End");
 	}
-	DrawRequestDebug();
-
+	//DrawRequestDebug();
 }
+
+// Public functions
+
+void SetNearZ(float nearz)
+{
+	if (nearz >= 0.0001f && nearz < FARZ)
+	{
+		NEARZ = nearz;
+
+	}
+}
+void SetFarZ(float farz)
+{
+	if (farz > NEARZ)
+	{
+		FARZ = farz;
+	}
+}
+
+void SetVerticalFovDeg(float fovDeg)
+{
+	if (fovDeg >= 5.0f && fovDeg < 90.0f)
+	{
+		VFOVRAD = DEG2RAD * fovDeg;
+		HFOVRAD = VFOVRAD * (CanvasSize.x/CanvasSize.y);
+	}
+}
+
 
 void RenderMap(float deltatime)
 {
 	glClearColor(0.3f, 0.2f, 0.3f, 1.0f);
 	Init2D_YDown();
+	ClearZBuffer();
+	CameraToCanvasConvert = GetConvertXY();
 
-            glEnable(GL_DEPTH_TEST);
-            glDepthFunc(GL_LEQUAL);
-            glDepthMask(GL_TRUE); //  is this needed?
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LEQUAL);
+	glDepthMask(GL_TRUE); //  is this needed?
+
+
 	DrawGizmo();
+
 	StartFrame();
-
-	//RenderBisqwit();
+	RenderTopDown();
 	RenderMuffin();
-
 }
