@@ -44,6 +44,7 @@ Actor Actor_CreateDefaultActor(int idNumber)
 	a.kneelingHeight = 256.0f;
 	a.eyeHeightNormalized = 0.85f;
 	a.radius = 340.0f;
+	a.noclip = false;
 
 	a.lastResult = Move_Ok;
 

@@ -52,8 +52,10 @@ struct Actor
     float kneelingHeight; ///< How much above ground when kneeling/crouching
     float eyeHeightNormalized; ///< Eye height of active height
 
+    // Collsions
     float radius;
-
+    bool noclip;
+    
     MoveResult lastResult;
 };
 typedef struct Actor Actor;

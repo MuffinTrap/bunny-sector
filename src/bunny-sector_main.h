@@ -15,6 +15,7 @@ void BunnySector_StartMap(MapId mapId);
 void BunnySector_UpdateMap(MapId mapId, float deltaTime);
 void BunnySector_RenderMap(MapId mapId);
 void BunnySector_SetActorDriveInput(int actorId, float forward, float strafe, float vertical, float turnYaw, float turnPitch);
+void BunnySector_MoveActorFreely(int actorId, float deltatime);
 
 struct buns_Vec2
 {

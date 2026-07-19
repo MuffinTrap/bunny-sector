@@ -15,7 +15,7 @@ void RegisterBunnySector(mgdl_AngelScript* angel)
 	as_engine->RegisterGlobalFunction("void BunnySector_RenderMap(MapId mapId)", asFUNCTION(BunnySector_RenderMap), asCALL_CDECL);
 	as_engine->RegisterGlobalFunction("void BunnySector_UpdateMap(MapId mapId, float deltaTime)", asFUNCTION(BunnySector_UpdateMap), asCALL_CDECL);
 	as_engine->RegisterGlobalFunction("void BunnySector_SetActorDriveInput(int actorId, float forward, float strafe, float vertical, float turnYaw, float turnPitch)", asFUNCTION(BunnySector_SetActorDriveInput), asCALL_CDECL);
-
+	as_engine->RegisterGlobalFunction("void BunnySector_MoveActorFreely(int actorId, float deltatime)", asFUNCTION(BunnySector_MoveActorFreely), asCALL_CDECL);
 	// Register Map types as uninstantiable reference types
 
 	// WALL
@@ -36,6 +36,7 @@ void RegisterBunnySector(mgdl_AngelScript* angel)
 	as_engine->RegisterObjectProperty("Actor", "float yawRad", asOFFSET(Actor, yawRad));
 	as_engine->RegisterObjectProperty("Actor", "s16 sectorNumber", asOFFSET(Actor, sectorNumber));
 	as_engine->RegisterObjectProperty("Actor", "float elevation", asOFFSET(Actor, elevation));
+	as_engine->RegisterObjectProperty("Actor", "bool noclip", asOFFSET(Actor, noclip));
 
 	// Register other types
 	as_engine->RegisterObjectType("buns_Vec2", sizeof(buns_Vec2), asOBJ_VALUE|asOBJ_POD);

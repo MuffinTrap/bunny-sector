@@ -97,11 +97,11 @@ void DrawDebugs()
 	buns_GetActorPositionV2(0, outPlayerPos);
 	Vector2 playerPos = Vector2(outPlayerPos.x, outPlayerPos.y);
 
-	mgdl_DrawTextFloat("Player x: ", outPlayerPos.x, 16, 16, 16, Debug_Yellow);
-	mgdl_DrawTextFloat("Player y: ", outPlayerPos.y, 16, 32, 16, Debug_Yellow);
-	mgdl_DrawTextFloat("Player d: ", RAD2DEG * playerAngle, 16, 48, 16, Debug_Yellow);
-	mgdl_DrawTextFloat("Player fx: ", outPlayerDir.x, 16, 48+16, 16, Debug_Yellow);
-	mgdl_DrawTextFloat("Player fy: ", outPlayerDir.y, 16, 48+32, 16, Debug_Yellow);
+	mgdl_DrawTextFloat("Player x: ", outPlayerPos.x, 2, 16, 8, Debug_Yellow);
+	mgdl_DrawTextFloat("Player y: ", outPlayerPos.y, 2, 32, 8, Debug_Yellow);
+	mgdl_DrawTextFloat("Player d: ", RAD2DEG * playerAngle, 2, 48, 8, Debug_Yellow);
+	mgdl_DrawTextFloat("Player fx: ", outPlayerDir.x, 16, 2+16, 8, Debug_Yellow);
+	mgdl_DrawTextFloat("Player fy: ", outPlayerDir.y, 16, 2+32, 8, Debug_Yellow);
 }
 
 void movePlayer(float deltatime)
@@ -142,15 +142,14 @@ void movePlayer(float deltatime)
 	turn = wasd.x;
 
 	BunnySector_SetActorDriveInput(0, forward, strafe, vertical, turn, 0.0f);
-	BunnySector_UpdateMap(testMapId, deltatime);
+	BunnySector_MoveActorFreely(0, deltatime);
+//	BunnySector_UpdateMap(testMapId, deltatime);
 }
 
 void render3d(float deltatime)
 {
 	BunnySector_RenderMap(testMapId);
-
 	DrawDebugs();
-
 }
 
 

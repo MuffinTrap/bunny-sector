@@ -162,8 +162,15 @@ bool Map_IsPointInsideSectorRay(DukeMap* map, Vector2 point, int sectorNumber);
 bool Map_IsPointInsideWall(DukeMap* map, Vector2 point, Wall* wall);
 bool Map_FindIntersectionWithWall(DukeMap* map, Vector2 moveStart, Vector2 moveEnd, Wall* wall, Vector2* pointOUT);
 
+/**
+ * @brief Moves actor in map, asking actor where it is going.
+ * @param map The map
+ * @param deltaTime
+ * @param [inout] actor The actor that is moved. The position of actor is modified. Movement result is stored in actor
+*/ 
 void Map_MoveActorInMap(DukeMap* map, float deltaTime, Actor* inoutActor);
-MoveResult Map_MovePointInMap(DukeMap* map, Vector2 start, Vector2 end, s16 sectorNumber, Vector2* positionOut, s16* sectorOut);
+
+MoveResult Map_MovePointInMap(DukeMap* map, Vector2 start, Vector2 end, s16 sectorNumber, bool ignoreCollision, Vector2* positionOut, s16* sectorOut);
 
 /**
 * @brief Looks for player recursively from neighbouring sectors, starting from startingSector

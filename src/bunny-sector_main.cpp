@@ -135,14 +135,15 @@ void BunnySector_RenderMap(MapId mapId)
 			// Set up OpenGL 3D state
 			mgdl_glClearColor32(Debug_Black);
 			glPushMatrix();
-            //mgdl_glSetTransparency(true);
-            glEnable(GL_DEPTH_TEST);
-            glDepthFunc(GL_LEQUAL);
-            glDepthMask(GL_TRUE); //  is this needed?
-
-            glEnable(GL_CULL_FACE);
-            glCullFace(GL_BACK);
-            glShadeModel(GL_SMOOTH);
+	            
+			//mgdl_glSetTransparency(true);
+			glEnable(GL_DEPTH_TEST);
+			glDepthFunc(GL_LEQUAL);
+			glDepthMask(GL_TRUE); //  is this needed?
+			
+			glEnable(GL_CULL_FACE);
+			glCullFace(GL_BACK);
+			glShadeModel(GL_SMOOTH);
 
 			Viewport viewPort = mgdl_GetViewport();
 			glViewport(viewPort.left, viewPort.bottom, viewPort.width, viewPort.height);
@@ -175,6 +176,11 @@ void BunnySector_SetActorDriveInput(int actorId, float forward, float strafe, fl
 	demoActor.strafeDrive = Clamp(strafe, -1.0f, 1.0f);
 	demoActor.verticalDrive = Clamp(vertical, -1.0f, 1.0f);
 	demoActor.turnDrive = Clamp(turnYaw, -1.0f, 1.0f);
+}
+
+void BunnySector_MoveActorFreely(int actorId, float deltatime)
+{
+	demoActor.position = Actor_ApplyDrive(&demoActor, deltatime);
 }
 
 Sector* buns_GetSector(s16 sectorNumber)

@@ -374,7 +374,9 @@ void Map_MoveActorInMap(DukeMap* map, float deltaTime, Actor* inoutActor)
 
 	Vector2 pointOut;
 	s16 sectorOut;
-	MoveResult result = Map_MovePointInMap(map, point, endpoint, inoutActor->sectorNumber, &pointOut, &sectorOut);
+	MoveResult result = Map_MovePointInMap(
+		map, point, endpoint, inoutActor->noclip, inoutActor->sectorNumber, 
+		&pointOut, &sectorOut);
 
 	// Keep actor on floor and under the ceiling
     float minY = Map_GetSectorFloorHeight(map, inoutActor->sectorNumber) + inoutActor->standingHeight;
@@ -389,7 +391,7 @@ void Map_MoveActorInMap(DukeMap* map, float deltaTime, Actor* inoutActor)
     inoutActor->lastResult = result;
 }
 
-MoveResult Map_MovePointInMap(DukeMap* map, Vector2 start, Vector2 end, s16 sectorNumber, Vector2* positionOut, s16* sectorOut)
+MoveResult Map_MovePointInMap(DukeMap* map, Vector2 start, Vector2 end, s16 sectorNumber, bool ignoreCollision, Vector2* positionOut, s16* sectorOut)
 {
 
     // Keep testing until player is back inside again
@@ -397,16 +399,6 @@ MoveResult Map_MovePointInMap(DukeMap* map, Vector2 start, Vector2 end, s16 sect
     if (insideSector == true)
     {
         // TODO does player hit head
-
-        /* TODO Jumping in different place function?
-        float ceilingY = sector->ceilingy;
-        float floorY = sector->floory;
-         *				player->positionOpenGL.z = floorY + player->standingHeight;
-         *				if (player->positionOpenGL.z  > ceilingY)
-         *				{
-         *					player->positionOpenGL.z = ceilingY - player->standingHeight - 1;
-        }
-        */
         *positionOut = end;
         *sectorOut = sectorNumber;
         return Move_Ok;
@@ -423,11 +415,11 @@ MoveResult Map_MovePointInMap(DukeMap* map, Vector2 start, Vector2 end, s16 sect
             if (Map_FindIntersectionWithWall(map, start, end, w, &cross))
             {
                 // Yes
-                // Is it a portal?
-                if (w->nextsector >= 0)
+                // Is it a portal? Or is collision off?
+                if (w->nextsector >= 0 || ignoreCollision)
                 {
                     s16 newSector = w->nextsector;
-                    bool insideNewSector =  Map_IsPointInsideSectorOG(map, end, newSector);
+                    bool insideNewSector = Map_IsPointInsideSectorOG(map, end, newSector);
                     if (insideNewSector)
                     {
                         *positionOut = end;
@@ -441,7 +433,7 @@ MoveResult Map_MovePointInMap(DukeMap* map, Vector2 start, Vector2 end, s16 sect
                         Wall* otherSide = Map_GetWall(map, w->nextwall);
                         Vector2 normal = Map_GetWallNormal(map, otherSide);
                         cross = Vector2Add(cross, normal);
-                        return Map_MovePointInMap(map, cross, end, newSector, positionOut, sectorOut);
+                        return Map_MovePointInMap(map, cross, end, newSector, ignoreCollision, positionOut, sectorOut);
                     }
                 }
                 else
@@ -464,11 +456,23 @@ MoveResult Map_MovePointInMap(DukeMap* map, Vector2 start, Vector2 end, s16 sect
                     }
                     else
                     {
-                        return Map_MovePointInMap(map, hitEnd, slideEnd, sectorNumber, positionOut, sectorOut);
+		    	// Did player slide through a portal?
+                        MoveResult recursion = Map_MovePointInMap(
+						map, hitEnd, slideEnd, sectorNumber, ignoreCollision, 
+						positionOut, sectorOut);
+			if (recursion != Move_Cancel) {
+				return recursion;
+			}
+			else {
+				// Cancel the whole movement chain
+				break; // to After wall loop:
+			}
                     }
-                }
-            }
-        }
+                } // Collision with wall
+            } // Found intersection
+        }// Wall loop
+	
+	// After wall loop:
         {
             // DANGER Player has escaped: return to original position
             bool stillInsideSector = Map_IsPointInsideSectorOG(map, start, sectorNumber);
@@ -484,7 +488,7 @@ MoveResult Map_MovePointInMap(DukeMap* map, Vector2 start, Vector2 end, s16 sect
                 s16 playerSector = Map_FindSector(map, -1, xzpos);
                 if (playerSector < 0)
                 {
-                    // Put in center of sector
+                    // Put in center of sector, MovePlayerInMap takes care of elevation
                     *positionOut = Vector2Add(sector->minXZPoint, Vector2Scale(sector->sizeXZ, 0.5f));
                     *sectorOut = sectorNumber;
                     return Move_Cancel;
