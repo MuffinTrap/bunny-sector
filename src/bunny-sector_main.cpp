@@ -59,15 +59,15 @@ bool BunnySector_Init()
 	return true;
 }
 
-int BunnySector_LoadMap(const char* mapfilename)
+int BunnySector_LoadMap(const char* mapfilename, int dukesPerUnit)
 {
 	zstr mapname = zstr_from(mapfilename);
-	int mapid = BunnySector_LoadMap(mapname);
+	int mapid = BunnySector_LoadMap(mapname, dukesPerUnit);
 	zstr_free(&mapname);
 	return mapid;
 }
 
-int BunnySector_LoadMap(const zstr& mapfilename)
+int BunnySector_LoadMap(const zstr& mapfilename, int dukesPerUnit)
 {
 	// Do we have this map already?
 	int firstFree = -1;
@@ -87,7 +87,7 @@ int BunnySector_LoadMap(const zstr& mapfilename)
 		}
 	}
 
-	activeMap = ReadMapFromFile(mapfilename);
+	activeMap = ReadMapFromFile(mapfilename, dukesPerUnit);
 	if (activeMap  != nullptr)
 	{
 		mapsArray[firstFree] = activeMap ;
@@ -206,6 +206,11 @@ void buns_GetActorPositionV2(int actorId, buns_Vec2& out_pos)
 	out_pos.x = demoActor.position.x;
 	out_pos.y = demoActor.position.y;
 }
+void buns_SetActorPosition(int actorId, float x, float z)
+{
+	demoActor.position.x = x;
+	demoActor.position.y = z;
+}
 void buns_GetActorFloorDir(int actorId, buns_Vec2& out_dir)
 {
 	out_dir.x = demoActor.floorDirection.x;
@@ -221,4 +226,29 @@ void buns_GetActorPositionV3(int actorId, buns_Vec3& out_pos)
 Actor* buns_GetActor(int actorId)
 {
 	return &demoActor;
+}
+
+#define V2_CROSS(ax, ay, bx, by)(ax * by - ay * bx)
+
+bool buns_Intersect(double a1x, double a1y, double a2x, double a2y, double b1x, double b1y, double b2x, double b2y, buns_Vec2& out_point)
+{
+
+	double AxA = V2_CROSS(a1x, a1y, a2x, a2y);
+	double BxB = V2_CROSS(b1x, b1y, b2x, b2y);
+	double alinex = a1x-a2x;
+	double aliney = a1y-a2y;
+	double blinex = b1x-b2x;
+	double bliney = b1y-b2y;
+	double det = V2_CROSS(alinex, aliney, blinex, bliney);
+	if (det == 0.0)
+	{
+		 return false;
+	}
+	double x = V2_CROSS(AxA, alinex, BxB, blinex)/ det;
+	double y = V2_CROSS(AxA, aliney, BxB, bliney)/ det;
+
+	out_point.x = x;
+	out_point.y = y;
+
+	return true;
 }

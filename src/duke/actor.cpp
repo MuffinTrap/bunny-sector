@@ -17,6 +17,7 @@ Actor Actor_CreateDefaultActor(int idNumber)
 	a.verticalDrive = 0.0f;
 
 	a.position = Vector2Zero();
+	a.elevation = 0;
 	a.prevPosition = Vector2Zero();
 
 	a.turnVelocity = 0.0f;

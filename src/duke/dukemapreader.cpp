@@ -6,13 +6,16 @@
 
 static const int HeightToWidth = 16;
 
-DukeMap* ReadMapFromFile(const zstr& mapfilename)
+DukeMap* ReadMapFromFile(const zstr& mapfilename, int dukesPerUnit)
 {
-    return ReadMapFromFile(zstr_cstr(&mapfilename));
+    return ReadMapFromFile(zstr_cstr(&mapfilename), dukesPerUnit);
 }
-DukeMap* ReadMapFromFile(const char* mapfilename)
+DukeMap* ReadMapFromFile(const char* mapfilename, int dukesPerUnit)
 {
-    float scale = 1.0f/1024.0f;
+	if (dukesPerUnit < 1)
+	{
+		dukesPerUnit = 1;
+	}
     Log_InfoF("Reading map file %s\n", mapfilename);
     if (!OpenBinary(mapfilename))
     {
@@ -24,9 +27,9 @@ DukeMap* ReadMapFromFile(const char* mapfilename)
     DukeMap m;
     m.mapfile = zstr_from(mapfilename);
     m.version = ReadInt32();
-    s32 start_x = ReadInt32(); // X coordinate
-    s32 start_z = ReadInt32(); // Z Coordinate
-    s32 start_y = ReadInt32() * -1 / HeightToWidth; // Y Coordinate, flipped
+    s32 start_x = ReadInt32()/dukesPerUnit; // X coordinate
+    s32 start_z = ReadInt32()/dukesPerUnit; // Z Coordinate
+    s32 start_y = (ReadInt32()/HeightToWidth/dukesPerUnit) * -1; // Y Coordinate, flipped
     m.startPosition = Vector2New(start_x, start_z);
     m.startElevation = start_y;
 
@@ -43,10 +46,8 @@ DukeMap* ReadMapFromFile(const char* mapfilename)
 
         // NOTE These are changed to have the same unit as width and depth
 
-        s->ceilingy = (ReadInt32()/HeightToWidth) * -1;  // NOTE Y is up, originally was -Z
-        s->floory = (ReadInt32()/HeightToWidth) * -1; // NOTE Y is up, originally was -Z
-        printf("Ceilingy %d\n", s->ceilingy);
-        printf("Floory %d\n", s->floory);
+        s->ceilingy = (ReadInt32()/HeightToWidth/dukesPerUnit) * -1;  // NOTE Y is up, originally was -Z
+        s->floory = (ReadInt32()/HeightToWidth/dukesPerUnit) * -1; // NOTE Y is up, originally was -Z
         s->ceilingstat = ReadInt16();
         s->floorstat = ReadInt16();
         s->ceilingpicnum = ReadInt16();
@@ -72,11 +73,13 @@ DukeMap* ReadMapFromFile(const char* mapfilename)
     for (int s = 0; s < m.wallAmount; s++)
     {
         Wall* w = &m.walls[s];
-        w->x = ReadInt32();
+        w->x = ReadInt32()/dukesPerUnit;
 
         // NOTE In mapster the origo is in the middle of the map
         // and Y increases down.
-        w->z = ReadInt32();
+        w->z = ReadInt32()/dukesPerUnit;
+	
+	printf("Wall %d at: %d, %d\n", s, w->x, w->z);
 
         w->point2 = ReadInt16();
         w->nextwall = ReadInt16();
@@ -101,9 +104,9 @@ DukeMap* ReadMapFromFile(const char* mapfilename)
     {
         MapSprite* s = &m.sprites[i];
 
-        s32 x = ReadInt32();
-        s32 z = ReadInt32();
-        s32 y = ReadInt32()/ HeightToWidth * -1;
+        s32 x = ReadInt32()/dukesPerUnit;
+        s32 z = ReadInt32()/dukesPerUnit;
+        s32 y = (ReadInt32()/ HeightToWidth/dukesPerUnit) * -1;
         s->position = Vector3New(x, y, z);
 
         s->cstat = ReadInt16();
@@ -151,8 +154,8 @@ DukeMap* ReadMapFromFile(const char* mapfilename)
             maxp.y = maxF(w->z, maxp.y);
         }
         // Found points : calculate tex coords
-        float width = (maxp.x - minp.x) * scale;
-        float height = (maxp.y - minp.y) * scale;
+        float width = (maxp.x - minp.x);
+        float height = (maxp.y - minp.y);
         float aspect = width/height;
         sector->minXZPoint = minp;
         sector->sizeXZ = Vector2Subtract(maxp, minp);

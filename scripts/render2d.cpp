@@ -3,7 +3,6 @@
 
 bool DEBUG_PRINT = false;
 bool PRINT = true;
-float DEBUG_SCALE = 6.0f;
 int WALL_LIMIT = -1;
 int REQUEST_LIMIT = -1;
 
@@ -20,8 +19,8 @@ int[] TOP_LIMITS(SCREEN_WIDTH);
 int[] BOTTOM_LIMITS(SCREEN_WIDTH);
 
 // Fov
-float HFOVRAD = DEG2RAD * 90.0f;
-float VFOVRAD = DEG2RAD * 90.0f;
+float HFOVRAD = DEG2RAD * 80.0f;
+float VFOVRAD = DEG2RAD * 54.0f;
 Vector2 ViewPortSize = Vector2New(1,1); // Viewport in world units
 Vector2 CanvasSize = Vector2New(SCREEN_WIDTH, SCREEN_HEIGHT); // Canvas is where we draw
 Vector2 CameraToCanvasConvert = Vector2New(1,1); // Transforms from Camera to Canvas. Divide by Z!
@@ -32,8 +31,8 @@ Vector2 frustumLeft;
 Vector2 frustumRight;
 
 // Near and far plane
-float NEARZ = 0.01f;
-float FARZ = 1024.0f * 200; // 1024 dukes is 1 meter
+float NEARZ = 0.0001f;
+float FARZ = 10 * 1024.0f;
 
 void UpdateFrustumToFov()
 {
@@ -167,7 +166,7 @@ void ResetDrawTimes()
 
 
 // Sector draw requests
-int REQUEST_AMOUNT = 8;
+int REQUEST_AMOUNT = 64;
 // Ring buffer of requests
 SectorRequest[] requests(REQUEST_AMOUNT);
 int requestFill = 0; // How many unread
@@ -235,6 +234,11 @@ int PlayerSeesPoint(Vector2 point)
 	}
 }
 
+bool IsValidIntersect(Vector2 p)
+{
+	return (p.x > -1000000 && p.y < 1000000);
+}
+
 // NOTE This works!
 Vector2 Intersect(Vector2 start1, Vector2 end1, Vector2 start2, Vector2 end2)
 {
@@ -245,7 +249,8 @@ Vector2 Intersect(Vector2 start1, Vector2 end1, Vector2 start2, Vector2 end2)
 	float det = Vector2CrossProduct( line1 , line2);
 	if (det == 0.0f)
 	{
-		 return Vector2Zero();
+		// Return very invalid point
+		 return Vector2New(-1000001, 1000001);
 	}
 	float x = Vector2CrossProduct(
 			Vector2(AxA, line1.x),
@@ -253,7 +258,7 @@ Vector2 Intersect(Vector2 start1, Vector2 end1, Vector2 start2, Vector2 end2)
 		) / det;
 	float y = Vector2CrossProduct(
 			Vector2(AxA, line1.y),
-			Vector2(y, line2.y)
+			Vector2(BxB, line2.y)
 		) / det;
 
 	return Vector2(x,y);
@@ -269,7 +274,7 @@ Vector2 ClipLineToFrustum(Vector2 start, Vector2 end, int side)
 		return Intersect(start, end, frustumOrigo, frustumRight);
 	}
 	else {
-		return start;
+		return Vector2New(-1000001, 1000001);
 	}
 }
 
@@ -313,8 +318,8 @@ void LogReq()
 	mgdl_LogTextInt("  Fill:", requestFill);
 }
 
-void FillWall(int ax, int ayt, int ayb, float az,
-	int bx, int byt, int byb, float bz,
+void FillWall(float ax, float ayt, float ayb, float az,
+	float bx, float byt, float byb, float bz,
 	int limitLeft, int limitRight,
 	color32 color)
 {
@@ -322,12 +327,12 @@ void FillWall(int ax, int ayt, int ayb, float az,
 		return;
 	}
 	float xchange = (bx-ax); // Whole x change, not clipped
-	int xmax = int( fmaxf(ax, limitLeft) );
+	float xmax = fmaxf(ax, limitLeft);
 	float xoutside = xmax-ax;
 	
 	// Clamp start and end x
 	ax=xmax;
-	bx = int( fminf(bx, limitRight) );
+	bx = fminf(bx, limitRight);
 
 	// How much y and z change on every x step
 	float ytopchange = (byt-ayt)/xchange;
@@ -336,41 +341,53 @@ void FillWall(int ax, int ayt, int ayb, float az,
 
 	// If part of wall is not on screen, need to advance y and z
 	// accordingly
-	if (xoutside>0) // Wall starts outside screen
+	if (xoutside > 0) // Wall starts outside screen
 	{
 		ayt += ytopchange * xoutside;
 		ayb += ybotchange * xoutside;
 		az  += zchange    * xoutside;
 	}
-	for (int x = ax; x < bx; x++)
+	int sx = int(floor(ax));
+	int ex = int(floor(bx));
+	mgdl_glColor32(color);
+	glBegin(GL_LINES);
+	for (int x = sx; x < ex; x++)
 	{
 		if (az < ZBuffer[zBufferIndexOffset+x])
 		{
-			mgdl_DrawLine(x,ayt,x,ayb,color);
+			float dist = 1.0f - az/1024.0f;
+			glColor3f(dist, dist, dist);
+			glVertex2f(x, ayt);
+			glVertex2f(x, ayb);
+			//mgdl_DrawLine(x,ayt,x,ayb,color);
 			ZBuffer[zBufferIndexOffset+x]=az;
 		}
 		ayt		+=ytopchange;
 		ayb		+=ybotchange;
 		az		+=zchange;
 	}
+	glEnd();
 }
 
-void OutlineWall(int ax, int ayt, int ayb, float az,
-			  int bx, int byt, int byb, float bz,
-			  int limitLeft, int limitRight,
-			  color32 color)
+void OutlineWall(float ax, float ayt, float ayb, float az,
+	float bx, float byt, float byb, float bz,
+	int limitLeft, int limitRight,
+	color32 color)
 {
 	int x1 = int( fmaxf(ax, limitLeft));
 	int x2 = int( fminf(bx, limitRight));
-	int ytop1 = ayt;
-	int ytop2 = byt;
-	int ybot1 = ayb;
-	int ybot2 = byb;
+	float ytop1 = ayt;
+	float ytop2 = byt;
+	float ybot1 = ayb;
+	float ybot2 = byb;
 	float z1 = az;
 	float z2 = bz;
 
 	// How much y and z change from a to b
 	float xchange = (bx-ax); // Whole x change, not clipped
+	if (xchange == 0) {
+		return;
+	}
 	float ytopchange = (ytop2-ytop1)/xchange;
 	float ybotchange = (ybot2-ybot1)/xchange;
 	float zchange = (z2-z1)/xchange;
@@ -392,10 +409,10 @@ void OutlineWall(int ax, int ayt, int ayb, float az,
 	float ybotright = ybotleft + (x2-x1)*ybotchange;
 
 	// Do z check?
-	mgdl_DrawLine(x1,ytopleft, x2, ytopright, Debug_White);
-	mgdl_DrawLine(x1,ybotleft, x2, ybotright, Debug_White);
-	mgdl_DrawLine(x1,ybotleft, x1, ybotleft, Debug_White);
-	mgdl_DrawLine(x2,ytopright, x2, ybotright, Debug_White);
+	mgdl_DrawLine(x1,ytopleft, x2, ytopright, color);
+	mgdl_DrawLine(x1,ybotleft, x2, ybotright, color);
+	mgdl_DrawLine(x1,ybotleft, x1, ybotleft, color);
+	mgdl_DrawLine(x2,ytopright, x2, ybotright, color);
 }
 
 void DrawRequestDebug()
@@ -433,15 +450,62 @@ void DrawRequestDebug()
 	mgdl_DrawText("W", rdx + rds * requestWrite, rdy+rfs*2, rfs, Debug_White);
 }
 
-void RenderTopDownList(array<Vector2> wallpoints)
+bool ClipWall(Vector2 A, Vector2 B, int side, bool drawDebugs, Vector2 &out point)
+{
+	if (side < 0) {
+		Vector2 clip1 = ClipLineToFrustum(A, B, -1);
+		
+		if (IsValidIntersect(clip1) == false) { return false;}
+		
+		float dotclip1 = Vector2DotProduct(clip1, FORWARD_2D);
+		if (dotclip1 > 0) {
+			if (drawDebugs && PRINT) {
+				mgdl_DrawLineV(A, clip1, Debug_Green);
+				DrawCross(clip1, Debug_Green);
+				mgdl_DrawTextFloat("A to Clip1 x:", clip1.x, 8,NextY(),8,Debug_Green);
+				mgdl_DrawTextFloat("A to Clip1 y:", clip1.y, 8,NextY(),8,Debug_Green);
+			}
+			point = clip1;
+			return true;
+			//} else if (dotclip2 > 0){
+			//	point = clip2;
+		}
+	}
+	else if (side > 0) {
+		Vector2 clip2 = ClipLineToFrustum(A, B,  1);
+		
+		if (IsValidIntersect(clip2) == false) { return false;}
+				
+		float dotclip2 = Vector2DotProduct(clip2, FORWARD_2D);
+		if (dotclip2 > 0) {
+			if (drawDebugs && PRINT) {
+				mgdl_DrawLineV(B, clip2, Debug_Blue);
+				DrawCross(clip2, Debug_Blue);
+				mgdl_DrawTextFloat("B to Clip2 x:", clip2.x, 8,NextY(),8,Debug_Blue);
+				mgdl_DrawTextFloat("B to Clip2 y:", clip2.y, 8,NextY(),8,Debug_Blue);
+			}
+			point = clip2;
+			return true;
+			//} else if (dotclip1 > 0) {
+			//	trans2 = clip1;
+			//}	
+		}
+	}
+	return false;
+}
+
+
+
+
+void RenderTopDownList(array<Vector2> wallpoints, float scale)
 {
 	float screen_half_width = SCREEN_WIDTH / 2.0f;
 	float screen_half_height = SCREEN_HEIGHT / 2.0f;
 
-	glPushMatrix();
+glPushMatrix();
 
-		glTranslatef(screen_half_width, screen_half_height, 0);
-
+	glTranslatef(screen_half_width, screen_half_height, 0);
+	
 	Actor@ player = buns_GetActor(0);
 	float playerAngle = player.yawRad;
 
@@ -453,8 +517,8 @@ void RenderTopDownList(array<Vector2> wallpoints)
 	{
 		int nexti = (wi + 1) % 4;
 
-		Vector2 wall1 = wallpoints[wi];
-		Vector2 wall2 = wallpoints[nexti];
+		Vector2 wall1 = Vector2Scale(wallpoints[wi], scale);
+		Vector2 wall2 = Vector2Scale(wallpoints[nexti], scale);
 
 		// TOP DOWN ROTATED
 		// Player is always at (0,0)
@@ -462,9 +526,43 @@ void RenderTopDownList(array<Vector2> wallpoints)
 		Vector2 trans1 = WorldToCamera(wall1, playerPos, playerAngle);
 		Vector2 trans2 = WorldToCamera(wall2, playerPos, playerAngle);
 		
-		mgdl_DrawLine(trans1.x, trans1.y,
-			trans2.x, trans2.y, Debug_White);
+			bool front1 = Vector2DotProduct(trans1, FORWARD_2D) > 0;
+			bool front2 = Vector2DotProduct(trans2, FORWARD_2D) > 0;
 		
+			bool behind = false;
+			// Is wall completely behind player?
+			if (!front1 && !front2)
+			{
+				behind = true;
+			}
+			// Clip _if_ needed!
+			else if (front1 || front2)
+			{
+				Vector2 outPoint;
+				if (front1==false) {
+					bool clipOk = ClipWall(trans1, trans2, -1, true, outPoint);
+					if (clipOk) {
+						trans1 = outPoint;
+					}
+					else { behind = true; }
+				}
+				if (front2==false){
+					bool clipOk = ClipWall(trans1, trans2, 1, true, outPoint);
+					if (clipOk) {
+						trans2 = outPoint;
+					}
+					else { behind = true; }
+				}
+			} 
+				
+				
+			color32 wallColor = Debug_White;
+			if (behind ) { 
+				wallColor = Debug_DarkGray;		
+			}	
+				
+			mgdl_DrawLine(trans1.x, trans1.y,
+				trans2.x, trans2.y, wallColor);
 	}
 
 
@@ -473,7 +571,7 @@ void RenderTopDownList(array<Vector2> wallpoints)
 	mgdl_DrawLineV(frustumOrigo, frustumLeft, Debug_Green);
 	mgdl_DrawLineV(frustumOrigo, frustumRight, Debug_Blue);
 
-	glPopMatrix();
+glPopMatrix();
 }
 
 
@@ -482,30 +580,43 @@ void RenderTopDown(float scale)
 	float screen_half_width = SCREEN_WIDTH / 2.0f;
 	float screen_half_height = SCREEN_HEIGHT / 2.0f;
 
-	glPushMatrix();
+glPushMatrix();
 
-		glTranslatef(screen_half_width, screen_half_height, 0);
-		glScalef(scale, scale, 1.0f);
 
 	Actor@ player = buns_GetActor(0);
 	float playerAngle = player.yawRad;
 
 	buns_Vec2 outPlayerPos;
 	buns_GetActorPositionV2(0, outPlayerPos);
-	Vector2 playerPos = Vector2(outPlayerPos.x, outPlayerPos.y);	
+	Vector2 playerPos = Vector2(outPlayerPos.x * scale, outPlayerPos.y * scale);
+	
+	mgdl_DrawTextFloat("Player x: ", outPlayerPos.x, 2, 8, 8, Debug_Yellow);
+	mgdl_DrawTextFloat("Player y: ", outPlayerPos.y, 2, 16, 8, Debug_Yellow);
+	mgdl_DrawTextFloat("Player d: ", RAD2DEG * playerAngle, 2, 24, 8, Debug_Yellow);
+	//mgdl_DrawTextFloat("Player fx: ", outPlayerDir.x, 16, NextY(), 8, Debug_Yellow);
+	//mgdl_DrawTextFloat("Player fy: ", outPlayerDir.y, 16, NextY(), 8, Debug_Yellow);
+	
+
+	glTranslatef(screen_half_width, screen_half_height, 0);
+	//glScalef(scale, scale, 1.0f);
+	
 
 	s16 sectorAmount = buns_GetSectorAmount();
 
 	for (s16 sectorIndex = 0; sectorIndex < sectorAmount; sectorIndex++)
 	{
+	
+			if (PRINT) {
+				mgdl_DrawTextInt("Sector", sectorIndex, 8, NextY(), 8, Debug_White);
+			}
 		Sector@ sector = buns_GetSector(sectorIndex);
 		for (s16 wallIndex = 0; wallIndex < sector.wallnum; wallIndex++)
 		{
 			Wall@ start = buns_GetWall(sector.wallptr + wallIndex);
 			Wall@ end = buns_GetWallEnd(start);
 
-			Vector2 wall1 = Vector2(start.x, start.z);
-			Vector2 wall2 = Vector2(end.x, end.z);
+			Vector2 wall1 = Vector2(start.x * scale, start.z * scale);
+			Vector2 wall2 = Vector2(end.x * scale, end.z * scale);
 
 			// TOP DOWN ROTATED
 			// Player is always at (0,0)
@@ -513,34 +624,79 @@ void RenderTopDown(float scale)
 			Vector2 trans1 = WorldToCamera(wall1, playerPos, playerAngle);
 			Vector2 trans2 = WorldToCamera(wall2, playerPos, playerAngle);
 			
-			if (start.nextsector < 0){
-				mgdl_DrawLine(trans1.x, trans1.y,
-							  trans2.x, trans2.y, Debug_White);
-			}else{
-				mgdl_DrawLine(trans1.x, trans1.y,
-							  trans2.x, trans2.y, Debug_Red);
+				
+			if (PRINT && wallIndex == 1) {
+				mgdl_DrawTextInt("Wall", wallIndex, 8, NextY(), 8, Debug_White);
+				mgdl_DrawTextFloat("A.z", trans1.x, 8, NextY(), 8, Debug_White);
+				mgdl_DrawTextFloat("A.x", trans1.y, 8, NextY(), 8, Debug_White);
+				mgdl_DrawTextFloat("B.z", trans2.x, 8, NextY(), 8, Debug_White);
+				mgdl_DrawTextFloat("B.x", trans2.y, 8, NextY(), 8, Debug_White);
 			}
+		
+			
+			bool front1 = Vector2DotProduct(trans1, FORWARD_2D) > 0;
+			bool front2 = Vector2DotProduct(trans2, FORWARD_2D) > 0;
+		
+			bool behind = false;
+			// Is wall completely behind player?
+			if (!front1 && !front2)
+			{
+				behind = true;
+			}
+			// Clip _if_ needed!
+			else if (front1 || front2)
+			{
+				Vector2 outPoint;
+				if (front1==false) {
+					bool clipOk = ClipWall(trans1, trans2, -1, true, outPoint);
+					if (clipOk) {
+						trans1 = outPoint;
+					}
+				}
+				if (front2==false){
+					bool clipOk = ClipWall(trans1, trans2, 1, true, outPoint);
+					if (clipOk) {
+						trans2 = outPoint;
+					}
+				}
+			} 
+				
+				
+			color32 wallColor = Debug_White;
+			if (behind ) { 
+				wallColor = Debug_DarkGray;		
+			}	
+			else if (start.nextsector >= 0) {
+				wallColor = Debug_Red;
+			}
+				
+			mgdl_DrawLine(trans1.x, trans1.y,
+				trans2.x, trans2.y, wallColor);
 		}
+			
 	}
 
 	// Player view cone for fov debug
 	mgdl_DrawLineV(frustumOrigo, frustumLeft, Debug_Green);
 	mgdl_DrawLineV(frustumOrigo, frustumRight, Debug_Blue);
 
-	glPopMatrix();
+glPopMatrix();
 }
 
 
-void RenderMuffin()
+void RenderMuffin(float scale)
 {
 	float screen_half_width = SCREEN_WIDTH / 2.0f;
 	float screen_half_height = SCREEN_HEIGHT / 2.0f;
 	// Translate origo to screen center
-	glPushMatrix();
+glPushMatrix();
 
 	glTranslatef(screen_half_width, screen_half_height, 0);
+	//glScalef(scale, scale, 1.0f);
 	// Set up player stuff
 	///////////////////////
+	mgdl_DrawLine(-screen_half_width, -screen_half_height,-screen_half_width, screen_half_height, Debug_Blue);
+	mgdl_DrawLine(screen_half_width, -screen_half_height,screen_half_width, screen_half_height, Debug_Blue);
 
 	Actor@ player = buns_GetActor(0);
 
@@ -552,7 +708,7 @@ void RenderMuffin()
 	buns_Vec2 outPlayerDir;
 	buns_GetActorFloorDir(0, outPlayerDir);
 	Vector2 playerDir = Vector2(outPlayerDir.x, outPlayerDir.y);
-
+	//mgdl_LogTextFloat("Player Y ", playerY);
 	float playerAngle = player.yawRad;
 
 	if (DEBUG_PRINT){
@@ -565,6 +721,7 @@ void RenderMuffin()
 	s16 sectorAmount = buns_GetSectorAmount();
 
 	// Start processing requests
+	if (DEBUG_PRINT) { mgdl_LogTextInt("Push: ", player.sectorNumber);}
 	PushRequest(player.sectorNumber, -SCREEN_WIDTH/2, SCREEN_WIDTH/2-1);
 
 	while (RequestLeft())
@@ -591,10 +748,15 @@ void RenderMuffin()
 			mgdl_LogTextInt("Pop", now.number);
 			LogReq();
 		}
+		
+		if (PRINT) { 
+			mgdl_DrawTextInt("Sector: ", now.number, 0, NextY(), 8, Debug_White);
+		}
+				
 
 		// Start drawing sector
 		float sectorHeight = (sector.ceilingy - sector.floory);
-
+		//mgdl_LogTextFloat("Sector ceiling ", sector.ceilingy);
 		for (s16 wallIndex = 0; wallIndex < sector.wallnum; wallIndex++) {
 			if (wallIndex >= WALL_LIMIT && WALL_LIMIT > 0) {
 				break;
@@ -602,24 +764,28 @@ void RenderMuffin()
 			Wall@ start = buns_GetWall(sector.wallptr + wallIndex);
 			Wall@ end = buns_GetWallEnd(start);
 			
+			if (PRINT) { 
+				mgdl_DrawTextInt("Wall: ", wallIndex, 0, NextY(),8, Debug_White);
+				}
+			
 			ProcessWall(
 				wallIndex, 
-				Vector2New(start.x, start.z), 
-				Vector2New(end.x, end.z),
-				sector.floory,
-				sector.ceilingy, 
+				Vector2New(start.x * scale, start.z * scale), 
+				Vector2New(end.x * scale, end.z * scale),
+				sector.floory * scale,
+				sector.ceilingy * scale,
 				start.nextsector,
 				now.left, now.right,
 				playerPos, playerY, playerAngle
 				);
 		}
 	}
-	glPopMatrix();
+glPopMatrix();
 	if (DEBUG_PRINT)
 	{
 		mgdl_LogText("------End");
 	}
-	//DrawRequestDebug();
+	DrawRequestDebug();
 }
 
 void RenderTICMap(Vector2[] wallpoints)
@@ -627,7 +793,7 @@ void RenderTICMap(Vector2[] wallpoints)
 	float screen_half_width = SCREEN_WIDTH / 2.0f;
 	float screen_half_height = SCREEN_HEIGHT / 2.0f;
 	// Translate origo to screen center
-	glPushMatrix();
+glPushMatrix();
 
 	glTranslatef(screen_half_width, screen_half_height, 0);
 	
@@ -659,7 +825,7 @@ void RenderTICMap(Vector2[] wallpoints)
 			-10, 10, -1, -SCREEN_WIDTH/2, SCREEN_WIDTH/2-1,
 			playerPos, playerY, playerAngle);
 	}
-	glPopMatrix();
+glPopMatrix();
 
 }
 		
@@ -680,6 +846,7 @@ void ProcessWall(int wallIndex, Vector2 wall1, Vector2 wall2,
 	Vector2 trans1 = WorldToCamera(wall1, playerPos, playerAngle);
 	Vector2 trans2 = WorldToCamera(wall2, playerPos, playerAngle);
 	
+
 	if (PRINT) {
 		mgdl_DrawTextInt("Wall", wallIndex, 8, NextY(), 8, Debug_Yellow);
 		mgdl_DrawTextFloat("A.z", trans1.x, 8, NextY(), 8, Debug_Yellow);
@@ -698,11 +865,7 @@ void ProcessWall(int wallIndex, Vector2 wall1, Vector2 wall2,
 	bool backface = false;
 	bool outsideWindow = false;
 
-	Vector2 clip1 = ClipLineToFrustum(trans1, trans2, -1);
-	Vector2 clip2 = ClipLineToFrustum(trans1, trans2,  1);
-
-	float dotclip1 = Vector2DotProduct(clip1, FORWARD_2D);
-	float dotclip2 = Vector2DotProduct(clip2, FORWARD_2D);
+	
 
 	// Is wall completely behind player?
 	if (!front1 && !front2)
@@ -713,42 +876,30 @@ void ProcessWall(int wallIndex, Vector2 wall1, Vector2 wall2,
 	// Clip _if_ needed!
 	else if (front1 || front2)
 	{
-		if (PRINT) {
-			if (front1==false) {
-				mgdl_DrawText("A behind!",8, NextY(), 8, Debug_Yellow);
+		Vector2 outPoint;
+		if (front1==false) {
+			//mgdl_DrawText("A behind!",8, NextY(), 8, Debug_Yellow);
+			bool clipOk = ClipWall(trans1, trans2, -1, false, outPoint);
+			if (clipOk) {
+				trans1 = outPoint;
 			}
-			if (front2==false){
-				mgdl_DrawText("B behind!",8, NextY(), 8, Debug_Yellow);
+			else {
+				clipped = true;
+				draw = false;
+			} 
+		}
+		if (front2==false){
+			//mgdl_DrawText("B behind!",8, NextY(), 8, Debug_Yellow);
+			bool clipOk = ClipWall(trans1, trans2, 1, false, outPoint);
+			if (clipOk) {
+				trans2 = outPoint;
 			}
+			else {
+				clipped = true;
+				draw = false;
+			} 
 		}
 		
-		if (!front1){
-			if (dotclip1 > 0) {
-				if (PRINT) {
-					mgdl_DrawLineV(trans1,clip1,Debug_Green);
-					DrawCross(clip1, Debug_Green);
-					mgdl_DrawTextFloat("A to Clip1 x:", clip1.x, 8,NextY(),8,Debug_Green);
-				}
-				trans1 = clip1;
-			} else {
-				clipped = true;
-				draw = false;
-			}
-		}
-		else if (!front2) {
-			if (dotclip2 > 0) {
-				if (PRINT) {
-					mgdl_DrawLineV(trans2,clip2,Debug_Blue);
-					DrawCross(clip2, Debug_Blue);
-					mgdl_DrawTextFloat("B to Clip2 x:", clip2.x, 8,NextY(),8,Debug_Blue);
-				}
-				trans2 = clip2;
-			} else {
-				clipped = true;
-				draw = false;
-			}
-		} // End clip test
-
 		if (draw)
 		{
 			// Normalize to the front of player; Z is forward
@@ -757,19 +908,8 @@ void ProcessWall(int wallIndex, Vector2 wall1, Vector2 wall2,
 			float ax =  Vector2DotProduct(trans1, RIGHT_2D);
 			float bx =  Vector2DotProduct(trans2, RIGHT_2D);
 			// Make sure z is not zero
-			if (az < NEARZ) { az = NEARZ; }
-			if (bz < NEARZ) { bz = NEARZ; }
-	
-			// Draw this wall.
-			// Is it a portal?
-			bool isportal = nextSector >= 0;
-			color32 wallcolor = Debug_Blue;
-			if (isportal) {
-				wallcolor = Debug_Red;
-				if (DEBUG_PRINT) {
-					mgdl_LogTextInt("Found portal to ", nextSector);
-				}
-			}
+			//if (az < NEARZ) { az = NEARZ; }
+			//if (bz < NEARZ) { bz = NEARZ; }
 
 			// Player elevation affects perceived ceiling and floor y
 			ceilingy = (ceilingy - playerY);
@@ -796,7 +936,8 @@ void ProcessWall(int wallIndex, Vector2 wall1, Vector2 wall2,
 	
 			Btop = ViewportToCanvas(Btop);
 			Bbot = ViewportToCanvas(Bbot);
-	
+	//mgdl_LogTextFloat("Acanvas x", Atop.x);	
+	//mgdl_LogTextFloat("Acanvas y", Atop.y);
 			if (Atop.x > Btop.x)
 			{
 				backface = true;
@@ -808,9 +949,18 @@ void ProcessWall(int wallIndex, Vector2 wall1, Vector2 wall2,
 			{
 				outsideWindow = true;
 				draw = false;
-			}
 			
+			}
+			// Draw this wall.
+			// Is it a portal?
+			bool isportal = nextSector >= 0;
+			color32 wallcolor = Debug_DarkGray;
 			if (isportal) {
+				wallcolor = Debug_Red;
+				if (DEBUG_PRINT) {
+					mgdl_LogTextInt("Found portal to ", nextSector);
+				}
+			
 				// Limits for the new request 
 				float beginx = fmaxf(Atop.x, limitLeft);
 				float endx = fminf(Btop.x, limitRight);
@@ -823,15 +973,21 @@ void ProcessWall(int wallIndex, Vector2 wall1, Vector2 wall2,
 				}
 			}
 
-			if (draw)
-			{
-				
+			if (draw) {
+				if (isportal){
 				OutlineWall(
 				Atop.x, Atop.y, Abot.y, az,
 				Btop.x, Btop.y, Bbot.y, bz,
 				limitLeft, limitRight,
+				wallcolor);	
+				}
+				else {
+				FillWall(
+				Atop.x, Atop.y, Abot.y, az,
+				Btop.x, Btop.y, Bbot.y, bz,
+				limitLeft, limitRight,
 				wallcolor);
-				
+				}
 			} 			
 		} // if one point in front
 	} // is behind ?
@@ -880,6 +1036,7 @@ void StartFrame()
 		TOP_LIMITS[i] = 0;
 		BOTTOM_LIMITS[i] = SCREEN_HEIGHT-1;
 	}
+	SetVerticalFovDeg(80.0f);
 	ClearZBuffer();
 	ResetDrawTimes();
 	ResetRequests();
@@ -889,7 +1046,7 @@ void StartFrame()
 }
 
 
-bool TIC_TEST = true;
+bool TIC_TEST = false;
 	// Smol test map
 	Vector2[] wallpoints = {
 		Vector2New(-100, -100),
@@ -897,7 +1054,28 @@ bool TIC_TEST = true;
 		Vector2New(100, 100),
 		Vector2New(-100, 100)
 	};
+
+float elapsed = 0.0f;
+void IntersectTest(float deltatime)
+{
+elapsed += deltatime/4.0f;
+glPushMatrix();
+	glTranslatef(SCREEN_WIDTH/2,SCREEN_HEIGHT/2, 0);
 	
+	Vector2 A1 = Vector2New(-100,-10);
+	Vector2 A2 = Vector2Add(A1, Vector2Rotate( Vector2New(400, 0), -elapsed/2));
+	mgdl_DrawLineV(A1, A2, Debug_Yellow);
+	
+	Vector2 B1 = Vector2New(10, -100);
+	Vector2 B2 = Vector2Add(B1, Vector2Rotate( Vector2New(400,0),  elapsed));
+	mgdl_DrawLineV(B1, B2, Debug_Red);
+	
+	Vector2 inter = Intersect(A1, A2, B1, B2);
+	mgdl_DrawLineV(A1, inter, Debug_Yellow);
+	mgdl_DrawLineV(B1, inter, Debug_Red);
+	DrawCross(inter, Debug_White);
+glPopMatrix();
+}
 
 
 void RenderMap(float deltatime)
@@ -906,15 +1084,41 @@ void RenderMap(float deltatime)
 	Init2D_YDown();
 	DrawGizmo();
 
+	
 	StartFrame();
-	if (TIC_TEST) {
+	
+	Actor@ playerActor = buns_GetActor(0);
+	float playerAngle = playerActor.yawRad;
+
+	buns_Vec2 outPlayerDir;
+	buns_GetActorFloorDir(0, outPlayerDir);
+
+	buns_Vec2 outPlayerPos;
+	buns_GetActorPositionV2(0, outPlayerPos);
+	Vector2 playerPos = Vector2(outPlayerPos.x, outPlayerPos.y);
+
+	mgdl_DrawTextFloat("Player x: ", outPlayerPos.x, 2, NextY(), 8, Debug_Yellow);
+	mgdl_DrawTextFloat("Player y: ", outPlayerPos.y, 2, NextY(), 8, Debug_Yellow);
+	mgdl_DrawTextFloat("Player d: ", RAD2DEG * playerAngle, 2, NextY(), 8, Debug_Yellow);
+	//mgdl_DrawTextFloat("Player fx: ", outPlayerDir.x, 16, NextY(), 8, Debug_Yellow);
+	//mgdl_DrawTextFloat("Player fy: ", outPlayerDir.y, 16, NextY(), 8, Debug_Yellow);
+	
+	if (false)
+	{
+		IntersectTest(deltatime);
+	}
+	else if (TIC_TEST) {
+		BunnySector_MoveActorFreely(0, deltatime);
+	
 		Actor@ player = buns_GetActor(0);
 		player.noclip = true;
-		RenderTopDownList(wallpoints);
 		RenderTICMap(wallpoints);
+		RenderTopDownList(wallpoints, 1.0f);
 	} else {
-		RenderTopDown(0.25f);
-		RenderMuffin();
+		
+		BunnySector_UpdateMap(testMapId, deltatime);
+		RenderMuffin(0.6f);
+		RenderTopDown(0.1f);
 	}
 }
 

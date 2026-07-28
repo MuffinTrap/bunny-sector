@@ -10,7 +10,7 @@ void RegisterBunnySector(mgdl_AngelScript* angel)
 	as_engine->RegisterTypedef("MapId", "int");
 
 	as_engine->RegisterGlobalFunction("bool BunnySector_Init()", asFUNCTION(BunnySector_Init), asCALL_CDECL);
-	as_engine->RegisterGlobalFunction("MapId BunnySector_LoadMap(const zstr &in mapfilename)", asFUNCTIONPR(BunnySector_LoadMap, (const zstr&), MapId), asCALL_CDECL);
+	as_engine->RegisterGlobalFunction("MapId BunnySector_LoadMap(const zstr &in mapfilename, int dukesPerUnit)", asFUNCTIONPR(BunnySector_LoadMap, (const zstr&, int), MapId), asCALL_CDECL);
 	as_engine->RegisterGlobalFunction("void BunnySector_StartMap(MapId mapId)", asFUNCTION(BunnySector_StartMap), asCALL_CDECL);
 	as_engine->RegisterGlobalFunction("void BunnySector_RenderMap(MapId mapId)", asFUNCTION(BunnySector_RenderMap), asCALL_CDECL);
 	as_engine->RegisterGlobalFunction("void BunnySector_UpdateMap(MapId mapId, float deltaTime)", asFUNCTION(BunnySector_UpdateMap), asCALL_CDECL);
@@ -61,4 +61,5 @@ void RegisterBunnySector(mgdl_AngelScript* angel)
 	as_engine->RegisterGlobalFunction("void buns_GetActorPositionV2(int actorId, buns_Vec2 &out pos)", asFUNCTION(buns_GetActorPositionV2), asCALL_CDECL);
 	as_engine->RegisterGlobalFunction("void buns_GetActorPositionV3(int actorId, buns_Vec3 &out pos)", asFUNCTION(buns_GetActorPositionV2), asCALL_CDECL);
 	as_engine->RegisterGlobalFunction("void buns_GetActorFloorDir(int actorId, buns_Vec2 &out dir)", asFUNCTION(buns_GetActorFloorDir), asCALL_CDECL);
+	as_engine->RegisterGlobalFunction("void buns_SetActorPosition(int actorId, float x, float z)", asFUNCTION(buns_SetActorPosition), asCALL_CDECL);
 }

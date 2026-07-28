@@ -24,11 +24,11 @@ void angelscript_init()
 	int screenHeight = mgdl_GetScreenHeight();
 
 	BunnySector_Init();
-	testMapId = BunnySector_LoadMap("assets/test_room.map");
+	testMapId = BunnySector_LoadMap("assets/test_room.map", 1);
 	BunnySector_StartMap(testMapId);
 
-    glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LEQUAL);
+//    glEnable(GL_DEPTH_TEST);
+//    glDepthFunc(GL_LEQUAL);
 
 }
 
@@ -87,21 +87,6 @@ void DrawDebugs()
 	int screenWidth = mgdl_GetScreenWidth();
 	int screenHeight = mgdl_GetScreenHeight();
 
-	Actor@ player = buns_GetActor(0);
-	float playerAngle = player.yawRad;
-
-	buns_Vec2 outPlayerDir;
-	buns_GetActorFloorDir(0, outPlayerDir);
-
-	buns_Vec2 outPlayerPos;
-	buns_GetActorPositionV2(0, outPlayerPos);
-	Vector2 playerPos = Vector2(outPlayerPos.x, outPlayerPos.y);
-
-	mgdl_DrawTextFloat("Player x: ", outPlayerPos.x, 2, 16, 8, Debug_Yellow);
-	mgdl_DrawTextFloat("Player y: ", outPlayerPos.y, 2, 32, 8, Debug_Yellow);
-	mgdl_DrawTextFloat("Player d: ", RAD2DEG * playerAngle, 2, 48, 8, Debug_Yellow);
-	mgdl_DrawTextFloat("Player fx: ", outPlayerDir.x, 16, 2+16, 8, Debug_Yellow);
-	mgdl_DrawTextFloat("Player fy: ", outPlayerDir.y, 16, 2+32, 8, Debug_Yellow);
 }
 
 void movePlayer(float deltatime)
@@ -142,8 +127,7 @@ void movePlayer(float deltatime)
 	turn = wasd.x;
 
 	BunnySector_SetActorDriveInput(0, forward, strafe, vertical, turn, 0.0f);
-	BunnySector_MoveActorFreely(0, deltatime);
-//	BunnySector_UpdateMap(testMapId, deltatime);
+
 }
 
 void render3d(float deltatime)

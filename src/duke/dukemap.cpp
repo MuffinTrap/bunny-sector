@@ -375,7 +375,7 @@ void Map_MoveActorInMap(DukeMap* map, float deltaTime, Actor* inoutActor)
 	Vector2 pointOut;
 	s16 sectorOut;
 	MoveResult result = Map_MovePointInMap(
-		map, point, endpoint, inoutActor->noclip, inoutActor->sectorNumber, 
+		map, point, endpoint, inoutActor->sectorNumber,inoutActor->noclip,  
 		&pointOut, &sectorOut);
 
 	// Keep actor on floor and under the ceiling
@@ -391,7 +391,10 @@ void Map_MoveActorInMap(DukeMap* map, float deltaTime, Actor* inoutActor)
     inoutActor->lastResult = result;
 }
 
-MoveResult Map_MovePointInMap(DukeMap* map, Vector2 start, Vector2 end, s16 sectorNumber, bool ignoreCollision, Vector2* positionOut, s16* sectorOut)
+MoveResult Map_MovePointInMap(DukeMap* map, 
+	Vector2 start, Vector2 end, s16 sectorNumber, 
+	bool ignoreCollision, 
+	Vector2* positionOut, s16* sectorOut)
 {
 
     // Keep testing until player is back inside again

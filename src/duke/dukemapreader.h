@@ -6,8 +6,14 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-    DukeMap* ReadMapFromFile(const char* mapfilename);
+	/**
+	* @brief Loads a map from file
+	* @param mapfilename Name of the map file
+	* @param dukesPerUnit Adjusts dimensions when loading. All dimensions are divided by this. 1024 dukes is about 1 meter.
+	* @returns Loaded map or nullptr if loading failed
+	*/
+    DukeMap* ReadMapFromFile(const char* mapfilename, int dukesPerUnit);
 #ifdef __cplusplus
 }
-    DukeMap* ReadMapFromFile(const zstr& mapfilename);
+    DukeMap* ReadMapFromFile(const zstr& mapfilename, int dukesPerUnit);
 #endif
