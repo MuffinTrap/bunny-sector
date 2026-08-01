@@ -164,8 +164,10 @@ void Map_PrintInfo(DukeMap* map)
     }
 }
 
-#define BETWEEN(p,a,b) (p >= a && p <= b || p <= a && p >= b)
 
+// Point inside sector code by:
+// https://stackoverflow.com/users/2608744/timepp
+#define BETWEEN(p,a,b) (p >= a && p <= b || p <= a && p >= b)
 bool Map_IsPointInsideSectorOG(DukeMap* map, Vector2 P, int sectorNumber)
 {
     if (sectorNumber < 0)
