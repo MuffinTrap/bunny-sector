@@ -29,8 +29,8 @@ Actor Actor_CreateDefaultActor(int idNumber)
 	a.yawRad = 0.0f;
 	a.pitchRad = 0.0f;
 
-	a.turnAccelerationDegrees = 90.0f;
-	a.turnSpeedDegrees = 150.0f; // NOTE set
+	a.turnAccelerationDegrees = 480.0f;
+	a.turnSpeedDegrees = 340.0f; // NOTE set
 
 	a.moveSpeed = 2048.0f; // NOTE Set
 	a.moveAcceleration = 2024.0f;
@@ -44,8 +44,11 @@ Actor Actor_CreateDefaultActor(int idNumber)
 	a.standingHeight = 512.0f + 256; // NOTE Set
 	a.kneelingHeight = 256.0f;
 	a.eyeHeightNormalized = 0.85f;
-	a.radius = 340.0f;
+	a.radius = 10.0f;
 	a.noclip = false;
+
+	a.turnSpeedMultiplier = 1.0f;
+	a.walkSpeedMultiplier = 1.0f;
 
 	a.lastResult = Move_Ok;
 
@@ -71,7 +74,7 @@ Vector2 Actor_ApplyDrive(Actor* actor, float deltaTime)
 	if (abs(actor->turnDrive) > deadzone)
 	{
 		float accRad = Deg2Rad(actor->turnAccelerationDegrees);
-		actor->turnVelocity += actor->turnDrive * accRad * deltaTime;
+		actor->turnVelocity += actor->turnDrive * actor->turnSpeedMultiplier * accRad * deltaTime;
 	}
 	else
 	{
@@ -98,7 +101,12 @@ Vector2 Actor_ApplyDrive(Actor* actor, float deltaTime)
 	Vector2 forward = FLOOR_FORWARD;
 	actor->floorDirection = Vector2Rotate(forward, actor->yawRad);
 
-	Vector2 floorDestination = Vector2Add(actor->position, Vector2Scale(actor->floorDirection, actor->forwardDrive *actor->moveSpeed * deltaTime));
+	Vector2 floorDestination = Vector2Add(
+		actor->position, Vector2Scale(
+				actor->floorDirection,
+				actor->forwardDrive * actor->walkSpeedMultiplier * actor->moveSpeed * deltaTime
+				)
+		);
 
 	Vector2 destination = floorDestination;
 	return destination;

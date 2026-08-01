@@ -16,7 +16,7 @@ struct Actor
     s16 sectorNumber;
 
     // Drive: either from AI or input
-    // All [-1,1]
+    // All [-1,1]/
     float forwardDrive; /**< Is going forwards or backwards */
     float strafeDrive; /**< Is going sideways */
     float turnDrive; /**< Is turning on yaw axis */
@@ -55,6 +55,10 @@ struct Actor
     // Collsions
     float radius;
     bool noclip;
+
+    // changed during gameplay
+    float walkSpeedMultiplier;
+    float turnSpeedMultiplier;
     
     MoveResult lastResult;
 };

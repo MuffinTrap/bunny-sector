@@ -14,8 +14,6 @@ bool BunnySector_Init();
 void BunnySector_StartMap(MapId mapId);
 void BunnySector_UpdateMap(MapId mapId, float deltaTime);
 void BunnySector_RenderMap(MapId mapId);
-void BunnySector_SetActorDriveInput(int actorId, float forward, float strafe, float vertical, float turnYaw, float turnPitch);
-void BunnySector_MoveActorFreely(int actorId, float deltatime);
 
 struct buns_Vec2
 {
@@ -40,17 +38,21 @@ bool buns_Intersect(double a1x, double a1y,
 
 
 // Get data from active map
-Sector* buns_GetSector(s16 sectorNumber);
-Wall* buns_GetWall(s16 wallIndex);
-Wall* buns_GetWallEnd(Wall* wall);
-s16 buns_GetSectorAmount();
-void buns_GetActorPositionV2(int actorId, buns_Vec2& out_pos);
-void buns_GetActorPositionV3(int actorId, buns_Vec3& out_pos);
-void buns_GetActorFloorDir(int actorId, buns_Vec2& out_dir);
-void buns_SetActorPosition(int actorId, float x, float z);
-Actor* buns_GetActor(int actorId);
+Sector* BunnySector_GetSector(s16 sectorNumber);
+Wall* BunnySector_GetWall(s16 wallIndex);
+Wall* BunnySector_GetWallEnd(Wall* wall);
+s16 BunnySector_GetSectorAmount();
 
-
+// Actor functions
+Actor* BunnySector_GetActor(int actorId);
+void BunnySector_GetActorPositionV2(int actorId, buns_Vec2& out_pos);
+void BunnySector_GetActorPositionV3(int actorId, buns_Vec3& out_pos);
+void BunnySector_GetActorFloorDir(int actorId, buns_Vec2& out_dir);
+float BunnySector_GetActorRadius(int actorId);
+void BunnySector_SetActorPosition(int actorId, float x, float z);
+void BunnySector_SetActorSpeeds(int actorId, float walkSpeedMultiplier, float turnSpeedMultiplier);
+void BunnySector_SetActorDriveInput(int actorId, float forward, float strafe, float vertical, float turnYaw, float turnPitch);
+void BunnySector_MoveActorFreely(int actorId, float deltatime);
 
 #ifdef __cplusplus
 }

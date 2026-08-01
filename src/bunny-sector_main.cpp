@@ -111,6 +111,8 @@ void BunnySector_StartMap(MapId mapId)
 	}
 }
 
+static const float FIXED_STEP = 1.0f/120.0f;
+static float leftOverTime = 0.0f;
 
 void BunnySector_UpdateMap(MapId mapId, float deltaTime)
 {
@@ -120,7 +122,14 @@ void BunnySector_UpdateMap(MapId mapId, float deltaTime)
 		DukeMap* map = mapsArray[mapId];
 		if (map != nullptr)
 		{
-			Map_MoveActorInMap(map, deltaTime, &demoActor);
+			deltaTime += leftOverTime;
+			while (deltaTime >= FIXED_STEP)
+			{
+				// Note: to prevent insane delta times when debugging this is done in fixed time
+				Map_MoveActorInMap(map, FIXED_STEP, &demoActor);
+				deltaTime -= FIXED_STEP;
+			}
+			leftOverTime = deltaTime;
 		}
 	}
 }
@@ -183,54 +192,65 @@ void BunnySector_MoveActorFreely(int actorId, float deltatime)
 	demoActor.position = Actor_ApplyDrive(&demoActor, deltatime);
 }
 
-Sector* buns_GetSector(s16 sectorNumber)
+void BunnySector_SetActorSpeeds(int actorId, float walkSpeedMultiplier, float turnSpeedMultiplier)
+{
+	demoActor.walkSpeedMultiplier = walkSpeedMultiplier;
+	demoActor.turnSpeedMultiplier = turnSpeedMultiplier;
+}
+
+Sector* BunnySector_GetSector(s16 sectorNumber)
 {
 	Sector* sp = Map_GetSector(activeMap, sectorNumber);
 	//Log_InfoF("Get sector %d floory %d ceilingy %d\n", sectorNumber, sp->floory, sp->ceilingy);
 	return Map_GetSector(activeMap, sectorNumber);
 }
-Wall* buns_GetWall(s16 wallIndex)
+Wall* BunnySector_GetWall(s16 wallIndex)
 {
 	return Map_GetWall(activeMap, wallIndex);
 }
-Wall* buns_GetWallEnd(Wall* wall)
+Wall* BunnySector_GetWallEnd(Wall* wall)
 {
 	return Map_GetWallEnd(activeMap, wall);
 }
-s16 buns_GetSectorAmount()
+s16 BunnySector_GetSectorAmount()
 {
 	return activeMap->sectorAmount;
 }
-void buns_GetActorPositionV2(int actorId, buns_Vec2& out_pos)
+
+float BunnySector_GetActorRadius(int actorId)
+{
+	return demoActor.radius;
+}
+void BunnySector_GetActorPositionV2(int actorId, buns_Vec2& out_pos)
 {
 	out_pos.x = demoActor.position.x;
 	out_pos.y = demoActor.position.y;
 }
-void buns_SetActorPosition(int actorId, float x, float z)
+void BunnySector_SetActorPosition(int actorId, float x, float z)
 {
 	demoActor.position.x = x;
 	demoActor.position.y = z;
 }
-void buns_GetActorFloorDir(int actorId, buns_Vec2& out_dir)
+void BunnySector_GetActorFloorDir(int actorId, buns_Vec2& out_dir)
 {
 	out_dir.x = demoActor.floorDirection.x;
 	out_dir.y = demoActor.floorDirection.y;
 }
-void buns_GetActorPositionV3(int actorId, buns_Vec3& out_pos)
+void BunnySector_GetActorPositionV3(int actorId, buns_Vec3& out_pos)
 {
 	out_pos.x = demoActor.position.x;
 	out_pos.y = demoActor.elevation;
 	out_pos.z = demoActor.position.y;
 }
 
-Actor* buns_GetActor(int actorId)
+Actor* BunnySector_GetActor(int actorId)
 {
 	return &demoActor;
 }
 
 #define V2_CROSS(ax, ay, bx, by)(ax * by - ay * bx)
 
-bool buns_Intersect(double a1x, double a1y, double a2x, double a2y, double b1x, double b1y, double b2x, double b2y, buns_Vec2& out_point)
+bool BunnySector_Intersect(double a1x, double a1y, double a2x, double a2y, double b1x, double b1y, double b2x, double b2y, buns_Vec2& out_point)
 {
 
 	double AxA = V2_CROSS(a1x, a1y, a2x, a2y);
