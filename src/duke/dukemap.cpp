@@ -352,6 +352,26 @@ bool Map_IsPointInsideWall(DukeMap* map, Vector2 point, Wall* wall)
     return crossY > 0.0f;
 }
 
+float GetDistanceToWall(Vector2 point, Vector2 ws, Vector2 we)
+{
+    const float xdiff = we.x-ws.x;
+    const float ydiff = we.y-ws.y;
+    if (xdiff == 0.0f && ydiff == 0.0f) {
+        return 0.0f;
+    }
+	const float top = fabsf( (ydiff)*point.x - (xdiff)*point.y + we.x*ws.y - we.y*ws.x);
+	const float bot = sqrt( (ydiff)*(ydiff) + (xdiff)*(xdiff));
+    return top/bot;
+}
+
+float Map_GetDistanceToWall(DukeMap* map, Wall* wall, Vector2 point)
+{
+    Wall* wend = Map_GetWallEnd(map, wall);
+    Vector2 ws = Vector2New(wall->x, wall->z);
+    Vector2 we = Vector2New(wend->x, wend->z);
+    return GetDistanceToWall(point, ws, we);
+}
+
 s32 Map_GetSectorFloorHeight(DukeMap* map, s16 sectorNumber)
 {
     Sector* s = Map_GetSector(map, sectorNumber);
@@ -433,7 +453,7 @@ void Map_MoveActorInMap(DukeMap* map, float deltaTime, Actor* inoutActor)
 	Vector2 pointOut;
 	s16 sectorOut;
 	MoveResult result = Map_MovePointInMap(
-		map, point, endpoint, inoutActor->sectorNumber,inoutActor->noclip,  
+		map, point,  endpoint, inoutActor->radius, inoutActor->sectorNumber,inoutActor->noclip,
 		&pointOut, &sectorOut);
 
 	// Keep actor on floor and under the ceiling
@@ -461,12 +481,99 @@ void Map_MoveActorInMap(DukeMap* map, float deltaTime, Actor* inoutActor)
 
 
 MoveResult Map_MovePointInMap(DukeMap* map,
-	Vector2 start, Vector2 end, s16 sectorNumber, 
+	Vector2 start, Vector2 end, float radius, s16 sectorNumber,
 	bool ignoreCollision, 
 	Vector2* positionOut, s16* sectorOut)
 {
+    Vector2 cross;
+    Sector* sector = Map_GetSector(map, sectorNumber);
 
-    // Is player inside current sector?
+    // Check each wall of sector
+    for (s16 wi = 0; wi < sector->wallnum; wi++)
+    {
+        // Get wall start and end points
+        Wall* w = Map_GetWallInSector(map, sectorNumber, wi);
+        float wsx = w->x;
+        float wsz = w->z;
+        Wall* wend = Map_GetWallEnd(map, w);
+        float wex = wend->x;
+        float wez = wend->z;
+
+        // Is player close to this wall?
+        bool isClose = IntersectBox(start.x, start.y, end.x, end.y, wsx, wsz, wex, wez);
+        // Is player on the other side of it
+        bool startThisSide = Map_IsPointInsideWall(map, start, w);
+        bool endOtherSide = Map_IsPointInsideWall(map, end, w) == false;
+        bool crosses = false;
+
+        if (isClose && startThisSide && endOtherSide)
+        {
+            crosses = true;
+            printf("Player crossed the wall\n");
+        }
+        else if (isClose)
+        {
+            printf("Player close to wall\n");
+        }
+        else if (endOtherSide)
+        {
+            printf("Move goes outside wall\n");
+        }
+
+        if (crosses)
+        {
+            // If is portal and end point is on the other side
+            // we can just allow player to move to next sector
+            if (w->nextsector >= 0)
+            {
+                s16 newSector = w->nextsector;
+                // bool insideNewSector = Map_IsPointInsideSectorOG(map, end, newSector);
+                // Did player actually end up in the neighbor?
+                *positionOut = end;
+                *sectorOut = newSector;
+                return Move_HitPortal;
+            }
+            else
+            {
+                // This is a wall. Find the exact intersection point
+                bool intersectFound =  Map_FindIntersectionWithWall(map, start, end, w, &cross);
+                if (intersectFound)
+                {
+                    Vector2 normal = Map_GetWallNormal(map, w);
+                    // Push player back from wall
+                    Vector2 hitEnd = Vector2Add(cross, normal);
+                    // Slide player along the wall
+                    Vector2 wstart = Vector2New(wsx, wsz);
+                    Vector2 wend = Vector2New(wex, wez);
+                    Vector2 slideMove = Vec2Project( Vector2Subtract(end, start), Vector2Subtract(wend, wstart));
+                    Vector2 slideEnd = Vector2Add(hitEnd, slideMove);
+                    *positionOut = slideEnd;
+                    *sectorOut = sectorNumber;
+                    return Move_HitWall;
+                }
+            }// Collision with wall
+        } // if crosses wall
+        else if (w->nextsector < 0)
+        {
+            // Keep player away from walls
+            Vector2 wstart = Vector2New(wsx, wsz);
+            Vector2 wend = Vector2New(wex, wez);
+            float distance = GetDistanceToWall(end, wstart, wend);
+            if (distance < radius)
+            {
+                // TODO Slide
+                Vector2 normal = Map_GetWallNormal(map, w);
+                float intoWall = radius - distance;
+                end = Vector2Add(end, Vector2Scale(normal, intoWall));
+
+                *positionOut = end;
+                *sectorOut = sectorNumber;
+                return Move_HitWall;
+            }
+        } // Does not cross wall
+    }// Wall loop
+
+
     bool insideSector =  Map_IsPointInsideSectorOG(map, end, sectorNumber);
     if (insideSector)
     {
@@ -475,84 +582,6 @@ MoveResult Map_MovePointInMap(DukeMap* map,
         *sectorOut = sectorNumber;
         return Move_Ok;
     }
-    else
-    {
-        // Find out where player went
-        Vector2 cross;
-        Sector* sector = Map_GetSector(map, sectorNumber);
-
-        // Check each wall
-        for (s16 wi = 0; wi < sector->wallnum; wi++)
-        {
-            // Get wall start and end points
-            Wall* w = Map_GetWallInSector(map, sectorNumber, wi);
-            float x3 = w->x;
-            float z3 = w->z;
-            Wall* wend = Map_GetWallEnd(map, w);
-            float x4 = wend->x;
-            float z4 = wend->z;
-
-            // Is player close to this wall?
-            bool isClose = IntersectBox(start.x, start.y, end.x, end.y, x3, z3, x4, z4);
-            // Is player on the other side of it
-            bool startThisSide = Map_IsPointInsideWall(map, start, w);
-            bool endOtherSide = Map_IsPointInsideWall(map, end, w) == false;
-            bool crosses = false;
-
-            if (isClose && startThisSide && endOtherSide)
-            {
-                crosses = true;
-                printf("Player crossed the wall\n");
-            }
-            else if (isClose)
-            {
-                printf("Player close to wall\n");
-            }
-            else if (endOtherSide)
-            {
-                printf("Move goes outside wall\n");
-            }
-
-            if (crosses)
-            {
-                // If is portal and end point is on the other side
-                // we can just allow player to move to next sector
-                if (w->nextsector >= 0)
-                {
-                    s16 newSector = w->nextsector;
-                    bool insideNewSector = Map_IsPointInsideSectorOG(map, end, newSector);
-                    // Did player actually end up in the neighbor?
-                    if (true)
-                    {
-                        *positionOut = end;
-                        *sectorOut = newSector;
-                        return Move_HitPortal;
-                    }
-                }
-                else
-                {
-                    // This is a wall. Find the exact intersection point
-                    bool intersectFound =  Map_FindIntersectionWithWall(map, start, end, w, &cross);
-                    if (intersectFound)
-                    {
-                        Vector2 normal = Map_GetWallNormal(map, w);
-                        Wall* w2 = Map_GetWallEnd(map, w);
-                        // Push player back from wall
-                        Vector2 hitEnd = Vector2Add(cross, normal);
-                        // Slide player along the wall
-                        Vector2 wstart = Vector2New(w->x, w->z);
-                        Vector2 wend = Vector2New(w2->x, w2->z);
-                        Vector2 slideMove = Vec2Project( Vector2Subtract(end, start), Vector2Subtract(wend, wstart));
-                        Vector2 slideEnd = Vector2Add(hitEnd, slideMove);
-                        *positionOut = slideEnd;
-                        *sectorOut = sectorNumber;
-                        return Move_HitWall;
-                    }
-                }// Collision with wall
-            } // if crosses wall
-        }// Wall loop
-    } // If not inside starting sector
-
     *positionOut = start;
     // No exact intersection found, cancel move to be sure
     return Move_Cancel;

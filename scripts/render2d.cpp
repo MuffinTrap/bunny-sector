@@ -604,6 +604,93 @@ bool ClipWall(Vector2 A, Vector2 B, int side, bool drawDebugs, Vector2 &out poin
 	return false;
 }
 
+void ProcessWallTopDown(Vector2 trans1, Vector2 trans2, float playerRadius, bool isPortal)
+{
+
+
+
+	bool front1 = Vector2DotProduct(trans1, FORWARD_2D) > 0;
+	bool front2 = Vector2DotProduct(trans2, FORWARD_2D) > 0;
+
+	bool behind = false;
+	// Is wall completely behind player?
+	if (!front1 && !front2)
+	{
+		behind = true;
+	}
+	// Clip _if_ needed!
+	else if (front1 || front2)
+	{
+		Vector2 outPoint;
+		if (front1==false) {
+			bool clipOk = ClipWall(trans1, trans2, -1, true, outPoint);
+			if (clipOk) {
+				trans1 = outPoint;
+			}
+		}
+		if (front2==false){
+			bool clipOk = ClipWall(trans1, trans2, 1, true, outPoint);
+			if (clipOk) {
+				trans2 = outPoint;
+			}
+		}
+	}
+
+	Vector2 moveEnd = Vector2Scale(FORWARD_2D, 100);
+
+	color32 wallColor = Debug_White;
+	if (behind ) {
+		wallColor = Debug_DarkGray;
+	}
+	else if (isPortal) {
+		wallColor = Debug_Red;
+		// DEBUG Draw intersection with portals
+		Vector2 pointOut;
+		if (PointIntersect(0, 0, moveEnd.x, moveEnd.y, trans1.x, trans1.y, trans2.x, trans2.y, pointOut))
+		{
+			DrawCross(pointOut, Debug_Red);
+		}
+		mgdl_DrawLineV(Vector2Zero(), moveEnd, Debug_Yellow);
+	}
+
+	// Debug Draw if player is inside this wall or not
+	bool inside = Map_IsPointInsideWall(Vector2Zero(), trans1, trans2);
+	if (inside)
+	{
+		Vector2 walldir = Vector2Subtract(trans2, trans1);
+		Vector2 wallNormal = Vector2Normalize(Vector2Rotate(walldir , DEG2RAD * 90));
+
+		Vector2 wallcenter = Vector2Add(trans1, Vector2Scale(walldir, 0.5));
+		mgdl_DrawLineV(wallcenter, Vector2Add(wallcenter, Vector2Scale(wallNormal, 10)), wallColor);
+		if (isPortal == false)
+		{
+
+			float distance = GetDistanceToWall(Vector2Zero(), trans1, trans2);
+			color32 distanceColor = Debug_DarkGray;
+			if (distance < playerRadius)
+			{
+				distanceColor = Debug_White;
+			}
+			mgdl_DrawLineV(Vector2Zero(), Vector2Scale( Vector2Scale(wallNormal, -1.0f), distance), distanceColor);
+		}
+	}
+
+	// Debug draw if player move overlaps with wall
+	if (IntersectBoxV(Vector2Zero(), moveEnd, trans1, trans2))
+	{
+		if (wallColor == Debug_Red) {
+			wallColor = Debug_Blue;
+		}
+		else
+		{
+			wallColor = Debug_Green;
+		}
+	}
+
+	mgdl_DrawLine(trans1.x, trans1.y,
+				  trans2.x, trans2.y, wallColor);
+}
+
 
 
 
@@ -616,12 +703,17 @@ glPushMatrix();
 
 	glTranslatef(screen_half_width, screen_half_height, 0);
 	
-	Actor@ player = BunnySector_GetActor(0);
-	float playerAngle = player.yawRad;
 
+	Actor@ player = BunnySector_GetActor(0);
 	buns_Vec2 outPlayerPos;
+	buns_Vec2 outPlayerDir;
 	BunnySector_GetActorPositionV2(0, outPlayerPos);
-	Vector2 playerPos = Vector2(outPlayerPos.x, outPlayerPos.y);	
+	BunnySector_GetActorFloorDir(0, outPlayerDir);
+
+	float playerAngle = player.yawRad;
+	Vector2 playerPos = Vector2New(outPlayerPos.x * scale, outPlayerPos.y * scale);
+	Vector2 playerDir = Vector2New(outPlayerDir.x, outPlayerDir.y);
+	float playerRadius = BunnySector_GetActorRadius(0);
 
 	for (int wi = 0; wi < pointAmount; wi++)
 	{
@@ -635,44 +727,8 @@ glPushMatrix();
 		//////////////
 		Vector2 trans1 = WorldToCamera(wall1, playerPos, playerAngle);
 		Vector2 trans2 = WorldToCamera(wall2, playerPos, playerAngle);
+		ProcessWallTopDown(trans1, trans2, playerRadius, false);
 		
-			bool front1 = Vector2DotProduct(trans1, FORWARD_2D) > 0;
-			bool front2 = Vector2DotProduct(trans2, FORWARD_2D) > 0;
-		
-			bool behind = false;
-			// Is wall completely behind player?
-			if (!front1 && !front2)
-			{
-				behind = true;
-			}
-			// Clip _if_ needed!
-			else if (front1 || front2)
-			{
-				Vector2 outPoint;
-				if (front1==false) {
-					bool clipOk = ClipWall(trans1, trans2, -1, true, outPoint);
-					if (clipOk) {
-						trans1 = outPoint;
-					}
-					else { behind = true; }
-				}
-				if (front2==false){
-					bool clipOk = ClipWall(trans1, trans2, 1, true, outPoint);
-					if (clipOk) {
-						trans2 = outPoint;
-					}
-					else { behind = true; }
-				}
-			} 
-				
-				
-			color32 wallColor = Debug_Yellow;
-			if (behind ) { 
-				wallColor = Debug_DarkGray;		
-			}	
-				
-			mgdl_DrawLine(trans1.x, trans1.y,
-				trans2.x, trans2.y, wallColor);
 	}
 
 
@@ -737,8 +793,8 @@ glPushMatrix();
 			//////////////
 			Vector2 trans1 = WorldToCamera(wall1, playerPos, playerAngle);
 			Vector2 trans2 = WorldToCamera(wall2, playerPos, playerAngle);
-			
-				
+			ProcessWallTopDown(trans1, trans2, playerRadius,start.nextsector >= 0);
+
 			if (PRINT && wallIndex == 1) {
 				mgdl_DrawTextInt("Wall", wallIndex, text_x, NextY(), 8, Debug_White);
 				mgdl_DrawTextFloat("A.z", trans1.x, text_x, NextY(), 8, Debug_White);
@@ -746,89 +802,7 @@ glPushMatrix();
 				mgdl_DrawTextFloat("B.z", trans2.x, text_x, NextY(), 8, Debug_White);
 				mgdl_DrawTextFloat("B.x", trans2.y, text_x, NextY(), 8, Debug_White);
 			}
-		
-			
-			bool front1 = Vector2DotProduct(trans1, FORWARD_2D) > 0;
-			bool front2 = Vector2DotProduct(trans2, FORWARD_2D) > 0;
-		
-			bool behind = false;
-			// Is wall completely behind player?
-			if (!front1 && !front2)
-			{
-				behind = true;
-			}
-			// Clip _if_ needed!
-			else if (front1 || front2)
-			{
-				Vector2 outPoint;
-				if (front1==false) {
-					bool clipOk = ClipWall(trans1, trans2, -1, true, outPoint);
-					if (clipOk) {
-						trans1 = outPoint;
-					}
-				}
-				if (front2==false){
-					bool clipOk = ClipWall(trans1, trans2, 1, true, outPoint);
-					if (clipOk) {
-						trans2 = outPoint;
-					}
-				}
-			} 
 				
-			Vector2 moveEnd = Vector2Scale(FORWARD_2D, 100);
-			bool isPortal =start.nextsector >= 0;
-				
-			color32 wallColor = Debug_White;
-			if (behind ) { 
-				wallColor = Debug_DarkGray;		
-			}	
-			else if (isPortal) {
-				wallColor = Debug_Red;
-				// DEBUG Draw intersection with portals
-				Vector2 pointOut;
-				if (PointIntersect(0, 0, moveEnd.x, moveEnd.y, trans1.x, trans1.y, trans2.x, trans2.y, pointOut))
-				{
-					DrawCross(pointOut, Debug_Red);
-				}
-				mgdl_DrawLineV(Vector2Zero(), moveEnd, Debug_Yellow);
-			}
-
-			// Debug Draw if player is inside this wall or not
-			bool inside = Map_IsPointInsideWall(Vector2Zero(), trans1, trans2);
-			if (inside)
-			{
-				Vector2 walldir = Vector2Subtract(trans2, trans1);
-				Vector2 wallNormal = Vector2Normalize(Vector2Rotate(walldir , DEG2RAD * 90));
-
-				Vector2 wallcenter = Vector2Add(trans1, Vector2Scale(walldir, 0.5));
-				mgdl_DrawLineV(wallcenter, Vector2Add(wallcenter, Vector2Scale(wallNormal, 10)), wallColor);
-				if (isPortal == false)
-				{
-
-					float distance = GetDistanceToWall(Vector2Zero(), trans1, trans2);
-					color32 distanceColor = Debug_DarkGray;
-					if (distance < playerRadius)
-					{
-						distanceColor = Debug_White;
-					}
-					mgdl_DrawLineV(Vector2Zero(), Vector2Scale( Vector2Scale(wallNormal, -1.0f), distance), distanceColor);
-				}
-			}
-
-			// Debug draw if player move overlaps with wall
-			if (IntersectBoxV(Vector2Zero(), moveEnd, trans1, trans2))
-			{
-				if (wallColor == Debug_Red) {
-					wallColor = Debug_Blue;
-				}
-				else
-				{
-					 wallColor = Debug_Green;
-				}
-			}
-
-			mgdl_DrawLine(trans1.x, trans1.y,
-				trans2.x, trans2.y, wallColor);
 		}
 			
 	}
