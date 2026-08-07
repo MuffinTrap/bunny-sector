@@ -1,13 +1,13 @@
 #pragma once
 
-enum MoveResult
+enum MoveResultBit
 {
-    Move_Ok,
-    Move_HitWall,
-    Move_HitPortal,
-    Move_Cancel
+    Move_Ok = 0,
+    Move_HitWall = 1,
+    Move_HitPortal = 2,
+    Move_Cancel = 3
 };
-typedef enum MoveResult MoveResult;
+typedef enum MoveResultBit MoveResultBit;
 
 enum SpriteAlignment
 {

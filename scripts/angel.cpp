@@ -24,7 +24,7 @@ void angelscript_init()
 	int screenHeight = mgdl_GetScreenHeight();
 
 	BunnySector_Init();
-	testMapId = BunnySector_LoadMap("assets/test_room.map", 1);
+	testMapId = BunnySector_LoadMap("assets/doome1m1.map", 1);
 	BunnySector_StartMap(testMapId);
 
 //    glEnable(GL_DEPTH_TEST);

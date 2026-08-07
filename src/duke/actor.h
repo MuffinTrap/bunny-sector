@@ -60,7 +60,7 @@ struct Actor
     float walkSpeedMultiplier;
     float turnSpeedMultiplier;
     
-    MoveResult lastResult;
+    u32 lastMoveResultFlags;
 };
 typedef struct Actor Actor;
 

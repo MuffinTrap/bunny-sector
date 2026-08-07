@@ -105,6 +105,7 @@ void BunnySector_StartMap(MapId mapId)
 		if (map != nullptr)
 		{
 			Map_SetActorToStart(map, &demoActor);
+			printf("BunnySector startmap put actor to %.2f, %.2f\n", demoActor.position.x, demoActor.position.y);
 			defaultView = Actor_GetViewpoint(&demoActor);
 			s_AlignCameraToViewpoint(&defaultView, defaultCamera);
 		}

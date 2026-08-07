@@ -170,7 +170,7 @@ bool Map_FindIntersectionWithWall(DukeMap* map, Vector2 moveStart, Vector2 moveE
 */ 
 void Map_MoveActorInMap(DukeMap* map, float deltaTime, Actor* inoutActor);
 
-MoveResult Map_MovePointInMap(DukeMap* map, 
+u32 Map_MovePointInMap(DukeMap* map,
 	Vector2 start, Vector2 end, float radius, s16 sectorNumber,
 	bool ignoreCollision, 
 	Vector2* positionOut, s16* sectorOut);

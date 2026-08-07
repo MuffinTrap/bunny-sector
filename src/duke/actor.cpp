@@ -44,13 +44,13 @@ Actor Actor_CreateDefaultActor(int idNumber)
 	a.standingHeight = 512.0f + 256; // NOTE Set
 	a.kneelingHeight = 256.0f;
 	a.eyeHeightNormalized = 0.85f;
-	a.radius = 10.0f;
+	a.radius = 60.0f;
 	a.noclip = false;
 
 	a.turnSpeedMultiplier = 1.0f;
 	a.walkSpeedMultiplier = 1.0f;
 
-	a.lastResult = Move_Ok;
+	a.lastMoveResultFlags = 0;
 
 	return a;
 }
