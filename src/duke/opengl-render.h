@@ -77,11 +77,12 @@ void OpenGLRender_SetShellGrass(ShellGrass* grass);
  */
 void OpenGLRender_StartDrawingPolygons(float scaleXYZ);
 
+	void OpenGLRender_DrawWallV(Vector2 start, Vector2 end, Vector2 normalXZ, s32 floorY, s32 ceilingY, s16 picnum, s8 shade);
 
 	void OpenGLRender_DrawWall(DukeMap* map, Wall* w, float floorY, float ceilingY, RenderSettingsOpenGL* settings);
 	void OpenGLRender_DrawSprite(Vector3 position, float width, float height, float spriteAngle, float playerAngle, SpriteAlignment alignment, SpritePivot pivot, s16 picnum, s8 brightnessOffset);
 
-	void OpenGLRender_DrawQuad(Vector2 start, Vector2 end, Vector2 normalXZ, float floorY, float ceilingY, s16 picnum, s8 brightnessOffset, RenderSettingsOpenGL* settings3D);
+	void OpenGLRender_DrawQuad(Vector2 start, Vector2 end, Vector2 normalXZ, float floorY, float ceilingY, s16 picnum, s8 brightnessOffset, float scale);
 /**
  * @brief Finalizes the drawing
  */

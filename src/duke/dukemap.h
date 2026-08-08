@@ -140,10 +140,10 @@ s32 Map_GetSectorCeilingHeight(DukeMap* map, s16 sectorNumber);
 
 Wall* Map_GetWallInSector(DukeMap* map, s16 sector, s16 wi);
 Wall* Map_GetWallInSectorPtr(DukeMap* map, Sector* sector, s16 wi);
-Wall* Map_GetWallEnd(DukeMap* map, Wall* w);
+Wall* Map_GetWallEnd(DukeMap* map, const Wall* w);
 Wall* Map_GetWall(DukeMap* map, s16 wallIndex);
 Vector2 Map_GetWallMiddle(DukeMap* map, Wall* w);
-Vector2 Map_GetWallNormal(DukeMap* map, Wall* w);
+Vector2 Map_GetWallNormal(DukeMap* map, const Wall* w);
 
 SpriteAlignment Sprite_GetAlignment(MapSprite* sprite);
 SpritePivot Sprite_GetPivot(MapSprite* sprite);

@@ -81,6 +81,8 @@ DukeMap* ReadMapFromFile(const char* mapfilename, int dukesPerUnit)
         // and Y increases down.
         w->z = ReadInt32()/dukesPerUnit;
 
+        printf("Wall %d at %d, %d\n", s, w->x, w->z);
+
         w->point2 = ReadInt16();
         w->nextwall = ReadInt16();
         w->nextsector = ReadInt16();

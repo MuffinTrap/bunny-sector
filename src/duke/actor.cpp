@@ -24,7 +24,7 @@ Actor Actor_CreateDefaultActor(int idNumber)
 	a.floorVelocity = Vector2Zero();
 	a.verticalVelocity = 0.0f;
 	//a.lookDirection = mgdl_GetGLWorldForward();
-	a.floorDirection = Vector2New(0, -1);
+	a.floorDirection = Vector2New(1, 0);
 
 	a.yawRad = 0.0f;
 	a.pitchRad = 0.0f;
@@ -35,10 +35,10 @@ Actor Actor_CreateDefaultActor(int idNumber)
 	a.moveSpeed = 2048.0f; // NOTE Set
 	a.moveAcceleration = 2024.0f;
 
-	a.verticalSpeedUp = 1400.0f;
+	a.verticalSpeedUp = 4400.0f;
 	a.verticalSpeedDown = -32000.0f; // DANGER
-	a.verticalAccelerationUp = 800.0f;
-	a.verticalAccelerationDown = 800.0f;
+	a.verticalAccelerationUp = 1800.0f;
+	a.verticalAccelerationDown = 1800.0f;
 
 	// Size
 	a.standingHeight = 512.0f + 256; // NOTE Set
@@ -107,6 +107,33 @@ Vector2 Actor_ApplyDrive(Actor* actor, float deltaTime)
 				actor->forwardDrive * actor->walkSpeedMultiplier * actor->moveSpeed * deltaTime
 				)
 		);
+
+	if (abs(actor->verticalDrive) > deadzone)
+	{
+		// Apply falling/jumping
+		actor->verticalVelocity += actor->verticalDrive * actor->verticalAccelerationUp * deltaTime;
+	}
+	else
+	{
+		actor->verticalVelocity *= 0.9f;
+		if (abs(actor->verticalVelocity) < deadzone)
+		{
+			actor->verticalVelocity = 0.0f;
+		}
+	}
+
+	// Limit falling speed
+	if (actor->verticalVelocity > actor->verticalSpeedUp)
+	{
+		actor->verticalVelocity = actor->verticalSpeedUp;
+	}
+	else if (actor->verticalVelocity < actor->verticalSpeedDown)
+	{
+		actor->verticalVelocity = actor->verticalSpeedDown;
+	}
+
+	// Move vertically
+	actor->elevation = actor->elevation + actor->verticalVelocity * deltaTime;
 
 	Vector2 destination = floorDestination;
 	return destination;

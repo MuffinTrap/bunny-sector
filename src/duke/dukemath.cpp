@@ -35,41 +35,19 @@ Vector2 Vec2Project(Vector2 move, Vector2 wall)
 	return Vector2Scale(wall, Vector2DotProduct(move, wall)/Vector2DotProduct(wall, wall));
 }
 
-Vector2 Vec2XZRotateY(Vector2 p, float angle)
-{
-	float sin_a = sin(angle);
-	float cos_a = cos(angle);
-	float xt = p.x * cos_a + p.y*sin_a;
-	float zt = p.x *-sin_a + p.y*cos_a;
-    return Vector2New(xt, zt);
-}
-Vector3 Vec3XYZRotateY(Vector3 p, float angle)
-{
-
-	float sin_a = sin(angle);
-	float cos_a = cos(angle);
-	float xt = p.x * cos_a + p.z*sin_a;
-	float yt = p.y;
-	float zt = p.x *-sin_a + p.z*cos_a;
-    return Vector3New(xt, yt, zt);
-}
-
 /*
  * Duke angles are [0 , 2047]
  * Rotating the world forward should give
  * DA       Direction
- * 0     : ( 0, 0, 1)
- * 512   : ( 1, 0, 0)
- * 1024  : ( 0, 0,-1)
- * 1536  : (-1, 0, 0)
+ * 0     : ( 1, 0)
+ * 512   : ( 0, 1)
+ * 1024  : ( -1, 0)
+ * 1536  : (0, -1)
  *
- * World forward is : 0, 0, -1
- * Rotating that by 0 radians gives the same, so we need to subtract PI from
- * result
- * Positive angles rotate counter-clockwise
+ * World forward is : 1, 0
+ * Positive angles rotate clockwise
  * 0 dukes = 0 degrees
- * 0 degrees = (0, 0, -1)
- * 0 degrees -90 degrees = (1, 0, 0)
+ * 512 dukes = 90 degrees
  *
 */
 float Math_DukeAngleToRad(s16 angleInt)
@@ -79,7 +57,7 @@ float Math_DukeAngleToRad(s16 angleInt)
 
 	// How many radians to turn
     float ratio = (float)angleInt / (float)2048;
-	float radians = ratio * M_PI * 2.0f;
+	float radians = ratio * (M_PI * 2.0f);
     return radians;
 }
 

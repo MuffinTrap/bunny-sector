@@ -20,7 +20,8 @@ static Texture* defaultChecker = nullptr;
 static void s_AlignCameraToViewpoint(Viewpoint* info, Camera* camera)
 {
 	Vector3 cameraPosition = Vec3DukePosToOpenGL(info->position, &defaultOpenGL);
-	Vector3 rotations = Vector3New(info->pitchRad, info->yawRad, 0.0f);
+	float adjustedYaw = (-1.0f * info->yawRad) - DEG2RAD*90; // This is correct when angle is 0.0f
+	Vector3 rotations = Vector3New(info->pitchRad, adjustedYaw, 0.0f);
 	Matrix rotation = MatrixRotateXYZ(rotations);
 	Vector3 forward = mgdl_GetGLWorldForward();
 	Vector3 cameraDir = Vector3Transform(forward, rotation);
@@ -134,6 +135,43 @@ void BunnySector_UpdateMap(MapId mapId, float deltaTime)
 		}
 	}
 }
+void BunnySector_AlignCameraToActor(int actorId)
+{
+	Viewport viewPort = mgdl_GetViewport();
+	// NOTE Must set GL_PROJECTION first then GL_MODELVIEW
+
+
+	demoActor.sectorNumber = Map_FindSectorV2(activeMap, demoActor.sectorNumber, demoActor.position);
+	defaultView = Actor_GetViewpoint(&demoActor);
+
+	s_AlignCameraToViewpoint(&defaultView, defaultCamera);
+
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	gluPerspective(defaultCamera->fovY,
+				   (float)viewPort.width/(float)viewPort.height,
+				   defaultCamera->nearZ,
+				defaultCamera->farZ);
+
+	Camera_Apply(defaultCamera); // Sets GL_MODELVIEW
+}
+void BunnySector_Setup3D()
+{
+	mgdl_glClearColor32(Debug_Black);
+
+	//mgdl_glSetTransparency(true);
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LEQUAL);
+	glDepthMask(GL_TRUE); //  is this needed?
+
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+	glShadeModel(GL_SMOOTH);
+
+	Viewport viewPort = mgdl_GetViewport();
+	glViewport(viewPort.left, viewPort.bottom, viewPort.width, viewPort.height);
+
+}
 
 void BunnySector_RenderMap(MapId mapId)
 {
@@ -143,41 +181,27 @@ void BunnySector_RenderMap(MapId mapId)
 		if (map != nullptr)
 		{
 			// Set up OpenGL 3D state
-			mgdl_glClearColor32(Debug_Black);
 			glPushMatrix();
-	            
-			//mgdl_glSetTransparency(true);
-			glEnable(GL_DEPTH_TEST);
-			glDepthFunc(GL_LEQUAL);
-			glDepthMask(GL_TRUE); //  is this needed?
-			
-			glEnable(GL_CULL_FACE);
-			glCullFace(GL_BACK);
-			glShadeModel(GL_SMOOTH);
 
-			Viewport viewPort = mgdl_GetViewport();
-			glViewport(viewPort.left, viewPort.bottom, viewPort.width, viewPort.height);
+			BunnySector_Setup3D();
 
-			// NOTE Must set GL_PROJECTION first then GL_MODELVIEW
-			glMatrixMode(GL_PROJECTION);
-			glLoadIdentity();
-
-			gluPerspective(defaultCamera->fovY,
-                                    (float)viewPort.width/(float)viewPort.height,
-                                    defaultCamera->nearZ,
-                                    defaultCamera->farZ);
-
-			demoActor.sectorNumber = Map_FindSectorV2(map, demoActor.sectorNumber, demoActor.position);
-			defaultView = Actor_GetViewpoint(&demoActor);
-
-			s_AlignCameraToViewpoint(&defaultView, defaultCamera);
-			Camera_Apply(defaultCamera);
+			BunnySector_AlignCameraToActor(0);
 
 			BuildRender_Draw3D(&defaultView, map, &defaultOpenGL);
 
 			glPopMatrix();
 		}
 	}
+}
+
+float BunnySector_GetOpenGLCameraVerticalFOVDeg()
+{
+	return defaultCamera->fovY;
+
+}
+void BunnySector_SetOpenGLCameraVerticalFOVDeg(float degrees)
+{
+	defaultCamera->fovY = degrees;
 }
 
 void BunnySector_SetActorDriveInput(int actorId, float forward, float strafe, float vertical, float turnYaw, float turnPitch)
@@ -247,6 +271,24 @@ void BunnySector_GetActorPositionV3(int actorId, buns_Vec3& out_pos)
 Actor* BunnySector_GetActor(int actorId)
 {
 	return &demoActor;
+}
+void BunnySector_StartWallDrawing()
+{
+	OpenGLRender_StartDrawingPolygons(defaultOpenGL.scale);
+}
+void BunnySector_EndWallDrawing()
+{
+	OpenGLRender_EndDrawingPolygons();
+}
+
+void BunnySector_DrawWallF(float startx, float startz, float endx, float endz, float normalx, float normalz, s32 floory, s32 ceilingy, s16 picnum, s8 shade)
+{
+	OpenGLRender_DrawWallV(Vector2New(startx, startz), Vector2New(endx, endz), Vector2New(normalx, normalz), floory, ceilingy, picnum, shade);
+}
+void BunnySector_DrawWall(Wall* start, Wall* end, s32 floory, s32 ceilingy, s16 picnum, s8 shade)
+{
+	//printf("BunnySector_DrawWall gets %d, %d \n", start->x, start->z);
+	OpenGLRender_DrawWallV(Vector2New(start->x, start->z), Vector2New(end->x, end->z), Map_GetWallNormal(activeMap, start), floory, ceilingy, picnum, shade);
 }
 
 #define V2_CROSS(ax, ay, bx, by)(ax * by - ay * bx)

@@ -24,11 +24,10 @@ void angelscript_init()
 	int screenHeight = mgdl_GetScreenHeight();
 
 	BunnySector_Init();
-	testMapId = BunnySector_LoadMap("assets/doome1m1.map", 1);
+	testMapId = BunnySector_LoadMap("assets/test_room.map", 1);
 	BunnySector_StartMap(testMapId);
 
-//    glEnable(GL_DEPTH_TEST);
-//    glDepthFunc(GL_LEQUAL);
+	RenderInit();
 
 }
 
@@ -109,18 +108,7 @@ void movePlayer(float deltatime)
 		vertical = 0.0f;
 	}
 
-	if (mgdl_IsButtonDown(0, ButtonLeft))
-	{
-		turn = -1.0f;
-	}
-	else if (mgdl_IsButtonDown(0, ButtonRight))
-	{
-		turn = 1.0f;
-	}
-	else
-	{
-		turn = 0.0f;
-	}
+
 
 	Vector2 wasd = mgdl_GetJoystick(0, Joystick_Nunchuk);
 	forward = -wasd.y;
@@ -130,17 +118,47 @@ void movePlayer(float deltatime)
 
 }
 
-void render3d(float deltatime)
+void adjustFov(float deltatime)
 {
-	BunnySector_RenderMap(testMapId);
-	DrawDebugs();
-}
 
+	float fovchange = 0.0f;
+	if (mgdl_IsButtonDown(0, ButtonLeft))
+	{
+		fovchange = 10.0f;
+	}
+	else if (mgdl_IsButtonDown(0, ButtonRight))
+	{
+		fovchange = -10.0f;
+	}
+	if (fovchange != 0.0f)
+	{
+		SetVerticalFovDeg(GetVerticalFovDeg() + fovchange * deltatime);
+	}
+}
 
 void angelscript_frame(float deltatime)
 {
+
+	BunnySector_SetActorSpeeds(0, 1.0f, 0.7f);
 	movePlayer(deltatime);
-	RenderMap(deltatime);
+	adjustFov(deltatime);
+
+	BunnySector_UpdateMap(testMapId, deltatime);
+	//BunnySector_RenderMap(testMapId);
+	if (mgdl_IsButtonDown(0, Button2))
+	{
+		RenderMapSoftware(deltatime);
+	}
+	else
+	{
+		BunnySector_Setup3D();
+		BunnySector_AlignCameraToActor(0);
+		BunnySector_StartWallDrawing();
+		RenderMap(deltatime);
+		BunnySector_EndWallDrawing();
+	}
+
+	RenderMiniMap();
 
 	DrawDebugs();
 }

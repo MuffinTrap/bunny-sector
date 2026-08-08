@@ -82,6 +82,7 @@ void DrawGrass(ShellGrass* grass, color32 color, float minIntensity, float maxIn
 
 }
 
+// TODO Just give RGBAf color directly
 void DrawGrassOnPolygonBuffer(ShellGrass* grass, color32 color, Vector3 growDirection, float height, float minIntensity, BufferDrawFunction drawFunction, float activeScale)
 {
 	glEnable(GL_TEXTURE_2D);

@@ -465,7 +465,7 @@ bool OpenGLRender_RegisterTexture(s16 picnum, Texture* texture)
     }
 }
 
-// TODO Grass and Function typea
+// TODO Grass and Function types
 bool OpenGLRender_RegisterMaterial(s16 picnum, Material* material, MapMaterialType materialType)
 {
     if (nextFreeMaterialSlot < RENDERER_MATERIAL_ARRAY_SIZE)
@@ -492,11 +492,13 @@ bool OpenGLRender_RegisterMapMaterial(s16 picnum, MapMaterial* material)
 
 }
 
-void DrawQuad(Vector2 start, Vector2 end, const Vector2 normalXZ, float floorY, float ceilingY, s16 picnum, s8 brightnessOffset, RenderSettingsOpenGL* settings3D)
+/** TODO remove settings3D. Scale should be set globally already
+ */
+void DrawQuad(Vector2 start, Vector2 end, const Vector2 normalXZ, s32 floorY, s32 ceilingY, s16 picnum, s8 brightnessOffset, float scale)
 {
     // Keep texture aspect 1:1 unless told otherwise
-    float width = Vector2Length( Vector2Subtract(end, start)) * settings3D->scale;
-    float height = (ceilingY - floorY) * settings3D->scale;
+    float width = Vector2Length( Vector2Subtract(end, start)) * scale;
+    float height = (ceilingY - floorY) * scale;
 
     float aspect = width/height;
     float tex_x1 = 0.0f;
@@ -511,13 +513,19 @@ void DrawQuad(Vector2 start, Vector2 end, const Vector2 normalXZ, float floorY, 
     BeginVertexBufferPolygon(normal, BrightnessOffsetToColor(brightnessOffset));
 
         // Build Triangles for wall
-        BufferVertex(start.x, floorY, start.y, tex_x1, tex_bottom); // 0
-        BufferVertex(end.x, floorY, end.y, tex_x2, tex_bottom);
-        BufferVertex(end.x, ceilingY, end.y, tex_x2, tex_top);
-        BufferVertex(start.x, ceilingY, start.y, tex_x1, tex_top);
+        BufferVertex(start.x, (float)floorY, start.y, tex_x1, tex_bottom); // 0
+        BufferVertex(end.x, (float)floorY, end.y, tex_x2, tex_bottom);
+        BufferVertex(end.x, (float)ceilingY, end.y, tex_x2, tex_top);
+        BufferVertex(start.x, (float)ceilingY, start.y, tex_x1, tex_top);
 
     DrawVertexBufferWithMaterial(material, normal);
 
+}
+
+void OpenGLRender_DrawWallV(Vector2 start, Vector2 end, Vector2 normalXZ, s32 floorY, s32 ceilingY,  s16 picnum, s8 shade)
+{
+    // printf("DrawVallV %.2f %.2f -> %.2f %.2f, f : %d c: %d\n", start.x, start.y, end.x, end.y, floorY, ceilingY);
+    DrawQuad(start, end, normalXZ, floorY, ceilingY, picnum, shade, 1.0f/1024.0f);
 }
 
 void OpenGLRender_DrawWall(DukeMap* map, Wall* w, float floorY, float ceilingY, RenderSettingsOpenGL* settings)
@@ -536,7 +544,7 @@ void OpenGLRender_DrawWall(DukeMap* map, Wall* w, float floorY, float ceilingY, 
         // if this floor height is less than adjacent: Greate wall in between: goes up
         if (floorY < n_floorY)
         {
-            DrawQuad(start, end, normalXZ, floorY, n_floorY, w->picnum, w->shade, settings);
+            DrawQuad(start, end, normalXZ, floorY, n_floorY, w->picnum, w->shade, settings->scale);
         }
 
         // Ceiling:
@@ -544,14 +552,14 @@ void OpenGLRender_DrawWall(DukeMap* map, Wall* w, float floorY, float ceilingY, 
         if (ceilingY > n_ceilingY)
         {
             Wall* otherWall = Map_GetWall(map, w->nextwall);
-            DrawQuad(start, end, normalXZ, n_ceilingY, ceilingY, otherWall->picnum, w->shade, settings);
+            DrawQuad(start, end, normalXZ, n_ceilingY, ceilingY, otherWall->picnum, w->shade, settings->scale);
         }
     }
     else
     {
         // TODO Masked walls
         // Draw the wall
-        DrawQuad(start, end, normalXZ, floorY, ceilingY, w->picnum, w->shade, settings);
+        DrawQuad(start, end, normalXZ, floorY, ceilingY, w->picnum, w->shade, settings->scale);
     }
 }
 
@@ -616,8 +624,8 @@ void OpenGLRender_DrawSprite(Vector3 position, float width, float height, float 
 		spriteAngle = playerAngle + Deg2Rad(180);
 	}
 
-	Vector3 spriteForward = Vec3XYZRotateY(WORLD_FORWARD, spriteAngle+M_PI_2);
-	Vector3 spriteRight = Vec3XYZRotateY(spriteForward, -M_PI_2);
+	Vector3 spriteForward = Vector3RotateY(WORLD_FORWARD, spriteAngle+M_PI_2);
+	Vector3 spriteRight = Vector3RotateY(spriteForward, -M_PI_2);
 
     // Sprite right is on the left side when looking
     // from the player

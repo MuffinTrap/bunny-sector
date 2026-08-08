@@ -59,7 +59,7 @@ void Map_InitActors(DukeMap* map, Actor* players, int playerAmount)
 void Map_SetActorToStart(DukeMap* map, Actor* actor)
 {
     actor->position= map->startPosition;
-    actor->yawRad = Math_DukeAngleToRad(map->startAngle - 512);
+    actor->yawRad = Math_DukeAngleToRad(map->startAngle);
     actor->sectorNumber = map->startingSector;
     actor->elevation = Map_GetSectorFloorHeight(map, map->startingSector) + actor->standingHeight;
 }
@@ -67,14 +67,14 @@ void Map_SetActorToStart(DukeMap* map, Actor* actor)
 void Map_SetCameraToStart(DukeMap* map, Viewpoint* camera)
 {
     camera->position= Vector3New(map->startPosition.x, map->startElevation, map->startPosition.y);
-    camera->yawRad = Math_DukeAngleToRad(map->startAngle - 512);
+    camera->yawRad = Math_DukeAngleToRad(map->startAngle);
     camera->sector = map->startingSector;
 }
 
 void Map_InitActor(DukeMap* map, Actor* player)
 {
     player->position= map->startPosition;
-    player->yawRad = Math_DukeAngleToRad(map->startAngle - 512);
+    player->yawRad = Math_DukeAngleToRad(map->startAngle);
     player->sectorNumber = map->startingSector;
     player->elevation = Map_GetSectorFloorHeight(map, map->startingSector) + player->standingHeight;
 }
@@ -324,7 +324,7 @@ Vector2 Map_GetWallMiddle(DukeMap* map, Wall* w)
     Vector2 end = Vector2New(wend->x, wend->z);
     return Vector2Add(start, Vector2Scale( Vector2Subtract(end, start), 0.5f));
 }
-Vector2 Map_GetWallNormal(DukeMap* map, Wall* w)
+Vector2 Map_GetWallNormal(DukeMap* map, const Wall* w)
 {
     Wall* wend = Map_GetWallEnd(map, w);
     Vector2 start = Vector2New(w->x, w->z);
@@ -332,7 +332,7 @@ Vector2 Map_GetWallNormal(DukeMap* map, Wall* w)
     Vector2 wallVector = Vector2Subtract(end, start);
     return Vector2Normalize(Vector2Rotate(wallVector, DEG2RAD*90));
 }
-Wall* Map_GetWallEnd(DukeMap* map, Wall* w)
+Wall* Map_GetWallEnd(DukeMap* map, const Wall* w)
 {
     return &map->walls[w->point2];
 }

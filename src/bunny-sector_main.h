@@ -54,6 +54,18 @@ void BunnySector_SetActorSpeeds(int actorId, float walkSpeedMultiplier, float tu
 void BunnySector_SetActorDriveInput(int actorId, float forward, float strafe, float vertical, float turnYaw, float turnPitch);
 void BunnySector_MoveActorFreely(int actorId, float deltatime);
 
+// Camera functions
+float BunnySector_GetOpenGLCameraVerticalFOVDeg();
+void BunnySector_SetOpenGLCameraVerticalFOVDeg(float degrees);
+
+// Drawing
+void BunnySector_Setup3D();
+void BunnySector_AlignCameraToActor(int actorId);
+void BunnySector_StartWallDrawing();
+void BunnySector_DrawWallF(float startx, float startz, float endx, float endz, float normalx, float normalz, s32 floory, s32 ceilingy, s16 picnum, s8 shade);
+void BunnySector_DrawWall(Wall* start , Wall* end, s32 floory, s32 ceilingy, s16 picnum, s8 shade);
+void BunnySector_EndWallDrawing();
+
 #ifdef __cplusplus
 }
 #endif

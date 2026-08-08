@@ -37,7 +37,7 @@ Camera* GetDefaultCamera()
     {
         defaultCamera = Camera_CreateDefault();
     }
-    defaultCamera->nearZ = 0.1f;
+    defaultCamera->nearZ = 0.0001f;
     defaultCamera->farZ = 100.0f;
     defaultCamera->fovY = 77.7f;
     defaultCamera->projection = CameraNone;
@@ -154,11 +154,9 @@ void BuildRender_DrawSprites(DukeMap* map, Viewpoint* player, RenderSettingsOpen
 void BuildRender_Draw3D(Viewpoint* camera, DukeMap* map, RenderSettingsOpenGL* settings)
 {
         OpenGLRender_StartDrawingPolygons(settings->scale);
-            mgdl_glSetAlphaTest(true);
-                BuildRender_DrawSectorWalls(camera, map, settings);
-                BuildRender_DrawSectorFloorsAndCeilings(camera, map, settings);
-                BuildRender_DrawSprites(map, camera, settings);
-            mgdl_glSetAlphaTest(false);
+            BuildRender_DrawSectorWalls(camera, map, settings);
+            BuildRender_DrawSectorFloorsAndCeilings(camera, map, settings);
+            BuildRender_DrawSprites(map, camera, settings);
         OpenGLRender_EndDrawingPolygons();
 
 
@@ -307,8 +305,8 @@ void BuildRender_DrawSectorWalls(Viewpoint* player, DukeMap* map, RenderSettings
         Sector* sector = Map_GetSector(map, request.number);
         //Log_InfoF("Draw sector %d\n", request.number);
 
-        const float ceilingY = sector->ceilingy;
-        const float floorY = sector->floory;
+        const s32 ceilingY = sector->ceilingy;
+        const s32 floorY = sector->floory;
 
         // Render all walls of the current sector
         // Discard those that do not face player
@@ -324,8 +322,8 @@ void BuildRender_DrawSectorWalls(Viewpoint* player, DukeMap* map, RenderSettings
 
             // The Y is how far ahead of player the point is
             // NOTE negative around player
-            startZ = Vec2XZRotateY(startZ, -player->yawRad);
-            endZ = Vec2XZRotateY(endZ, -player->yawRad);
+            startZ = Vector2Rotate(startZ, -player->yawRad);
+            endZ = Vector2Rotate(endZ, -player->yawRad);
 
             // Is the wall behind player?
             // Behind is positive Z
@@ -534,7 +532,7 @@ void BuildRender_DrawTopDown(Viewpoint* players, DukeMap* map, RenderSettingsOpe
 
     Vector2 collision_forward = Vector2New(0.0, WORLD_FORWARD.z * settings2D->collisionLength);
 
-    collision_forward  = Vec2XZRotateY(collision_forward,  Deg2Rad(settings2D->collisionAngleDeg));
+    collision_forward  = Vector2Rotate(collision_forward,  Deg2Rad(settings2D->collisionAngleDeg));
     Vector2 collisionEnd = Vector2Add(settings2D->collisionPoint, collision_forward);
 
     bool collisionMiss = true;
@@ -696,7 +694,7 @@ void BuildRender_DrawTopDown(Viewpoint* players, DukeMap* map, RenderSettingsOpe
                     {
                         angle = players[0].yawRad + Deg2Rad(180);
                     }
-                    Vector2 spriteDir = Vec2XZRotateY(spriteForward, angle);
+                    Vector2 spriteDir = Vector2Rotate(spriteForward, angle);
 
                     if (al == Sprite_FLOOR)
                     {
@@ -826,7 +824,7 @@ void BuildRender_DrawTopDown(Viewpoint* players, DukeMap* map, RenderSettingsOpe
             Vector2 forward = Vector2New(WORLD_FORWARD.x, WORLD_FORWARD.z);
             if (settings2D->rotateMap == false)
             {
-                forward = Vec2XZRotateY(forward, player->yawRad);
+                forward = Vector2Rotate(forward, player->yawRad);
             }
             color32 pc =  Debug_Black;
 
@@ -854,8 +852,8 @@ void BuildRender_DrawTopDown(Viewpoint* players, DukeMap* map, RenderSettingsOpe
                 glVertex2i(playerPos2.x,playerPos2.y);
                 glVertex2f(end.x, end.y);
 
-                Vector2 sideLeft = Vec2XZRotateY(forward,  M_PI * 3.0f/4.0f);
-                Vector2 sideRight = Vec2XZRotateY(forward, -M_PI * 3.0f/4.0f);
+                Vector2 sideLeft = Vector2Rotate(forward,  M_PI * 3.0f/4.0f);
+                Vector2 sideRight = Vector2Rotate(forward, -M_PI * 3.0f/4.0f);
                 sideLeft = Vector2Add(sideLeft, end);
                 sideRight = Vector2Add(sideRight, end);
 
