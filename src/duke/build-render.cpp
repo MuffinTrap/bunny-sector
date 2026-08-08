@@ -37,9 +37,9 @@ Camera* GetDefaultCamera()
     {
         defaultCamera = Camera_CreateDefault();
     }
-    defaultCamera->nearZ = 0.0001f;
+    defaultCamera->nearZ = 0.1f;
     defaultCamera->farZ = 100.0f;
-    defaultCamera->fovY = 77.7f;
+    defaultCamera->fovY = 80.0f;
     defaultCamera->projection = CameraNone;
     Camera_SetMode(defaultCamera, CameraDirection);
     return defaultCamera;

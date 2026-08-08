@@ -95,6 +95,10 @@ void movePlayer(float deltatime)
 	float strafe = 0.0f;
 	float turn = 0.0f;
 	float vertical = 0.0f;
+
+	if (mgdl_IsButtonDown(0, Button2) == false)
+	{
+
 	if (mgdl_IsButtonDown(0, ButtonUp))
 	{
 		vertical = 1.0f;
@@ -107,6 +111,7 @@ void movePlayer(float deltatime)
 	{
 		vertical = 0.0f;
 	}
+	}
 
 
 
@@ -117,10 +122,48 @@ void movePlayer(float deltatime)
 	BunnySector_SetActorDriveInput(0, forward, strafe, vertical, turn, 0.0f);
 
 }
-
+float av = 0.0f;
+float ah = 0.0f;
 void adjustFov(float deltatime)
 {
 
+	if (mgdl_IsButtonPressed(0, ButtonMinus))
+	{
+		SetFovAdjust(0,0);
+		ah = 0.0f;
+		av = 0.0f;
+		SetVerticalFovDeg(80.0f);
+		BunnySector_SetOpenGLCameraVerticalFOVDeg(80.0f);
+	}
+	if (mgdl_IsButtonDown(0, Button2))
+	{
+		float vertical = 0.0f;
+		float horizontal = 0.0f;
+		if (mgdl_IsButtonDown(0, ButtonUp))
+		{
+			vertical = 1.0f;
+		}
+		else if (mgdl_IsButtonDown(0, ButtonDown))
+		{
+			vertical = -1.0f;
+		}
+		if (mgdl_IsButtonDown(0, ButtonRight))
+		{
+			horizontal = 1.0f;
+		}
+		else if (mgdl_IsButtonDown(0, ButtonLeft))
+		{
+			horizontal = -1.0f;
+		}
+		if (vertical != 0.0 || horizontal != 0.0f)
+		{
+			av += vertical * deltatime;
+			ah += horizontal * deltatime;
+			SetFovAdjust(av, ah);
+		}
+	}
+	else
+	{
 	float fovchange = 0.0f;
 	if (mgdl_IsButtonDown(0, ButtonLeft))
 	{
@@ -133,6 +176,8 @@ void adjustFov(float deltatime)
 	if (fovchange != 0.0f)
 	{
 		SetVerticalFovDeg(GetVerticalFovDeg() + fovchange * deltatime);
+		BunnySector_SetOpenGLCameraVerticalFOVDeg(BunnySector_GetOpenGLCameraVerticalFOVDeg() + fovchange * deltatime);
+	}
 	}
 }
 

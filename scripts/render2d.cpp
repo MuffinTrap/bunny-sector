@@ -21,9 +21,10 @@ int[] BOTTOM_LIMITS(SCREEN_WIDTH);
 
 // Fov variables
 float HFOVRAD = 0;
-float VFOVRAD = 0; // to be
+float VFOVRAD = 0; // to be set
+
 Vector2 ViewPortSize = Vector2New(1,1); // Viewport in world units
-Vector2 CanvasSize = Vector2New(SCREEN_WIDTH, SCREEN_HEIGHT); // Canvas is where we draw
+Vector2 CanvasSize = Vector2New(1,1);
 Vector2 CameraToCanvasConvert = Vector2New(1,1); // Transforms from Camera to Canvas. Divide by Z!
 
 // Player view cone calculated from HFOVRAD
@@ -32,9 +33,27 @@ Vector2 frustumLeft;
 Vector2 frustumRight;
 
 // Near and far plane
-float NEARZ = 0.0001f;
+float NEARZ = 0.1f;
 float FARZ = 1000 * 1024.0f;
 
+// This can be changed during gameplay
+void SetVerticalFovDeg(float fovDeg)
+{
+	if (fovDeg >= 5.0f && fovDeg < 180.0f)
+	{
+		VFOVRAD = DEG2RAD * fovDeg;
+
+		// Horizontal fov depends on vertical fov and aspect ratio
+		float aspect = 1.0f /(CanvasSize.x/CanvasSize.y);
+		HFOVRAD = VFOVRAD * aspect;
+
+		UpdateFrustumToFov();
+		// Viewport dimensions depend on FOV
+		ViewPortSize = ViewportSizeFromFovAndNearZ();
+	}
+}
+
+// This updates the clipping line segments
 void UpdateFrustumToFov()
 {
 	frustumOrigo	= Vector2(NEARZ, 0.0f);
@@ -42,6 +61,7 @@ void UpdateFrustumToFov()
 	frustumRight	= Vector2Scale(Vector2Rotate(FORWARD_2D, HFOVRAD/2.0f), 600.0f);
 }
 
+// These transform the clipped coordinates to canvas for drawing
 Vector2 ViewportToCanvas(Vector2 point)
 {
 	return Vector2New(
@@ -52,14 +72,15 @@ Vector2 ViewportToCanvas(Vector2 point)
 Vector2 CameraToViewport(Vector2 point, float z)
 {
 	return Vector2New( 
-		(point.x*NEARZ)/z,
-		(point.y*NEARZ)/z);
+		(point.x)/z,
+		(point.y)/z);
 }
 
+// Viewport size is calculated from FOV every frame to be sure
 Vector2 ViewportSizeFromFovAndNearZ()
 {
-	float viewHeight = tan(VFOVRAD/2.0f)*NEARZ;
-	float viewWidth = tan(HFOVRAD/2.0f)*NEARZ;
+	float viewHeight = tan(VFOVRAD/2.0f);
+	float viewWidth = tan(HFOVRAD/2.0f);
 	return Vector2New(viewHeight*2.0f, viewWidth*2.0f);
 }
 
@@ -68,17 +89,20 @@ Vector2 WorldToCamera(Vector2 point, Vector2 CameraPosition, float cameraYaw)
 {
 	return Vector2Rotate( Vector2Subtract(point, CameraPosition), -cameraYaw);
 }
+// NOTE: This is to replace the above transforms when everything works
+// to make code faster
 
+/*
 Vector2 GetConvertXY()
 {
 	float aspect=CanvasSize.x/CanvasSize.y;
 	HFOVRAD=VFOVRAD*aspect;
-	ViewPortSize = ViewportSizeFromFovAndNearZ();
 	return Vector2New(
-		NEARZ*CanvasSize.x/ViewPortSize.x,
-		NEARZ*CanvasSize.y/ViewPortSize.y
+		CanvasSize.x/ViewPortSize.x,
+		CanvasSize.y/ViewPortSize.y
 	);
 }
+*/
 
 
 // Array for storing Z buffer
@@ -799,6 +823,7 @@ glPushMatrix();
 	mgdl_DrawTextFloat("Player y: ", outPlayerPos.y, text_x, NextY(), 8, Debug_Yellow);
 	mgdl_DrawTextFloat("Player d: ", RAD2DEG * playerAngle, text_x, NextY(), 8, Debug_Yellow);
 	mgdl_DrawTextFloat("Player vfov: ", RAD2DEG * VFOVRAD, text_x, NextY(), 8, Debug_Yellow);
+	mgdl_DrawTextFloat("Player gl vfov: ", BunnySector_GetOpenGLCameraVerticalFOVDeg(), text_x, NextY(), 8, Debug_Yellow);
 	//mgdl_DrawTextFloat("Player fx: ", outPlayerDir.x, 16, NextY(), 8, Debug_Yellow);
 	//mgdl_DrawTextFloat("Player fy: ", outPlayerDir.y, 16, NextY(), 8, Debug_Yellow);
 	
@@ -1270,7 +1295,6 @@ void SetNearZ(float nearz)
 	if (nearz >= 0.0001f && nearz < FARZ)
 	{
 		NEARZ = nearz;
-		CameraToCanvasConvert = GetConvertXY();
 	}
 }
 void SetFarZ(float farz)
@@ -1285,17 +1309,8 @@ float GetVerticalFovDeg()
 {
 	return RAD2DEG * VFOVRAD;
 }
-void SetVerticalFovDeg(float fovDeg)
+void SetFovAdjust(float vertical, float horizontal)
 {
-	if (fovDeg >= 5.0f && fovDeg < 90.0f)
-	{
-		VFOVRAD = DEG2RAD * fovDeg;
-		HFOVRAD = VFOVRAD * (ViewPortSize.x/ViewPortSize.y);
-		UpdateFrustumToFov();
-		CameraToCanvasConvert = GetConvertXY();
-
-		BunnySector_SetOpenGLCameraVerticalFOVDeg(fovDeg);
-	}
 }
 
 void StartFrame()
@@ -1309,7 +1324,6 @@ void StartFrame()
 	ResetDrawTimes();
 	ResetRequests();
 
-	ViewPortSize = ViewportSizeFromFovAndNearZ();
 
 	ResetTextY();
 }
@@ -1359,6 +1373,9 @@ glPopMatrix();
 
 void RenderInit()
 {
+	SCREEN_WIDTH = mgdl_GetScreenWidth();
+	SCREEN_HEIGHT = mgdl_GetScreenHeight();
+	CanvasSize = Vector2New(SCREEN_WIDTH, SCREEN_HEIGHT); // Canvas is where we draw
 	SetVerticalFovDeg(80);
 }
 
