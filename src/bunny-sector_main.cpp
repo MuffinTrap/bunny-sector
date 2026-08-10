@@ -116,6 +116,10 @@ void BunnySector_StartMap(MapId mapId)
 static const float FIXED_STEP = 1.0f/120.0f;
 static float leftOverTime = 0.0f;
 
+// SQUARE ASPECT debugging
+bool s_aspectCamera = false;
+bool s_aspectView = false;
+
 void BunnySector_UpdateMap(MapId mapId, float deltaTime)
 {
 	// Map move all actors and sprites etc...
@@ -146,17 +150,21 @@ void BunnySector_AlignCameraToActor(int actorId)
 
 	s_AlignCameraToViewpoint(&defaultView, defaultCamera);
 
+	float aspect =  s_aspectCamera;
+
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	gluPerspective(defaultCamera->fovY,
-				   (float)viewPort.width/(float)viewPort.height,
+				  aspect,
 				   defaultCamera->nearZ,
 				defaultCamera->farZ);
 
 	Camera_Apply(defaultCamera); // Sets GL_MODELVIEW
 }
-void BunnySector_Setup3D()
+void BunnySector_Setup3D(float viewAspect, float cameraAspect)
 {
+	s_aspectView = viewAspect;
+	s_aspectCamera = cameraAspect;
 	mgdl_glClearColor32(Debug_Black);
 
 	//mgdl_glSetTransparency(true);
@@ -169,8 +177,15 @@ void BunnySector_Setup3D()
 	glShadeModel(GL_SMOOTH);
 
 	Viewport viewPort = mgdl_GetViewport();
-	glViewport(viewPort.left, viewPort.bottom, viewPort.width, viewPort.height);
-
+	if (s_aspectView > 1.9f)
+	{
+		glViewport(viewPort.left, viewPort.bottom, viewPort.width, viewPort.width/2.0f);
+	}
+	else
+	{
+		// Draw software renderer without distoring the viewport
+		glViewport(viewPort.left, viewPort.bottom, viewPort.width, viewPort.height);
+	}
 }
 
 void BunnySector_RenderMap(MapId mapId)
@@ -183,7 +198,7 @@ void BunnySector_RenderMap(MapId mapId)
 			// Set up OpenGL 3D state
 			glPushMatrix();
 
-			BunnySector_Setup3D();
+			BunnySector_Setup3D(false, false);
 
 			BunnySector_AlignCameraToActor(0);
 

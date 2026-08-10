@@ -88,6 +88,11 @@ float floorf(float a)
     return floor(a);
 }
 
+float clampf(float v, float min, float max)
+{
+    return fminf( fmaxf(v, min), max);
+}
+
 // AngelScript classes for Vector2, Vector3, Vector4, Quaternion and Matrix
 // The constructors are used only with the functions in this file.
 // Game code should use Vector2New, Vector3New, Vector4New, QuaternionNew,
