@@ -279,9 +279,10 @@ static Vector2 CalculateFloorOrCeilingUV(const Sector* sector, float x, float z)
     float zrange = sector->sizeXZ.y;
     float xdiff = x - sector->minXZPoint.x;
     float zdiff = z - sector->minXZPoint.y;
+    // NOTE The texture will repeat like crazy because these are duke units
     float tx = xdiff/xrange * sector->maxTexCoord.x;
     float tz = zdiff/zrange * sector->maxTexCoord.y;
-    return Vector2New(tx, tz);
+    return Vector2New(tx/1024.0f, tz/1024.0f);
 }
 
 void SetWrap(GLuint textureName)
@@ -406,9 +407,10 @@ void OpenGLRender_ReadMaterialsXML(const char* materialsfile)
 		
 		
 			mgdl_BufferPrintf("%s/%s", folderElement->GetText(), textureElement->GetText());
-			TextureHandle textureH = AssetManager_LoadTexture(mgdl_GetPrintfBuffer(), false);
+			TextureHandle textureH = AssetManager_LoadTexture(mgdl_GetPrintfBuffer(), true);
 			if (Handle_IsValid(textureH))
 			{
+                mgdl_SetTextureFilterMin(textureH, TextureFilterModes::MipmapLinear);
 				Texture* texture = AssetManager_GetTexture(textureH);
 				OpenGLRender_RegisterTexture(picnum, texture);
 			}

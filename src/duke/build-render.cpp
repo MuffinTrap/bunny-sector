@@ -85,9 +85,9 @@ RenderSettingsOpenGL GetDefaultRenderSettingsOpenGL()
     renderGL.spriteDefaultWidth = 1024;
     renderGL.spriteDefaultHeight = 8024;
 
-    renderGL.near = 0.1f;
+    renderGL.near = 1.0f/dukeUnitsPerMetre;
     renderGL.far = 100.0f;
-    renderGL.FOVyDegrees = 77.7f + 10.0f; // This is the culling fov
+    renderGL.FOVyDegrees = 80.0f;
     renderGL.aspectRatio = mgdl_GetAspectRatio();
     return renderGL;
 }

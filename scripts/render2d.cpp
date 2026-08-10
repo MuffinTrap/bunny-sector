@@ -10,7 +10,7 @@ int REQUEST_LIMIT = -1;
 // File variables
 
 int SCREEN_WIDTH = 640;
-int SCREEN_HEIGHT = SCREEN_WIDTH/2;
+int SCREEN_HEIGHT = 480;
 
 Vector2 FORWARD_2D = Vector2(1, 0);
 Vector2 RIGHT_2D = Vector2Rotate(FORWARD_2D, DEG2RAD * 90);
@@ -98,7 +98,8 @@ Vector2 CameraToViewport(Vector2 point, float z)
 Vector2 ViewportSizeFromFovAndNearZ()
 {
 	float viewHeight = tan(VFOVRAD/2.0f);
-	float viewWidth = viewHeight * (CanvasSize.x/CanvasSize.y);
+	float aspect = (CanvasSize.x/CanvasSize.y);
+	float viewWidth = atan(aspect * viewHeight);
 	return Vector2New(viewWidth*2.0f, viewHeight*2.0f);
 }
 
@@ -231,7 +232,7 @@ u8[] SectorDrawTimes(SECTOR_MAX);
 
 
 // Sector draw requests
-int REQUEST_AMOUNT = 64;
+int REQUEST_AMOUNT = 128;
 // Ring buffer of requests
 SectorRequest[] requests(REQUEST_AMOUNT);
 int requestFill = 0; // How many unread
@@ -748,6 +749,7 @@ void ProcessWallTopDown(Vector2 trans1, Vector2 trans2, float playerRadius, bool
 	}
 
 	// Debug draw if player move overlaps with wall
+	/*
 	if (IntersectBoxV(Vector2Zero(), moveEnd, trans1, trans2))
 	{
 		if (wallColor == Debug_Red) {
@@ -758,6 +760,7 @@ void ProcessWallTopDown(Vector2 trans1, Vector2 trans2, float playerRadius, bool
 			wallColor = Debug_Green;
 		}
 	}
+	*/
 
 	mgdl_DrawLine(trans1.x, trans1.y,
 				  trans2.x, trans2.y, wallColor);
@@ -998,6 +1001,8 @@ void RenderMuffin()
 				DrawWall(start, end, sector.floory, sector.ceilingy);
 			}
 		}
+		BunnySector_DrawSectorFloorOrCeiling(now.number, true, 0, 0);
+		BunnySector_DrawSectorFloorOrCeiling(now.number, false, 0, 0);
 	}
 
 	if (RENDER_2D_WALLS) {
@@ -1076,7 +1081,7 @@ void DrawWall(Wall@  wall, Wall@ end, s32 floory, s32 ceilingy)
 		if (ceilingy > neighbor.ceilingy)
 		{
 			Wall@ otherWall = BunnySector_GetWall(wall.nextwall);
-			BunnySector_DrawWall(wall, end, neighbor.ceilingy, ceilingy, otherWall.picnum, otherWall.shade);
+			BunnySector_DrawWall(wall, end, neighbor.ceilingy, ceilingy, wall.picnum, otherWall.shade);
 			//DrawQuad(startPoint, endPoint, wallNormal, neighbor.ceilingy, ceilingy, otherWall.picnum, otherWall.shade, 1.0f);
 		}
 	}
@@ -1294,7 +1299,7 @@ bool ProcessWall(float playerY,
 							Atop.x, Atop.y, Abot.y, az,
 							Btop.x, Btop.y, Bbot.y, bz,
 							limitLeft, limitRight,
-							Debug_DarkGray);
+							Debug_White);
 					}
 				}
 				return true;
@@ -1418,7 +1423,7 @@ void RenderMiniMap()
 {
 	Init2D_YDown();
 	DrawGizmo();
-	RenderTopDown(0.50f);
+	RenderTopDown(0.250f);
 }
 
 void RenderMapSoftware(float deltatime)

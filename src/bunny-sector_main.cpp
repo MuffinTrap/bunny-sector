@@ -155,7 +155,7 @@ void BunnySector_AlignCameraToActor(int actorId)
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	gluPerspective(defaultCamera->fovY,
-				  aspect,
+				  viewPort.width/viewPort.height,
 				   defaultCamera->nearZ,
 				defaultCamera->farZ);
 
@@ -177,15 +177,7 @@ void BunnySector_Setup3D(float viewAspect, float cameraAspect)
 	glShadeModel(GL_SMOOTH);
 
 	Viewport viewPort = mgdl_GetViewport();
-	if (s_aspectView > 1.9f)
-	{
-		glViewport(viewPort.left, viewPort.bottom, viewPort.width, viewPort.width/2.0f);
-	}
-	else
-	{
-		// Draw software renderer without distoring the viewport
-		glViewport(viewPort.left, viewPort.bottom, viewPort.width, viewPort.height);
-	}
+	glViewport(viewPort.left, viewPort.bottom, viewPort.width, viewPort.height);
 }
 
 void BunnySector_RenderMap(MapId mapId)
@@ -304,6 +296,12 @@ void BunnySector_DrawWall(Wall* start, Wall* end, s32 floory, s32 ceilingy, s16 
 {
 	//printf("BunnySector_DrawWall gets %d, %d \n", start->x, start->z);
 	OpenGLRender_DrawWallV(Vector2New(start->x, start->z), Vector2New(end->x, end->z), Map_GetWallNormal(activeMap, start), floory, ceilingy, picnum, shade);
+}
+
+void BunnySector_DrawSectorFloorOrCeiling(s16 sectorNumber, bool floor, s16 picnum, s8 shade)
+{
+	OpenGLRender_DrawFloorOrCeiling(activeMap, sectorNumber, floor);
+	OpenGLRender_DrawFloorOrCeiling(activeMap, sectorNumber, false);
 }
 
 #define V2_CROSS(ax, ay, bx, by)(ax * by - ay * bx)

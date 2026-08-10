@@ -24,7 +24,7 @@ void angelscript_init()
 	int screenHeight = mgdl_GetScreenHeight();
 
 	BunnySector_Init();
-	testMapId = BunnySector_LoadMap("assets/test_room.map", 1);
+	testMapId = BunnySector_LoadMap("assets/doome1m1.map", 1);
 	BunnySector_StartMap(testMapId);
 
 	// Match 2D render to OpenGL render
@@ -154,18 +154,25 @@ void angelscript_frame(float deltatime)
 	movePlayer(deltatime);
 	adjustFov(deltatime);
 
-	BunnySector_UpdateMap(testMapId, deltatime);
+	if (mgdl_IsButtonDown(0, ButtonZ))
+	{
+		BunnySector_MoveActorFreely(0, deltatime);
+	}
+	else
+	{
+		BunnySector_UpdateMap(testMapId, deltatime);
+	}
 	//BunnySector_RenderMap(testMapId); // This calls the old build render stuff
 
 	// Hold down 2 to see software render result
+	float aspect = mgdl_GetScreenWidth()/mgdl_GetScreenHeight();
 	if (mgdl_IsButtonDown(0, Button2))
 	{
-		BunnySector_Setup3D(640.0f/480.0f, 1.0f);
 		RenderMapSoftware(deltatime);
 	}
 	else
 	{
-		BunnySector_Setup3D(2.0f, 2.0f);
+		BunnySector_Setup3D(aspect, aspect);
 		BunnySector_AlignCameraToActor(0);
 		BunnySector_StartWallDrawing();
 		RenderMap(deltatime);

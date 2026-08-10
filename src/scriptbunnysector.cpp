@@ -63,9 +63,14 @@ void RegisterBunnySector(mgdl_AngelScript* angel)
 
 	// Register OpenGL Drawing functions
 
+	as_engine->RegisterGlobalFunction("void BunnySector_DrawSectorFloorOrCeiling(s16 sectorNumber, bool floor, s16 picnum, s8 shade)", asFUNCTION(BunnySector_DrawSectorFloorOrCeiling), asCALL_CDECL);
+
 	as_engine->RegisterGlobalFunction("void BunnySector_StartWallDrawing()", asFUNCTION(BunnySector_StartWallDrawing), asCALL_CDECL);
+
 	as_engine->RegisterGlobalFunction("void BunnySector_EndWallDrawing()", asFUNCTION(BunnySector_EndWallDrawing), asCALL_CDECL);
+
 	as_engine->RegisterGlobalFunction("void BunnySector_Setup3D(float aspectView, float aspectCamera)", asFUNCTION(BunnySector_Setup3D), asCALL_CDECL);
+
 	as_engine->RegisterGlobalFunction("void BunnySector_AlignCameraToActor(int actorId)", asFUNCTION(BunnySector_AlignCameraToActor), asCALL_CDECL);
 	as_engine->RegisterGlobalFunction("void BunnySector_DrawWallF(float startx, float starty, float endx, float endy, float normalx, float normalz, s32 floory, s32 ceilingy, s16 picnum, s8 shade)", asFUNCTION(BunnySector_DrawWallF), asCALL_CDECL);
 
