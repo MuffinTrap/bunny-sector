@@ -49,7 +49,7 @@ struct Actor
     float verticalAccelerationUp;
     float verticalAccelerationDown;
     float standingHeight; ///< How much above ground when standing
-    float kneelingHeight; ///< How much above ground when kneeling/crouching
+    float climbHeight; ///< How tall elevation change can traverse
     float eyeHeightNormalized; ///< Eye height of active height
 
     // Collsions
@@ -69,6 +69,7 @@ Actor Actor_Create(int idNumber, s16 sector, Vector3 position, float yawRad, flo
 Actor Actor_CreateDefaultActor(int idNumber);
 
 Vector2 Actor_ApplyDrive(Actor* actor, float deltaTime);
+float Actor_ApplyVerticalMove(Actor* actor, float gravity, float deltaTime);
 void Player_UpdateMove(Actor* player, WiiController* controller, RenderSettings2D* settings2D, RenderSettingsOpenGL* settingsGL, DukeMap* map, int amountPlayers);
 bool IsPointInsideRect(RectF rect, Vector2 point);
 Viewpoint Actor_GetViewpoint(Actor* actor);

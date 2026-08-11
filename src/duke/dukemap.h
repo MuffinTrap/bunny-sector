@@ -172,7 +172,7 @@ void Map_MoveActorInMap(DukeMap* map, float deltaTime, Actor* inoutActor);
 
 u32 Map_MovePointInMap(DukeMap* map,
 	Vector2 start, Vector2 end, float radius, s16 sectorNumber,
-	bool ignoreCollision, 
+	float elevationEnd, float maxElevationChange, float height,
 	Vector2* positionOut, s16* sectorOut);
 
 /**

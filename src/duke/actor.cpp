@@ -35,14 +35,14 @@ Actor Actor_CreateDefaultActor(int idNumber)
 	a.moveSpeed = 2048.0f; // NOTE Set
 	a.moveAcceleration = 2024.0f;
 
-	a.verticalSpeedUp = 4400.0f;
+	a.verticalSpeedUp = 44000.0f;
 	a.verticalSpeedDown = -32000.0f; // DANGER
-	a.verticalAccelerationUp = 1800.0f;
-	a.verticalAccelerationDown = 1800.0f;
+	a.verticalAccelerationUp = 8800.0f;
+	a.verticalAccelerationDown = -4800.0f;
 
 	// Size
 	a.standingHeight = 512.0f + 256; // NOTE Set
-	a.kneelingHeight = 256.0f;
+	a.climbHeight = a.standingHeight/2.0f;
 	a.eyeHeightNormalized = 0.85f;
 	a.radius = 60.0f;
 	a.noclip = false;
@@ -58,7 +58,7 @@ Actor Actor_CreateDefaultActor(int idNumber)
 Viewpoint Actor_GetViewpoint(Actor* actor)
 {
 	Viewpoint p;
-	p.position = Vector3New(actor->position.x, actor->elevation, actor->position.y);
+	p.position = Vector3New(actor->position.x, actor->elevation + actor->standingHeight * actor->eyeHeightNormalized, actor->position.y);
 	p.sector = actor->sectorNumber;
 	p.yawRad = actor->yawRad;
 	p.pitchRad = actor->pitchRad;
@@ -108,35 +108,44 @@ Vector2 Actor_ApplyDrive(Actor* actor, float deltaTime)
 				)
 		);
 
+	Vector2 destination = floorDestination;
+	return destination;
+}
+
+float Actor_ApplyVerticalMove(Actor* actor, float gravity, float deltaTime)
+{
+	float verticalAcceleration = gravity;
 	if (abs(actor->verticalDrive) > deadzone)
 	{
 		// Apply falling/jumping
-		actor->verticalVelocity += actor->verticalDrive * actor->verticalAccelerationUp * deltaTime;
-	}
-	else
-	{
-		actor->verticalVelocity *= 0.9f;
-		if (abs(actor->verticalVelocity) < deadzone)
+		if (actor->verticalDrive > 0)
 		{
-			actor->verticalVelocity = 0.0f;
+			verticalAcceleration += actor->verticalDrive * actor->verticalAccelerationUp;
 		}
 	}
 
-	// Limit falling speed
+	actor->verticalVelocity += verticalAcceleration * deltaTime;
+
+	// Limit vertical speeds
 	if (actor->verticalVelocity > actor->verticalSpeedUp)
 	{
 		actor->verticalVelocity = actor->verticalSpeedUp;
 	}
-	else if (actor->verticalVelocity < actor->verticalSpeedDown)
+	else if (actor->verticalVelocity < 0)
 	{
-		actor->verticalVelocity = actor->verticalSpeedDown;
+		// If falling, stop velocity when hits ground or limit max falling speed
+		if (Flag_IsBitSet(actor->lastMoveResultFlags, Move_OnGround))
+		{
+			actor->verticalVelocity = 0.0f;
+		}
+		else if (actor->verticalVelocity < actor->verticalSpeedDown)
+		{
+			actor->verticalVelocity = actor->verticalSpeedDown;
+		}
 	}
 
 	// Move vertically
-	actor->elevation = actor->elevation + actor->verticalVelocity * deltaTime;
-
-	Vector2 destination = floorDestination;
-	return destination;
+	return actor->elevation + actor->verticalVelocity * deltaTime;
 }
 
 Vector3 Actor_ApplyDrive2(Actor* actor, float deltaTime)

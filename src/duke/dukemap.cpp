@@ -317,6 +317,68 @@ bool Map_FindIntersectionWithWall(DukeMap* map, Vector2 moveStart, Vector2 moveE
     return Map_FindIntersectionWithWallUT(x1, z1, x2, z2, x3, z3, x4, z4, pointOUT);
 }
 
+// Copied from raylib
+// raylib.com
+/**********************************************************************************************
+*   LICENSE: zlib/libpng
+*
+*   Copyright (c) 2013-2026 Ramon Santamaria (@raysan5)
+*
+*   This software is provided "as-is", without any express or implied warranty. In no event
+*   will the authors be held liable for any damages arising from the use of this software.
+*
+*   Permission is granted to anyone to use this software for any purpose, including commercial
+*   applications, and to alter it and redistribute it freely, subject to the following restrictions:
+*
+*     1. The origin of this software must not be misrepresented; you must not claim that you
+*     wrote the original software. If you use this software in a product, an acknowledgment
+*     in the product documentation would be appreciated but is not required.
+*
+*     2. Altered source versions must be plainly marked as such, and must not be misrepresented
+*     as being the original software.
+*
+*     3. This notice may not be removed or altered from any source distribution.
+*
+**********************************************************************************************/
+bool Map_CircleCollidesWithWall(Vector2 center, float radius, Vector2 p1, Vector2 p2)
+{
+    bool collision = false;
+
+    float dx = p1.x - p2.x;
+    float dy = p1.y - p2.y;
+
+    if ((fabsf(dx) + fabsf(dy)) <= EPSILON)
+    {
+        float dx = center.x - p1.x;      // X distance between centers
+        float dy = center.y - p1.y;      // Y distance between centers
+
+        float distanceSquared = dx*dx + dy*dy; // Distance between centers squared
+        float radiusSum = radius;
+
+        collision = (distanceSquared <= (radiusSum*radiusSum));
+
+        return collision;
+    }
+    else
+    {
+        float lengthSQ = ((dx*dx) + (dy*dy));
+        float dotProduct = (((center.x - p1.x)*(p2.x - p1.x)) + ((center.y - p1.y)*(p2.y - p1.y)))/(lengthSQ);
+
+        if (dotProduct > 1.0f) dotProduct = 1.0f;
+        else if (dotProduct < 0.0f) dotProduct = 0.0f;
+
+        float dx2 = (p1.x - (dotProduct*(dx))) - center.x;
+        float dy2 = (p1.y - (dotProduct*(dy))) - center.y;
+        float distanceSQ = ((dx2*dx2) + (dy2*dy2));
+
+        if (distanceSQ <= radius*radius) collision = true;
+    }
+
+    return collision;
+}
+
+// Copied from raylib ends
+
 Vector2 Map_GetWallMiddle(DukeMap* map, Wall* w)
 {
     Wall* wend = Map_GetWallEnd(map, w);
@@ -356,7 +418,7 @@ float GetDistanceToWall(Vector2 point, Vector2 ws, Vector2 we)
     const float xdiff = we.x-ws.x;
     const float ydiff = we.y-ws.y;
     if (xdiff == 0.0f && ydiff == 0.0f) {
-        return 0.0f;
+        return Vector2Distance(point, ws);
     }
 	const float top = fabsf( (ydiff)*point.x - (xdiff)*point.y + we.x*ws.y - we.y*ws.x);
 	const float bot = sqrt( (ydiff)*(ydiff) + (xdiff)*(xdiff));
@@ -434,36 +496,29 @@ void Map_MoveActorInMap(DukeMap* map, float deltaTime, Actor* inoutActor)
     Vector2 current = inoutActor->position;
     Vector2 destination = Actor_ApplyDrive(inoutActor, deltaTime);
 
-    if (Vector2Equals(current, destination))
-    {
-        return;
-    }
-
 	Vector2 point = current;
 	Vector2 endpoint = destination;
 
-    // HAX make player always move at least 1
-    Vector2 move = Vector2Subtract(destination, current);
-    if (Vector2Length(move) < 1.0f)
-    {
-        endpoint = Vector2Add(point, Vector2Normalize(move));
-    }
+    // TODO Gravity depens on map?
+    float elevationEnd = Actor_ApplyVerticalMove(inoutActor, inoutActor->verticalAccelerationDown, deltaTime);
 
 	Vector2 pointOut;
 	s16 sectorOut;
 	u32 resultFlags = Map_MovePointInMap(
-		map, point,  endpoint, inoutActor->radius, inoutActor->sectorNumber,inoutActor->noclip,
+		map, point,  endpoint, inoutActor->radius, inoutActor->sectorNumber,elevationEnd,inoutActor->climbHeight,inoutActor->standingHeight,
 		&pointOut, &sectorOut);
 
-	// Keep actor on floor and under the ceiling
-    float minY = Map_GetSectorFloorHeight(map, inoutActor->sectorNumber) + inoutActor->standingHeight;
-
-    // TODO Calculate this from rendering settings somehow
-    float ceilingToEyes = inoutActor->standingHeight * (1.0f - inoutActor->eyeHeightNormalized);
-    float maxY = Map_GetSectorCeilingHeight(map, inoutActor->sectorNumber) - ceilingToEyes;
-    float verticalPosition = Clamp(destination.y, minY, maxY);
+	// Keep actor above floor and under the ceiling
+    float minY = Map_GetSectorFloorHeight(map, sectorOut);
+    float maxY = Map_GetSectorCeilingHeight(map, sectorOut) - inoutActor->standingHeight;
+    if (elevationEnd < minY)
+    {
+        resultFlags = Flag_SetBit(resultFlags, Move_OnGround);
+    }
+    float verticalPosition = Clamp(elevationEnd, minY, maxY);
 
 	inoutActor->position = pointOut;
+    inoutActor->elevation = verticalPosition;
 	inoutActor->sectorNumber = sectorOut;
     inoutActor->lastMoveResultFlags= resultFlags;
 }
@@ -481,7 +536,7 @@ void Map_MoveActorInMap(DukeMap* map, float deltaTime, Actor* inoutActor)
 
 u32 Map_MovePointInMap(DukeMap* map,
 	Vector2 start, Vector2 end, float radius, s16 sectorNumber,
-	bool ignoreCollision, 
+	float elevationEnd, float maxElevationChange, float height,
 	Vector2* positionOut, s16* sectorOut)
 {
     u32 moveResultBitfield = 0;
@@ -491,16 +546,39 @@ u32 Map_MovePointInMap(DukeMap* map,
     // Check each wall of sector
     // First check normal walls and push player away from them
     // Then check portals and see if player crosses them
+
+    // TODO Treat portals where elevation change is too much as walls
+
     for (s16 wi = 0; wi < sector->wallnum; wi++)
     {
         // Get wall start and end points
         // TODO make a function that gets the Start and Endpoint Vectors
-        Wall* w = Map_GetWallInSector(map, sectorNumber, wi);
-        if (w->nextsector < 0)
+        Wall* wall = Map_GetWallInSector(map, sectorNumber, wi);
+        bool treatAsWall = (wall->nextsector < 0);
+
+        // Check if could change elevation
+        if (treatAsWall == false)
         {
-            float wsx = w->x;
-            float wsz = w->z;
-            Wall* w2 = Map_GetWallEnd(map, w);
+            s16 newSector = wall->nextsector;
+            float neighborFloor = Map_GetSectorFloorHeight(map, newSector);
+            if (neighborFloor > elevationEnd + maxElevationChange)
+            {
+                treatAsWall = true;
+            }
+            else
+            {
+                float neighborCeiling = Map_GetSectorCeilingHeight(map, newSector);
+                if (neighborCeiling < elevationEnd + height)
+                {
+                    treatAsWall = true;
+                }
+            }
+        }
+        if (treatAsWall)
+        {
+            float wsx = wall->x;
+            float wsz = wall->z;
+            Wall* w2 = Map_GetWallEnd(map, wall);
             float wex = w2->x;
             float wez = w2->z;
             // Keep player away from walls
@@ -508,14 +586,14 @@ u32 Map_MovePointInMap(DukeMap* map,
             Vector2 wend = Vector2New(wex, wez);
 
             // Check if player moved so fast that went through the wall
-            bool endOtherSide = Map_IsPointInsideWall(map, end, w) == false;
+            bool endOtherSide = Map_IsPointInsideWall(map, end, wall) == false;
             if (endOtherSide)
             {
                 // Find the exact intersection point and slide player along the wall
-                bool intersectFound =  Map_FindIntersectionWithWall(map, start, end, w, &cross);
+                bool intersectFound =  Map_FindIntersectionWithWall(map, start, end, wall, &cross);
                 if (intersectFound)
                 {
-                    Vector2 normal = Map_GetWallNormal(map, w);
+                    Vector2 normal = Map_GetWallNormal(map, wall);
                     // Push player back from wall
                     Vector2 hitEnd = Vector2Add(cross, normal);
                     // Slide player along the wall
@@ -532,15 +610,17 @@ u32 Map_MovePointInMap(DukeMap* map,
 
             // Check if player is too close to wall
             // NOTE: end was maybe modified above
-
-            float distance = GetDistanceToWall(end, wstart, wend);
-            if (distance < radius)
+            if (Map_CircleCollidesWithWall(end, radius, wstart, wend))
             {
-                // NOTE : Slides automagically
-                Vector2 normal = Map_GetWallNormal(map, w);
-                float intoWall = radius - distance;
-                end = Vector2Add(end, Vector2Scale(normal, intoWall));
-                moveResultBitfield = Flag_SetBit(moveResultBitfield, Move_HitWall);
+                float distance = GetDistanceToWall(end, wstart, wend);
+                if (distance < radius)
+                {
+                    // NOTE : Slides automagically
+                    Vector2 normal = Map_GetWallNormal(map, wall);
+                    float intoWall = radius - distance;
+                    end = Vector2Add(end, Vector2Scale(normal, intoWall));
+                    moveResultBitfield = Flag_SetBit(moveResultBitfield, Move_HitWall);
+                }
             }
         } // if is wall
     } // Wall loop
@@ -549,16 +629,17 @@ u32 Map_MovePointInMap(DukeMap* map,
     *sectorOut = sectorNumber;
 
     // Check if player movement against walls made them go through portal
+    // NOTE above for loop has already pushed player away from inaccessible portals
     for (s16 wi = 0; wi < sector->wallnum; wi++)
     {
-        Wall* w = Map_GetWallInSector(map, sectorNumber, wi);
-        if (w->nextsector >= 0)
+        Wall* wall = Map_GetWallInSector(map, sectorNumber, wi);
+        if (wall->nextsector >= 0)
         {
-            float wsx = w->x;
-            float wsz = w->z;
-            Wall* wend = Map_GetWallEnd(map, w);
-            float wex = wend->x;
-            float wez = wend->z;
+            float wsx = wall->x;
+            float wsz = wall->z;
+            Wall* endWall = Map_GetWallEnd(map, wall);
+            float wex = endWall->x;
+            float wez = endWall->z;
             // Is player close to this wall?
             bool isClose = IntersectBox(start.x, start.y, end.x, end.y, wsx, wsz, wex, wez);
             bool crosses = false;
@@ -566,8 +647,8 @@ u32 Map_MovePointInMap(DukeMap* map,
             if (isClose)
             {
                 // Is player on the other side of it
-                bool startThisSide = Map_IsPointInsideWall(map, start, w);
-                bool endOtherSide = Map_IsPointInsideWall(map, end, w) == false;
+                bool startThisSide = Map_IsPointInsideWall(map, start, wall);
+                bool endOtherSide = Map_IsPointInsideWall(map, end, wall) == false;
                 crosses = startThisSide && endOtherSide;
             }
 
@@ -575,9 +656,8 @@ u32 Map_MovePointInMap(DukeMap* map,
             {
                 // If is portal and end point is on the other side
                 // we can just allow player to move to next sector
-                s16 newSector = w->nextsector;
-                // bool insideNewSector = Map_IsPointInsideSectorOG(map, end, newSector);
-                // Did player actually end up in the neighbor?
+
+                s16 newSector = wall->nextsector;
                 *sectorOut = newSector;
                 moveResultBitfield = Flag_SetBit(moveResultBitfield, Move_HitPortal);
             }
