@@ -6,11 +6,11 @@
 
 static const int HeightToWidth = 16;
 
-DukeMap* ReadMapFromFile(const zstr& mapfilename, int dukesPerUnit)
+DukeMap* Duke_ReadMapFromFile(const zstr& mapfilename, int dukesPerUnit)
 {
-    return ReadMapFromFile(zstr_cstr(&mapfilename), dukesPerUnit);
+    return Duke_ReadMapFromFile(zstr_cstr(&mapfilename), dukesPerUnit);
 }
-DukeMap* ReadMapFromFile(const char* mapfilename, int dukesPerUnit)
+DukeMap* Duke_ReadMapFromFile(const char* mapfilename, int dukesPerUnit)
 {
 	if (dukesPerUnit < 1)
 	{
@@ -30,9 +30,7 @@ DukeMap* ReadMapFromFile(const char* mapfilename, int dukesPerUnit)
     s32 start_x = ReadInt32()/dukesPerUnit; // X coordinate
     s32 start_z = ReadInt32()/dukesPerUnit; // Z Coordinate
     s32 start_y = (ReadInt32()/HeightToWidth/dukesPerUnit) * -1; // Y Coordinate, flipped
-    printf("Map start at %d %d\n", start_x, start_z);
     m.startPosition = Vector2New(start_x, start_z);
-    printf("Map start v2 at %.2f %.2f\n", m.startPosition.x, m.startPosition.y);
     m.startElevation = start_y;
 
     m.startAngle = ReadInt16();
@@ -80,8 +78,6 @@ DukeMap* ReadMapFromFile(const char* mapfilename, int dukesPerUnit)
         // NOTE In mapster the origo is in the middle of the map
         // and Y increases down.
         w->z = ReadInt32()/dukesPerUnit;
-
-        printf("Wall %d at %d, %d\n", s, w->x, w->z);
 
         w->point2 = ReadInt16();
         w->nextwall = ReadInt16();

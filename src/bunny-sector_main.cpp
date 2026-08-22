@@ -7,6 +7,8 @@
 #include "duke/dukemath.h"
 #include "duke/actor.h"
 
+#include "doom/doom-map-reader.h"
+
 static DukeMap** mapsArray = nullptr;
 static DukeMap* activeMap = nullptr;
 static const float MAP_AMOUNT = 4;
@@ -57,6 +59,10 @@ bool BunnySector_Init()
 	defaultView = GetDefaultCameraInfo();
 	defaultCamera = GetDefaultCamera();
 	demoActor = Actor_CreateDefaultActor(0);
+
+	DoomMap* test = Doom_ReadMapFromFile("assets/doomroom.wad", 1024);
+	DoomMap_PrintInfo(test);
+
 	return true;
 }
 
@@ -88,7 +94,7 @@ int BunnySector_LoadMap(const zstr& mapfilename, int dukesPerUnit)
 		}
 	}
 
-	activeMap = ReadMapFromFile(mapfilename, dukesPerUnit);
+	activeMap = Duke_ReadMapFromFile(mapfilename, dukesPerUnit);
 	if (activeMap  != nullptr)
 	{
 		mapsArray[firstFree] = activeMap ;
