@@ -1,4 +1,6 @@
 #include "doom-map-reader.h"
+#include "../bunny-sector_main.h"
+#include "../duke/binaryreader.h"
 #include <stdio.h>
 
 static int start = 0; // The position where the evaluated thing starts
@@ -12,6 +14,8 @@ static int sidedefAmount = 0;
 static int sectorAmount = 0;
 
 static DoomMap* map;
+
+
 
 #define ENTITY_START "{"
 #define ENTITY_END "}"
@@ -160,7 +164,51 @@ static void read_line()
 {
 	fgets(lineBuffer, LINEWIDTH, mapfile);
 }
-static void read_until(const char* keyword)
+static bool read_chars_until(const char* keyword)
+{
+	printf("Reading chars until %s\n", keyword);
+	bool allfound = false;
+	while(true)
+	{
+		if (feof(mapfile))
+		{
+			printf("End of file\n");
+			break;
+		}
+		char c = advance();
+		if (c == keyword[0])
+		{
+			printf("Found first: %c\n", c);
+			int wlen = strlen(keyword);
+			int found = 1;
+			for (int i = 1; i < wlen; i++)
+			{
+				c = advance();
+				if (c == keyword[i])
+				{
+					printf("Found %d/%d : %c\n", i ,wlen, c);
+					found++;
+					if (found == wlen)
+					{
+						allfound = true;
+						printf("Found the keyword\n");
+						break;
+					}
+				}
+				else
+				{
+					break;
+				}
+			}
+		}
+		if (allfound)
+		{
+			break;
+		}
+	}
+	return allfound;
+}
+static void read_lines_until(const char* keyword)
 {
 	while(feof(mapfile) == false)
 	{
@@ -206,11 +254,21 @@ static textureId readTextureId()
 {
 	sscanf(lineBuffer, "%s = \"%s\";", identifierBuffer, textureNameBuffer);
 
-	// TODO
-	// Make filename out of texture name
-	// or read from assets.xml
-	return 0;
+	// Find the point where is "
+	int index = -1;
+	for (int i = 0; i < TEXTURENAMEWIDTH; i++)
+	{
+		if (textureNameBuffer[i] == '"')
+		{
+			index = i;
+			break;
+		}
+	}
 
+	zstr textureName = zstr_from_len(textureNameBuffer, index);
+	textureId tid = BunnySector_GetTextureId(&textureName);
+	zstr_free(&textureName);
+	return tid;
 }
 
 static void read_thing() {
@@ -521,7 +579,7 @@ static void read_sector() {
 					if (counting)
 					{
 						thingAmount += 1;
-						read_until(ENTITY_END);
+						read_lines_until(ENTITY_END);
 					}
 					else
 					{
@@ -533,7 +591,7 @@ static void read_sector() {
 					if (counting)
 					{
 						vertexAmount += 1;
-						read_until(ENTITY_END);
+						read_lines_until(ENTITY_END);
 					}
 					else
 					{
@@ -545,7 +603,7 @@ static void read_sector() {
 					if (counting)
 					{
 						linedefAmount += 1;
-						read_until(ENTITY_END);
+						read_lines_until(ENTITY_END);
 					}
 					else
 					{
@@ -557,7 +615,7 @@ static void read_sector() {
 					if (counting)
 					{
 						sidedefAmount += 1;
-						read_until(ENTITY_END);
+						read_lines_until(ENTITY_END);
 					}
 					else
 					{
@@ -569,7 +627,7 @@ static void read_sector() {
 					if (counting)
 					{
 						sectorAmount += 1;
-						read_until(ENTITY_END);
+						read_lines_until(ENTITY_END);
 					}
 					else
 					{
@@ -598,6 +656,133 @@ static void read_sector() {
 		mgdl_FreeGeneralMemory(identifierBuffer);
 		mgdl_FreeGeneralMemory(textureNameBuffer);
 
+		// Read the nodes
+		// TODO read bit by bit
+		rewind(mapfile);
+		read_chars_until("XGLN");
+		StartReadingFile(mapfile);
+		u32 OrgVerts = ReadDWORD();
+		printf("OrgVerts %d %x\n", OrgVerts, OrgVerts);
+		u32 NewVertes = ReadDWORD();
+
+		map->vertexAmount += NewVertes;
+		if (NewVertes > 0)
+		{
+			mgdl_FreeGeneralMemory(map->vertices);
+			map->vertices = (vertex*)mgdl_AllocateGeneralMemory(map->vertexAmount * sizeof(vertex));
+		}
+
+		// Count
+
+		printf("NewVerts %d %x\n", NewVertes, NewVertes);
+		for (int ni = 0; ni < NewVertes; ni++)
+		{
+			// TODO Fixed integers
+			Fixed16 x = ReadFixed();
+			Fixed16 y = ReadFixed();
+
+			printf("Vert %d at (%d.%d, %d.%d)\n", ni, x.whole, x.fract,  y.whole, y.fract);
+			map->vertices[vertexAmount].x = x.whole;
+			map->vertices[vertexAmount].y = y.whole;
+			vertexAmount++;
+		}
+		u32 NumSubsectors = ReadDWORD();
+		DoomMap_AllocateSubsectors(map, NumSubsectors);
+		printf("NumSubsectors %d\n", NumSubsectors);
+		for (int ni = 0; ni < NumSubsectors; ni++)
+		{
+			u32 NumSegs = ReadDWORD();
+			printf("Segments in subsector %d : %d\n", ni, NumSegs);
+			map->subsectors[ni].segmentAmount = NumSegs;
+			map->subsectors[ni].segments = (Segment*)mgdl_AllocateGeneralMemory(NumSegs * sizeof(Segment));
+		}
+		u32 NumSegs = ReadDWORD();
+		printf("NumSeg %d\n", NumSegs);
+		DoomMap_AllocateSegments(map, NumSegs);
+		for (int subi = 0; subi < NumSubsectors; subi++)
+		{
+			SubSector* s = &map->subsectors[subi];
+			for (int si = 0; si < s->segmentAmount; si++)
+			{
+				u32 v1 = ReadDWORD(); // Vertex index
+				u32 partner = ReadDWORD(); // Segment index
+				u16 line = ReadWORD(); // Linedef index
+				u8 side = ReadByte(); // Linedef side
+				printf("Seg %d: V1 %d partner %d line %d side %d\n", si, v1, partner, line, side);
+
+				s->segments[si].v1 = v1;
+				s->segments[si].partnerSegment = partner;
+				s->segments[si].linedef = line;
+				s->segments[si].lineSide = side;
+			}
+		}
+
+		u32 NumNodes = ReadDWORD();
+		printf("NumNodes : %d\n", NumNodes);
+		DoomMap_AllocateNodes(map, NumNodes);
+		for (int ni = 0; ni < NumNodes; ni++)
+		{
+			// The line that splits the node
+			s16 x = ReadSWORD();
+			s16 y = ReadSWORD();
+			s16 dx = ReadSWORD();
+			s16 dy = ReadSWORD();
+
+			// Child 0 bounding box
+			s16 Top0 = ReadSWORD();
+			s16 Bottom0 = ReadSWORD();
+			s16 Left0 = ReadSWORD();
+			s16 Right0 = ReadSWORD();
+			// Child 1 bounding box
+			s16 Top1 = ReadSWORD();
+			s16 Bottom1 = ReadSWORD();
+			s16 Left1 = ReadSWORD();
+			s16 Right1 = ReadSWORD();
+
+			// Bit 31 : 1 subsector
+			// Bit 31 : 0 node
+			u32 child0 = ReadDWORD();
+			u32 child1 = ReadDWORD();
+			if (Flag_IsBitSet(child0, 31))
+			{
+				printf("Child 0 is subsector: %d\n", child0 & 0x7FFFFFFF);
+			}
+			else
+			{
+				printf("Child 0 is node: %d\n", child0);
+			}
+
+			if (Flag_IsBitSet(child1, 31))
+			{
+				printf("Child 1 is subsector: %d\n", child1 & 0x7FFFFFFF);
+			}
+			else
+			{
+				printf("Child 1 is node: %d\n", child1);
+			}
+			DoomNode* n = &map->nodes[ni];
+			n->x = x;
+			n->y = y;
+			n->dx = dx;
+			n->dy = dy;
+
+			n->Top0 = Top0;
+			n->Bottom0 = Bottom0;
+			n->Left0 = Left0;
+			n->Right0 = Right0;
+			// Child 1 bounding box
+			n->Top1 = Top1;
+			n->Bottom1 = Bottom1;
+			n->Left1 = Left1;
+			n->Right1 = Right1;
+
+			// Bit 31 : 1 subsector
+			// Bit 31 : 0 node
+			n->child0 = child0;
+			n->child1 = child1;
+		}
+
+		fclose(mapfile);
 		return map;
 
 	}

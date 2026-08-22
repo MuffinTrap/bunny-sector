@@ -1,4 +1,6 @@
 #include "doom-map.h"
+
+
 DoomMap* DoomMap_Create(int thingsAmount, int sectorAmount, int sideAmount, int lineAmount, int vertexAmount)
 {
 	DoomMap* map = (DoomMap*)mgdl_AllocateGeneralMemory(sizeof(DoomMap));
@@ -13,7 +15,25 @@ DoomMap* DoomMap_Create(int thingsAmount, int sectorAmount, int sideAmount, int 
 	map->linedefs = (linedef*)mgdl_AllocateGeneralMemory(lineAmount * sizeof(linedef));
 	map->sidedefs = (sidedef*)mgdl_AllocateGeneralMemory(sideAmount * sizeof(sidedef));
 	map->vertices = (vertex*)mgdl_AllocateGeneralMemory(vertexAmount * sizeof(vertex));
+
 	return map;
+}
+
+
+void DoomMap_AllocateNodes(DoomMap* map, int nodeAmount)
+{
+	map->nodeAmount = nodeAmount;
+	map->nodes = (DoomNode*)mgdl_AllocateGeneralMemory(nodeAmount * sizeof(DoomNode));
+}
+void DoomMap_AllocateSegments(DoomMap* map, int segmentAmount)
+{
+	map->segmentAmount = segmentAmount;
+	map->segments = (Segment*)mgdl_AllocateGeneralMemory(segmentAmount * sizeof(Segment));
+}
+void DoomMap_AllocateSubsectors(DoomMap* map, int subSectorAmount)
+{
+	map->subSectorAmount = subSectorAmount;
+	map->subsectors = (SubSector*)mgdl_AllocateGeneralMemory(subSectorAmount * sizeof(SubSector));
 }
 
 void DoomMap_PrintInfo(DoomMap* map)
@@ -42,4 +62,5 @@ void DoomMap_PrintInfo(DoomMap* map)
 	{
 		printf("Line def %d from: %d to: %d\n", i, map->linedefs[i].v1, map->linedefs[i].v2);
 	}
+
 }

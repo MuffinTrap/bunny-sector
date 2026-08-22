@@ -8,6 +8,7 @@
 #include "tesselator.h"
 #include "obj-export.h"
 #include "../tinyxml2/tinyxml2.h"
+#include "bunny-sector_main.h"
 
 
 // Used when drawing grass materials
@@ -345,8 +346,10 @@ XML structure
 <materials>
 	<folder>
 	<material>
-		Mandatory:
-		<picnum>
+		Either:
+		<picnum> // Duke maps
+		or
+		<name> // Doom maps
 		One of:
 			<texture> & <mipmaps>
 			<material type>
@@ -358,8 +361,9 @@ XML structure
 
 */
 
-void OpenGLRender_ReadMaterialsXML(const char* materialsfile)
+void OpenGLRender_ReadMaterialsXML(const char* materialsfile, zstr* TextureFileNames, int lastTextureIndex)
 {
+    s16 extraPicnums = 0;
 	if (mgdl_DoesFileExist(materialsfile) == false)
 	{
 		return;
@@ -390,31 +394,66 @@ void OpenGLRender_ReadMaterialsXML(const char* materialsfile)
 	}
 	while(materialElement)
 	{
-		int picnum;
+		int picnum = -1;
 		tinyxml2::XMLElement* picnumElement = materialElement->FirstChildElement("picnum");
 		if (picnumElement)
 		{
 			picnumElement->QueryIntText(&picnum);
 			Log_InfoF("material %d has picnum %d\n", materialindex, picnum);	
 		}
+		tinyxml2::XMLElement* nameElement = materialElement->FirstChildElement("name");
+		if (nameElement)
+		{
+			Log_InfoF("material %d has name %d\n", materialindex, nameElement->GetText());
+            // picnum is the index
+            zstr namez = zstr_from(nameElement->GetText());
+
+            // Do we already have a index for this texture
+            for (int i = 0; i < lastTextureIndex; i++)
+            {
+                zstr* ati = &TextureFileNames[i];
+                if (zstr_eq(&namez, ati))
+                {
+                    picnum = i;
+                    break;
+                }
+            }
+            zstr_free(&namez);
+		}
+		TextureHandle textureH = -1;
 	
 		tinyxml2::XMLElement* textureElement = materialElement->FirstChildElement("texture");
 		if (textureElement)
 		{
 			Log_InfoF("material %d has texture \"%s\"\n", materialindex, textureElement->GetText());
-			
 			// TODO Check for mipmaps
 		
 		
 			mgdl_BufferPrintf("%s/%s", folderElement->GetText(), textureElement->GetText());
-			TextureHandle textureH = AssetManager_LoadTexture(mgdl_GetPrintfBuffer(), true);
-			if (Handle_IsValid(textureH))
-			{
-                mgdl_SetTextureFilterMin(textureH, TextureFilterModes::MipmapLinear);
-				Texture* texture = AssetManager_GetTexture(textureH);
-				OpenGLRender_RegisterTexture(picnum, texture);
-			}
+			textureH = AssetManager_LoadTexture(mgdl_GetPrintfBuffer(), true);
 		}
+		else if (nameElement)
+        {
+            // Try to load a file with same name
+            zstr namez = zstr_from(nameElement->GetText());
+            zstr_cat(&namez, ".png");
+			mgdl_BufferPrintf("%s/%s", folderElement->GetText(), zstr_cstr(&namez));
+			textureH = AssetManager_LoadTexture(mgdl_GetPrintfBuffer(), true);
+            if (Handle_IsValid(textureH))
+            {
+                // Give picnum that is different from the ones in TextureFileNames
+                picnum = lastTextureIndex + extraPicnums;
+                extraPicnums += 1;
+            }
+            zstr_free(&namez);
+        }
+
+        if (Handle_IsValid(textureH) && picnum >= 0)
+        {
+            mgdl_SetTextureFilterMin(textureH, TextureFilterModes::MipmapLinear);
+            Texture* texture = AssetManager_GetTexture(textureH);
+            OpenGLRender_RegisterTexture(picnum, texture);
+        }
 		// TODO Check for material type
 		
 		// TODO check for function id

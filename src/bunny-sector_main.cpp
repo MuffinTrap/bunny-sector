@@ -9,6 +9,11 @@
 
 #include "doom/doom-map-reader.h"
 
+// TextureId to zstr array
+zstr* TextureFileNames;
+static const int TEXTURE_NAME_AMOUNT = 64;
+int freeTextureId;
+
 static DukeMap** mapsArray = nullptr;
 static DukeMap* activeMap = nullptr;
 static const float MAP_AMOUNT = 4;
@@ -50,18 +55,28 @@ bool BunnySector_Init()
 		Texture_SetFilterModeMin(defaultChecker, Linear);
 	}
 
+	TextureFileNames = (zstr*)mgdl_AllocateGeneralMemory(TEXTURE_NAME_AMOUNT * sizeof(zstr));
+	freeTextureId = 0;
+
 	OpenGLRender_Init();
 	OpenGLRender_RegisterTexture(RENDERER_PICNUM_DEFAULT, defaultChecker);
 	// Get rest of the textures from file
-	OpenGLRender_ReadMaterialsXML("assets/materials.xml");
+
+	DoomMap* test = Doom_ReadMapFromFile("assets/doomroom.wad", 1024);
+	DoomMap_PrintInfo(test);
+
+	for (int i = 0; i < freeTextureId; i++)
+	{
+		printf("Texture %d : %s\n", i, zstr_cstr(&TextureFileNames[i]));
+	}
+
+
+	OpenGLRender_ReadMaterialsXML("assets/materials.xml", TextureFileNames, freeTextureId);
 	BuildRender_Init();
 	defaultOpenGL = GetDefaultRenderSettingsOpenGL();
 	defaultView = GetDefaultCameraInfo();
 	defaultCamera = GetDefaultCamera();
 	demoActor = Actor_CreateDefaultActor(0);
-
-	DoomMap* test = Doom_ReadMapFromFile("assets/doomroom.wad", 1024);
-	DoomMap_PrintInfo(test);
 
 	return true;
 }
@@ -333,4 +348,26 @@ bool BunnySector_Intersect(double a1x, double a1y, double a2x, double a2y, doubl
 	out_point.y = y;
 
 	return true;
+}
+
+s16 BunnySector_GetTextureId(zstr* textureFilename)
+{
+
+	if (freeTextureId >= TEXTURE_NAME_AMOUNT -1)
+	{
+		// All indices in use
+		return -1;
+	}
+	// Do we already have a index for this texture
+	for (int i = 0; i < TEXTURE_NAME_AMOUNT && i < freeTextureId; i++)
+	{
+		zstr* ati = &TextureFileNames[i];
+		if (zstr_eq(textureFilename, ati))
+		{
+			return i;
+		}
+	}
+	TextureFileNames[freeTextureId] = zstr_dup(textureFilename);
+	freeTextureId += 1;
+	return freeTextureId - 1;
 }

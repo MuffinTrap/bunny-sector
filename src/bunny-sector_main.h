@@ -15,6 +15,9 @@ void BunnySector_StartMap(MapId mapId);
 void BunnySector_UpdateMap(MapId mapId, float deltaTime);
 void BunnySector_RenderMap(MapId mapId);
 
+
+s16 BunnySector_GetTextureId(zstr* textureFilename);
+
 struct buns_Vec2
 {
 	float x;

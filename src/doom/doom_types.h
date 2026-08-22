@@ -1,7 +1,7 @@
 #pragma once
 #include <mgdl.h>
 
-typedef int textureId; // Texture identifier instead of string
+typedef s16 textureId; // Texture identifier instead of string
 
 enum LINEDEF_FLAG
 {
@@ -89,3 +89,52 @@ struct thing
 	s8 arg0, arg1, arg2, arg3, arg4;
 };
 typedef struct thing thing;
+
+struct Fixed16
+{
+	s16 whole;
+	s16 fract;
+};
+typedef struct Fixed16 Fixed16;
+
+struct Segment
+{
+	u32 v1;
+	u32 partnerSegment;
+	u16 linedef;
+	u8 lineSide;
+};
+typedef struct Segment Segment;
+
+struct SubSector
+{
+	u32 segmentAmount;
+	Segment* segments;
+
+};
+typedef struct SubSector SubSector;
+
+struct DoomNode
+{
+	s16 x;
+	s16 y;
+	s16 dx;
+	s16 dy;
+
+	// Child 0 bounding box
+	s16 Top0 ;
+	s16 Bottom0 ;
+	s16 Left0 ;
+	s16 Right0 ;
+	// Child 1 bounding box
+	s16 Top1 ;
+	s16 Bottom1 ;
+	s16 Left1 ;
+	s16 Right1 ;
+
+	// Bit 31 : 1 subsector
+	// Bit 31 : 0 node
+	u32 child0 ;
+	u32 child1 ;
+};
+typedef struct DoomNode DoomNode;
