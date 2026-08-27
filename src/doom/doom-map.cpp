@@ -1,4 +1,5 @@
 #include "doom-map.h"
+#include "../duke/actor.h"
 
 
 DoomMap* DoomMap_Create(int thingsAmount, int sectorAmount, int sideAmount, int lineAmount, int vertexAmount)
@@ -10,11 +11,11 @@ DoomMap* DoomMap_Create(int thingsAmount, int sectorAmount, int sideAmount, int 
 	map->lineAmount = lineAmount;
 	map->vertexAmount = vertexAmount;
 
-	map->things = (thing*)mgdl_AllocateGeneralMemory(thingsAmount * sizeof(thing));
-	map->sectors = (sector*)mgdl_AllocateGeneralMemory(sectorAmount * sizeof(sector));
-	map->linedefs = (linedef*)mgdl_AllocateGeneralMemory(lineAmount * sizeof(linedef));
-	map->sidedefs = (sidedef*)mgdl_AllocateGeneralMemory(sideAmount * sizeof(sidedef));
-	map->vertices = (vertex*)mgdl_AllocateGeneralMemory(vertexAmount * sizeof(vertex));
+	map->things = (DoomThing*)mgdl_AllocateGeneralMemory(thingsAmount * sizeof(DoomThing));
+	map->sectors = (DoomSector*)mgdl_AllocateGeneralMemory(sectorAmount * sizeof(DoomSector));
+	map->linedefs = (DoomLinedef*)mgdl_AllocateGeneralMemory(lineAmount * sizeof(DoomLinedef));
+	map->sidedefs = (DoomSidedef*)mgdl_AllocateGeneralMemory(sideAmount * sizeof(DoomSidedef));
+	map->vertices = (DoomVertex*)mgdl_AllocateGeneralMemory(vertexAmount * sizeof(DoomVertex));
 
 	return map;
 }
@@ -28,12 +29,18 @@ void DoomMap_AllocateNodes(DoomMap* map, int nodeAmount)
 void DoomMap_AllocateSegments(DoomMap* map, int segmentAmount)
 {
 	map->segmentAmount = segmentAmount;
-	map->segments = (Segment*)mgdl_AllocateGeneralMemory(segmentAmount * sizeof(Segment));
+	map->segments = (DoomSegment*)mgdl_AllocateGeneralMemory(segmentAmount * sizeof(DoomSegment));
 }
 void DoomMap_AllocateSubsectors(DoomMap* map, int subSectorAmount)
 {
 	map->subSectorAmount = subSectorAmount;
-	map->subsectors = (SubSector*)mgdl_AllocateGeneralMemory(subSectorAmount * sizeof(SubSector));
+	map->subsectors = (DoomSubSector*)mgdl_AllocateGeneralMemory(subSectorAmount * sizeof(DoomSubSector));
+}
+
+void DoomMap_SetActorToStart(DoomMap* map, Actor* actor)
+{
+	// Find thing 0
+
 }
 
 void DoomMap_PrintInfo(DoomMap* map)
@@ -64,3 +71,16 @@ void DoomMap_PrintInfo(DoomMap* map)
 	}
 
 }
+DoomThing* DoomMap_GetThing(DoomMap* map, unsigned int index) { return &map->things[index];}
+DoomSector* DoomMap_GetSector(DoomMap* map, unsigned int index) { return &map->sectors[index];}
+DoomSidedef* DoomMap_GetSidedef(DoomMap* map, unsigned int index) { return &map->sidedefs[index];}
+DoomLinedef* DoomMap_GetLinedef(DoomMap* map, unsigned int index) { return &map->linedefs[index];}
+DoomVertex* DoomMap_GetVertex(DoomMap* map, unsigned int index) { return &map->vertices[index];}
+DoomNode* DoomMap_GetNode(DoomMap* map, unsigned int index) { return &map->nodes[index];}
+DoomSubSector* DoomMap_GetSubSector(DoomMap* map, unsigned int index) { return &map->subsectors[index];}
+DoomSegment* DoomMap_GetSegment(DoomMap* map, unsigned int index) { return &map->segments[index];}
+
+DoomNode * DoomMap_GetRootNode(DoomMap* map) { return &map->nodes[map->nodeAmount-1]; }
+
+DoomNode* DoomMap_GetChildNode(DoomMap* map, ChildId id) {return &map->nodes[id];}
+DoomSubSector* DoomMap_GetChildSubSector(DoomMap* map, ChildId id) { return &map->subsectors[(id & 0x7fffffff)];}

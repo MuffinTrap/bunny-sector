@@ -126,7 +126,7 @@ void BuildRender_Init()
 
 void BuildRender_ExportCurrentMapToObj(DukeMap* map, const char* filename, RenderSettingsOpenGL* settings)
 {
-    OpenGLRender_WriteToObj(map, filename, settings);
+    // OpenGLRender_WriteToObj(map, filename, settings);
 }
 
 void BuildRender_DrawSprites(DukeMap* map, Viewpoint* player, RenderSettingsOpenGL* settings)

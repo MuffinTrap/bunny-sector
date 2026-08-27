@@ -2,6 +2,7 @@
 #include <mgdl.h>
 
 typedef s16 textureId; // Texture identifier instead of string
+typedef unsigned int ChildId;
 
 enum LINEDEF_FLAG
 {
@@ -17,7 +18,15 @@ enum LINEDEF_FLAG
 };
 typedef enum LINEDEF_FLAG LINEDEF_FLAG;
 
-struct linedef
+// Identical To Vector2;
+struct DoomVertex
+{
+	float x;
+	float y;
+};
+typedef struct DoomVertex DoomVertex;
+
+struct DoomLinedef
 {
 	int id;
 	int v1;
@@ -30,9 +39,9 @@ struct linedef
 	int sidefront;
 	int sideback;
 };
-typedef struct linedef linedef;
+typedef struct DoomLinedef DoomLinedef;
 
-struct sidedef
+struct DoomSidedef
 {
 	int offsetx;
 	int offsety;
@@ -42,12 +51,10 @@ struct sidedef
 
 	int sector;
 };
-typedef struct sidedef sidedef;
+typedef struct DoomSidedef DoomSidedef;
 
-// Identical
-typedef Vector2 vertex;
 
-struct sector
+struct DoomSector
 {
 	int heightfloor;
 	int heightceiling;
@@ -58,7 +65,7 @@ struct sector
 	int special;
 	int id;
 };
-typedef struct sector sector;
+typedef struct DoomSector DoomSector;
 
 
 enum THING_FLAG
@@ -74,7 +81,8 @@ enum THING_FLAG
 	thing_friend
 };
 typedef enum LINEDEF_FLAG LINEDEF_FLAG;
-struct thing
+
+struct DoomThing
 {
 	int id;
 	float x;
@@ -88,7 +96,7 @@ struct thing
 	int special;
 	s8 arg0, arg1, arg2, arg3, arg4;
 };
-typedef struct thing thing;
+typedef struct DoomThing DoomThing;
 
 struct Fixed16
 {
@@ -97,22 +105,27 @@ struct Fixed16
 };
 typedef struct Fixed16 Fixed16;
 
-struct Segment
+struct DoomSegment
 {
 	u32 v1;
 	u32 partnerSegment;
 	u16 linedef;
 	u8 lineSide;
 };
-typedef struct Segment Segment;
+typedef struct DoomSegment DoomSegment;
 
-struct SubSector
+struct DoomSubSector
 {
 	u32 segmentAmount;
-	Segment* segments;
-
+	DoomSegment* segments;
 };
-typedef struct SubSector SubSector;
+typedef struct DoomSubSector DoomSubSector;
+
+// Segment property for AngelScript
+DoomSegment* DoomSubSector_GetSegment(u32 index, DoomSubSector* obj);
+
+
+bool ChildIsNode(ChildId id);
 
 struct DoomNode
 {
@@ -122,19 +135,20 @@ struct DoomNode
 	s16 dy;
 
 	// Child 0 bounding box
-	s16 Top0 ;
-	s16 Bottom0 ;
-	s16 Left0 ;
-	s16 Right0 ;
+	s16 top0 ;
+	s16 bottom0 ;
+	s16 left0 ;
+	s16 right0 ;
 	// Child 1 bounding box
-	s16 Top1 ;
-	s16 Bottom1 ;
-	s16 Left1 ;
-	s16 Right1 ;
+	s16 top1 ;
+	s16 bottom1 ;
+	s16 left1 ;
+	s16 right1 ;
 
 	// Bit 31 : 1 subsector
 	// Bit 31 : 0 node
-	u32 child0 ;
-	u32 child1 ;
+	ChildId child0 ;
+	ChildId child1 ;
 };
 typedef struct DoomNode DoomNode;
+

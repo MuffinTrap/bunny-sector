@@ -3,8 +3,6 @@
 #include "../duke/binaryreader.h"
 #include <stdio.h>
 
-static int start = 0; // The position where the evaluated thing starts
-static int current = 0; // The current character under read cursor
 static FILE* mapfile = nullptr;
 
 static int thingAmount = 0;
@@ -71,6 +69,11 @@ static DoomMap* map;
 #define COOP "coop"
 #define FRIEND "friend"
 
+static void RewindToFileStart(FILE* fileptr)
+{
+	rewind(fileptr);
+}
+
 
 static bool isDigit(char c)
 {
@@ -79,28 +82,24 @@ static bool isDigit(char c)
 
 static char advance()
 {
-	fseek(mapfile, current, SEEK_SET);
 	char c = fgetc(mapfile);
-	current++;
 	return c;
 }
 
 static char peek()
 {
-	fseek(mapfile, current, SEEK_SET);
 	return fgetc(mapfile);
 }
 
 static bool match(char expected)
 {
-	int prev = current;
 	if (advance() == expected)
 	{
 		return true;
 	}
 	else
 	{
-		fseek(mapfile, prev, SEEK_SET);
+		fseek(mapfile, ftell(mapfile)-1, SEEK_SET);
 		return false;
 	}
 }
@@ -121,13 +120,14 @@ static float read_float()
 static zstr read_str()
 {
 
+	int start = ftell(mapfile);
 	while( peek() != '"' && !feof(mapfile))
 	{
 		advance();
 	}
-	advance; // closing "
+	advance(); // closing "
 
-	int amount = current - start;
+	int amount = ftell(mapfile) - start;
 	char* str = (char*)mgdl_AllocateGeneralMemory((amount + 1) * sizeof(char));
 
 	int readamount = fread(str, 1, amount, mapfile);
@@ -168,17 +168,12 @@ static bool read_chars_until(const char* keyword)
 {
 	printf("Reading chars until %s\n", keyword);
 	bool allfound = false;
-	while(true)
+	while(feof(mapfile) == false)
 	{
-		if (feof(mapfile))
-		{
-			printf("End of file\n");
-			break;
-		}
 		char c = advance();
 		if (c == keyword[0])
 		{
-			printf("Found first: %c\n", c);
+			printf("Found first: %c at %ld\n", c, ftell(mapfile));
 			int wlen = strlen(keyword);
 			int found = 1;
 			for (int i = 1; i < wlen; i++)
@@ -272,10 +267,12 @@ static textureId readTextureId()
 }
 
 static void read_thing() {
+
+	printf("Read thing\n");
 	read_line();
 	if (line_has("{"))
 	{
-		thing* t = &map->things[thingAmount];
+		DoomThing* t = &map->things[thingAmount];
 		while (true)
 		{
 			read_line();
@@ -399,10 +396,12 @@ static void read_thing() {
 	}
 }
 static void read_vertex() {
+
+	printf("Read vertex\n");
 	read_line();
 	if (line_has("{"))
 	{
-		vertex* t = &map->vertices[vertexAmount];
+		DoomVertex* t = &map->vertices[vertexAmount];
 		while (true)
 		{
 			read_line();
@@ -424,10 +423,12 @@ static void read_vertex() {
 }
 
 static void read_linedef() {
+
+	printf("Read linedef\n");
 	read_line();
 	if (line_has("{"))
 	{
-		linedef* t = &map->linedefs[linedefAmount];
+		DoomLinedef* t = &map->linedefs[linedefAmount];
 		while (true)
 		{
 			read_line();
@@ -457,10 +458,11 @@ static void read_linedef() {
 }
 static void read_sidedef()
 {
+	printf("Read sidedef\n");
 	read_line();
 	if (line_has("{"))
 	{
-		sidedef* t = &map->sidedefs[sidedefAmount];
+		DoomSidedef* t = &map->sidedefs[sidedefAmount];
 		while (true)
 		{
 			read_line();
@@ -500,7 +502,7 @@ static void read_sector() {
 	read_line();
 	if (line_has("{"))
 	{
-		sector* t = &map->sectors[sectorAmount];
+		DoomSector* t = &map->sectors[sectorAmount];
 		while (true)
 		{
 			read_line();
@@ -555,9 +557,11 @@ static void read_sector() {
 		textureNameBuffer = (char*)mgdl_AllocateGeneralMemory((TEXTURENAMEWIDTH + 1) * sizeof(char));
 
 
+		StartReadingFile(mapfile);
 		// Parsing
 		bool counting = true;
 
+		// Read two times. First for counting and then for reading
 		while(true)
 		{
 			// On first pass need to calculate amounts for allocation
@@ -569,6 +573,8 @@ static void read_sector() {
 			sidedefAmount = 0;
 			sectorAmount = 0;
 
+			// Start from top
+			rewind(mapfile);
 			while(feof(mapfile) == false)
 			{
 				read_line();
@@ -634,47 +640,45 @@ static void read_sector() {
 						read_sector();
 					}
 				}
-				else if (line_has("ENDMAP"))
-				{
-					break;
-				}
 			}
+
+			// File was read
 			if (counting)
 			{
+				printf("Counting done\n");
+				// Read additional vertex amount for nodes
 				rewind(mapfile);
+				printf("Cursor at %ld\n", ftell(mapfile));
+				read_chars_until("XGLN");
+				u32 OrgVerts = ReadDWORD();
+				u32 NewVertes = ReadDWORD();
+				printf("Adding %d new vertices for nodes\n", NewVertes);
+				map = DoomMap_Create(thingAmount, sectorAmount, sidedefAmount, linedefAmount, vertexAmount + NewVertes);
+
 				counting = false;
-				map = DoomMap_Create(thingAmount, sectorAmount, sidedefAmount, linedefAmount, vertexAmount);
 			}
+
 			else
 			{
+				printf("Reading done\n");
+				printf("Cursor at %ld\n", ftell(mapfile));
 				// All data read
 				break;
 			}
 		} // Counting and reading done
 
-		mgdl_FreeGeneralMemory(lineBuffer);
-		mgdl_FreeGeneralMemory(identifierBuffer);
-		mgdl_FreeGeneralMemory(textureNameBuffer);
 
+		rewind(mapfile);
+
+		printf("Before nodes Cursor at %ld\n", ftell(mapfile));
 		// Read the nodes
 		// TODO read bit by bit
-		rewind(mapfile);
 		read_chars_until("XGLN");
-		StartReadingFile(mapfile);
 		u32 OrgVerts = ReadDWORD();
-		printf("OrgVerts %d %x\n", OrgVerts, OrgVerts);
+		printf("OrgVerts %d\n", OrgVerts);
 		u32 NewVertes = ReadDWORD();
 
-		map->vertexAmount += NewVertes;
-		if (NewVertes > 0)
-		{
-			mgdl_FreeGeneralMemory(map->vertices);
-			map->vertices = (vertex*)mgdl_AllocateGeneralMemory(map->vertexAmount * sizeof(vertex));
-		}
-
-		// Count
-
-		printf("NewVerts %d %x\n", NewVertes, NewVertes);
+		printf("NewVerts %d \n", NewVertes);
 		for (int ni = 0; ni < NewVertes; ni++)
 		{
 			// TODO Fixed integers
@@ -694,14 +698,14 @@ static void read_sector() {
 			u32 NumSegs = ReadDWORD();
 			printf("Segments in subsector %d : %d\n", ni, NumSegs);
 			map->subsectors[ni].segmentAmount = NumSegs;
-			map->subsectors[ni].segments = (Segment*)mgdl_AllocateGeneralMemory(NumSegs * sizeof(Segment));
+			map->subsectors[ni].segments = (DoomSegment*)mgdl_AllocateGeneralMemory(NumSegs * sizeof(DoomSegment));
 		}
 		u32 NumSegs = ReadDWORD();
 		printf("NumSeg %d\n", NumSegs);
 		DoomMap_AllocateSegments(map, NumSegs);
 		for (int subi = 0; subi < NumSubsectors; subi++)
 		{
-			SubSector* s = &map->subsectors[subi];
+			DoomSubSector* s = &map->subsectors[subi];
 			for (int si = 0; si < s->segmentAmount; si++)
 			{
 				u32 v1 = ReadDWORD(); // Vertex index
@@ -722,6 +726,7 @@ static void read_sector() {
 		DoomMap_AllocateNodes(map, NumNodes);
 		for (int ni = 0; ni < NumNodes; ni++)
 		{
+			printf("Node %d\n", ni);
 			// The line that splits the node
 			s16 x = ReadSWORD();
 			s16 y = ReadSWORD();
@@ -743,38 +748,43 @@ static void read_sector() {
 			// Bit 31 : 0 node
 			u32 child0 = ReadDWORD();
 			u32 child1 = ReadDWORD();
-			if (Flag_IsBitSet(child0, 31))
-			{
-				printf("Child 0 is subsector: %d\n", child0 & 0x7FFFFFFF);
-			}
-			else
-			{
-				printf("Child 0 is node: %d\n", child0);
-			}
 
-			if (Flag_IsBitSet(child1, 31))
+			printf("Child 0 %08.8x ", child0);
+			if (child0 & 0x80000000)
 			{
-				printf("Child 1 is subsector: %d\n", child1 & 0x7FFFFFFF);
+				printf("is subsector: %d\n", child0 & 0x7FFFFFFF);
 			}
 			else
 			{
-				printf("Child 1 is node: %d\n", child1);
+				printf("is node: %d\n", child0);
 			}
+			printf("Bounding box %d %d %d %d\n", Top0, Bottom0, Left0, Right0);
+
+			printf("Child 1 %08.8x ", child1);
+			if (child1 & 0x80000000)
+			{
+				printf("is subsector: %d\n", child1 & 0x7FFFFFFF);
+			}
+			else
+			{
+				printf("is node: %d\n", child1);
+			}
+			printf("Bounding box %d %d %d %d\n", Top1, Bottom1, Left1, Right1);
 			DoomNode* n = &map->nodes[ni];
 			n->x = x;
 			n->y = y;
 			n->dx = dx;
 			n->dy = dy;
 
-			n->Top0 = Top0;
-			n->Bottom0 = Bottom0;
-			n->Left0 = Left0;
-			n->Right0 = Right0;
+			n->top0 = Top0;
+			n->bottom0 = Bottom0;
+			n->left0 = Left0;
+			n->right0 = Right0;
 			// Child 1 bounding box
-			n->Top1 = Top1;
-			n->Bottom1 = Bottom1;
-			n->Left1 = Left1;
-			n->Right1 = Right1;
+			n->top1 = Top1;
+			n->bottom1 = Bottom1;
+			n->left1 = Left1;
+			n->right1 = Right1;
 
 			// Bit 31 : 1 subsector
 			// Bit 31 : 0 node
@@ -783,6 +793,16 @@ static void read_sector() {
 		}
 
 		fclose(mapfile);
-		return map;
 
+		mgdl_FreeGeneralMemory(lineBuffer);
+		mgdl_FreeGeneralMemory(identifierBuffer);
+		mgdl_FreeGeneralMemory(textureNameBuffer);
+
+		return map;
 	}
+
+	DoomMap * Doom_ReadMapFromFile(const zstr& mapfilename, int dukesPerUnit)
+	{
+		return Doom_ReadMapFromFile(zstr_cstr(&mapfilename), dukesPerUnit);
+	}
+

@@ -96,7 +96,6 @@ typedef struct Sector Sector;
 
 struct DukeMap
 {
-    zstr mapfile;
     s32 version;
     Vector2 startPosition;
     float startElevation;
@@ -126,13 +125,13 @@ extern "C" {
      * @brief Convert the information loaded from the file into game units and enums.
      * @param map The map to convert.
      */
-void Map_ConvertToGameUnits(DukeMap* map);
-void Map_FindIslandSectors(DukeMap* map);
-void Map_PrintInfo(DukeMap* map);
-void Map_SetCameraToStart(DukeMap* map, Viewpoint* view);
-void Map_SetActorToStart(DukeMap* map, Actor* actor);
-void Map_InitActor(DukeMap* map, Actor* player);
-void Map_InitActors(DukeMap* map, Actor* players, int playerAmount);
+void DukeMap_ConvertToGameUnits(DukeMap* map);
+void DukeMap_FindIslandSectors(DukeMap* map);
+void DukeMap_PrintInfo(DukeMap* map);
+void DukeMap_SetCameraToStart(DukeMap* map, Viewpoint* view);
+void DukeMap_SetActorToStart(DukeMap* map, Actor* actor);
+void DukeMap_InitActor(DukeMap* map, Actor* player);
+void DukeMap_InitActors(DukeMap* map, Actor* players, int playerAmount);
 
 Sector* Map_GetSector(DukeMap* map, s16 sectorNumber);
 s32 Map_GetSectorFloorHeight(DukeMap* map, s16 sectorNumber);
@@ -168,7 +167,7 @@ bool Map_FindIntersectionWithWall(DukeMap* map, Vector2 moveStart, Vector2 moveE
  * @param deltaTime
  * @param [inout] actor The actor that is moved. The position of actor is modified. Movement result is stored in actor
 */ 
-void Map_MoveActorInMap(DukeMap* map, float deltaTime, Actor* inoutActor);
+void DukeMap_MoveActorInMap(DukeMap* map, float deltaTime, Actor* inoutActor);
 
 u32 Map_MovePointInMap(DukeMap* map,
 	Vector2 start, Vector2 end, float radius, s16 sectorNumber,

@@ -9,6 +9,7 @@ struct DukeMap;
 struct Sector;
 struct Wall;
 struct Texture;
+struct BunnySector_Map;
 
 #define RENDERER_PICNUM_DEFAULT 0
 
@@ -100,11 +101,11 @@ void OpenGLRender_StopCountingFloorBufferSize();
 /**
  * @brief Exports all geometry to obj file
  */
-void OpenGLRender_WriteToObj(DukeMap* map, const char* filename, RenderSettingsOpenGL* settings);
+void OpenGLRender_WriteToObj(BunnySector_Map* map, const char* filename, RenderSettingsOpenGL* settings);
 
-void OpenGLRender_StartObjExport(DukeMap* map, const char* filename, RenderSettingsOpenGL* settings);
-void OpenGLRender_StartFillingWallBuffer(DukeMap* map);
-void OpenGLRender_BufferWalls(DukeMap* map);
+void OpenGLRender_StartObjExport(BunnySector_Map* map, const char* filename, RenderSettingsOpenGL* settings);
+void OpenGLRender_StartFillingWallBuffer(BunnySector_Map* map);
+void OpenGLRender_BufferWalls(BunnySector_Map* map);
 
 
 

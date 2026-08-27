@@ -9,6 +9,7 @@
 #include "obj-export.h"
 #include "../tinyxml2/tinyxml2.h"
 #include "bunny-sector_main.h"
+#include "bunny-sector-map.h"
 
 
 // Used when drawing grass materials
@@ -936,23 +937,25 @@ void OpenGLRender_StartDrawingFloorsFromBuffer(DukeMap* map)
 // OBJ EXPORT FUNCTIONS NOTE TODO DANGER TEST WARNING BUG
 // //////////////////////////////
 
-void OpenGLRender_StartObjExport(DukeMap* map, const char* filename, RenderSettingsOpenGL* settings)
+void OpenGLRender_StartObjExport(BunnySector_Map* map, const char* filename, RenderSettingsOpenGL* settings)
 {
-    ObjExport_Start(filename, zstr_cstr(&map->mapfile), map->sectorAmount, settings->scale);
+    DukeMap* dmap = map->mapPtr.dukeMap;
+    ObjExport_Start(filename, zstr_cstr(&map->mapfile), dmap->sectorAmount, settings->scale);
 }
-void OpenGLRender_StartFillingWallBuffer(DukeMap* map)
+void OpenGLRender_StartFillingWallBuffer(BunnySector_Map* map)
 {
+    DukeMap* dmap = map->mapPtr.dukeMap;
     u32 drawnWalls = 0;
-    for (int si = 0; si < map->sectorAmount; si++)
+    for (int si = 0; si < dmap->sectorAmount; si++)
     {
-        Sector* sector = Map_GetSector(map, si);
+        Sector* sector = Map_GetSector(dmap, si);
         for(int wi = 0; wi < sector->wallnum; wi++)
         {
-            Wall* w = Map_GetWallInSectorPtr(map, sector, wi);
+            Wall* w = Map_GetWallInSectorPtr(dmap, sector, wi);
             if (w->nextsector >= 0)
             {
                 // Create wall that goes down or up to adjacent sector: Note! both sectors dont need to do this. Only lower one
-                Sector* neighbor = Map_GetSector(map, w->nextsector);
+                Sector* neighbor = Map_GetSector(dmap, w->nextsector);
                 int n_floorY = neighbor->floory;
                 int n_ceilingY = neighbor->ceilingy;
 
@@ -1014,22 +1017,24 @@ void BufferQuad(Vector2 start, Vector2 end, float floorY, float ceilingY, u16 qu
     wallIndexBuffer[wallIndexBufferIndex+ 5] = quad * 4 + 0;
     wallIndexBufferIndex += 6;
 }
-void OpenGLRender_BufferWalls(DukeMap* map)
+void OpenGLRender_BufferWalls(BunnySector_Map* map)
 {
+
+    DukeMap* dmap = map->mapPtr.dukeMap;
     u16 quadCounter = 0;
-    for (int si = 0; si < map->sectorAmount; si++)
+    for (int si = 0; si < dmap->sectorAmount; si++)
     {
-        Sector* sector = Map_GetSector(map, si);
+        Sector* sector = Map_GetSector(dmap, si);
         for(int wi = 0; wi < sector->wallnum; wi++)
         {
-            Wall* w = Map_GetWallInSectorPtr(map, sector, wi);
+            Wall* w = Map_GetWallInSectorPtr(dmap, sector, wi);
             Vector2 start = Vector2New(w->x, w->z);
-            Wall* wend = Map_GetWallEnd(map, w);
+            Wall* wend = Map_GetWallEnd(dmap, w);
             Vector2 end =  Vector2New(wend->x, wend->z);
             if (w->nextsector >= 0)
             {
                 // Create wall that goes down or up to adjacent sector: Note! both sectors dont need to do this. Only lower one
-                Sector* neighbor = Map_GetSector(map, w->nextsector);
+                Sector* neighbor = Map_GetSector(dmap, w->nextsector);
                 int n_floorY = neighbor->floory;
                 int n_ceilingY = neighbor->ceilingy;
 
@@ -1059,13 +1064,14 @@ void OpenGLRender_BufferWalls(DukeMap* map)
     }
 }
 
-void OpenGLRender_WriteToObj(DukeMap* map, const char* filename, RenderSettingsOpenGL* settings)
+void OpenGLRender_WriteToObj(BunnySector_Map* map, const char* filename, RenderSettingsOpenGL* settings)
 {
     OpenGLRender_StartObjExport(map, filename, settings);
     OpenGLRender_StartFillingWallBuffer(map);
     OpenGLRender_BufferWalls(map);
 
-    const MapFloorVertexData* floorData = &map->floorVertexData;
+    DukeMap* dmap = map->mapPtr.dukeMap;
+    const MapFloorVertexData* floorData = &dmap->floorVertexData;
 
     // VERTICES
     // This will be buffer 0
@@ -1079,18 +1085,18 @@ void OpenGLRender_WriteToObj(DukeMap* map, const char* filename, RenderSettingsO
     // Write all floors in one big buffer
     u16 firstFloorBuffer = 1;
     u16 firstCeilingBuffer = 2;
-    for (int si = 0; si < map->sectorAmount; si++)
+    for (int si = 0; si < dmap->sectorAmount; si++)
     {
-        Sector* sector = Map_GetSector(map, si);
+        Sector* sector = Map_GetSector(dmap, si);
         Tesselator_BufferIndices indices = floorData->floorStartIndices[si];
 
         ObjExport_WriteVertices(&floorData->floorBuffer[indices.vertexIndex * floorData->FLOOR_BUFFER_VERTEX_SIZE], indices.vertexCount, floorData->FLOOR_BUFFER_VERTEX_SIZE,
                                 sector->floory, firstFloorBuffer,
                                 mgdl_BufferPrintf("%s", "Floor buffer"));
     }
-    for (int si = 0; si < map->sectorAmount; si++)
+    for (int si = 0; si < dmap->sectorAmount; si++)
     {
-        Sector* sector = Map_GetSector(map, si);
+        Sector* sector = Map_GetSector(dmap, si);
         Tesselator_BufferIndices indices = floorData->floorStartIndices[si];
 
         ObjExport_WriteVertices(&floorData->floorBuffer[indices.vertexIndex * floorData->FLOOR_BUFFER_VERTEX_SIZE], indices.vertexCount, floorData->FLOOR_BUFFER_VERTEX_SIZE,
@@ -1102,7 +1108,7 @@ void OpenGLRender_WriteToObj(DukeMap* map, const char* filename, RenderSettingsO
     // FACES
     u16 wallVertexBuffer = 0;
     ObjExport_WriteFaces(wallIndexBuffer, wallIndexBufferSize, wallVertexBuffer, Wind_CCW, mgdl_BufferPrintf("%s", "Wall faces"));
-    for (int si = 0; si < map->sectorAmount; si++)
+    for (int si = 0; si < dmap->sectorAmount; si++)
     {
         Tesselator_BufferIndices indices = floorData->floorStartIndices[si];
         // These faces refer to earlier written floor and ceiling buffers
@@ -1111,7 +1117,7 @@ void OpenGLRender_WriteToObj(DukeMap* map, const char* filename, RenderSettingsO
                              mgdl_BufferPrintf("Sector %d floor : refers to vb %d", si, firstFloorBuffer));
     }
 
-    for (int si = 0; si < map->sectorAmount; si++)
+    for (int si = 0; si < dmap->sectorAmount; si++)
     {
         Tesselator_BufferIndices indices = floorData->floorStartIndices[si];
         ObjExport_WriteFaces(&floorData->floorIndexBuffer[indices.indexIndex], indices.indexCount,

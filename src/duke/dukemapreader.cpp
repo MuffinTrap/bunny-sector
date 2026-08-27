@@ -25,7 +25,6 @@ DukeMap* Duke_ReadMapFromFile(const char* mapfilename, int dukesPerUnit)
     }
     DukeMap* mapPtr = (DukeMap*)malloc(sizeof(DukeMap));
     DukeMap m;
-    m.mapfile = zstr_from(mapfilename);
     m.version = ReadInt32();
     s32 start_x = ReadInt32()/dukesPerUnit; // X coordinate
     s32 start_z = ReadInt32()/dukesPerUnit; // Z Coordinate

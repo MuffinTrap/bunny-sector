@@ -1,6 +1,8 @@
 #include "mgdl.angel"
 #include "raymath.angel"
-#include "render2d.cpp"
+#include "render_utils.cpp"
+#include "render_duke.cpp"
+#include "render_doom.cpp"
 
 //#include "../src/bunny-sector_main.h"
 //#include <mgdl.h>
@@ -16,7 +18,8 @@
 #	endif
 #endif
 
-MapId testMapId;
+MapId dukeMapId;
+MapId doomMapId;
 
 void angelscript_init()
 {
@@ -24,8 +27,9 @@ void angelscript_init()
 	int screenHeight = mgdl_GetScreenHeight();
 
 	BunnySector_Init();
-	testMapId = BunnySector_LoadMap("assets/doome1m1.map", 1);
-	BunnySector_StartMap(testMapId);
+	dukeMapId = BunnySector_LoadMap("assets/doome1m1.map", 1);
+	doomMapId = BunnySector_LoadMap("assets/doomroom.wad", 1);
+	BunnySector_StartMap(dukeMapId);
 
 	// Match 2D render to OpenGL render
 	RenderInit(BunnySector_GetOpenGLCameraVerticalFOVDeg());
@@ -146,8 +150,12 @@ void adjustFov(float deltatime)
 		BunnySector_SetOpenGLCameraVerticalFOVDeg(BunnySector_GetOpenGLCameraVerticalFOVDeg() + fovchange * deltatime);
 	}
 }
-
 void angelscript_frame(float deltatime)
+{
+	RenderDoomMap(BunnySector_GetDoomMap(doomMapId));
+}
+
+void angelscript_frame_duke(float deltatime)
 {
 
 	BunnySector_SetActorSpeeds(0, 1.0f, 0.7f);
@@ -160,9 +168,9 @@ void angelscript_frame(float deltatime)
 	}
 	else
 	{
-		BunnySector_UpdateMap(testMapId, deltatime);
+		BunnySector_UpdateMap(dukeMapId, deltatime);
 	}
-	//BunnySector_RenderMap(testMapId); // This calls the old build render stuff
+	//BunnySector_RenderMap(dukeMapId); // This calls the old build render stuff
 
 	// Hold down 2 to see software render result
 	float aspect = mgdl_GetScreenWidth()/mgdl_GetScreenHeight();

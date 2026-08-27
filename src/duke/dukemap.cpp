@@ -32,11 +32,11 @@ Wall* Map_GetWallInSectorPtr(DukeMap* map, Sector* sector, s16 wi)
 }
 
 
-void Map_InitActors(DukeMap* map, Actor* players, int playerAmount)
+void DukeMap_InitActors(DukeMap* map, Actor* players, int playerAmount)
 {
     // When there are multiple players find starting sectors for all of them
     // Put player one in the official starting position
-    Map_SetActorToStart(map, &players[0]);
+    DukeMap_SetActorToStart(map, &players[0]);
     for (int pi = 1; pi < playerAmount; pi++)
     {
         MapSprite* startingPos = Map_FindSprite(map, SpriteLOTAG::LOTAG_Multiplayer_Start, pi);
@@ -52,11 +52,11 @@ void Map_InitActors(DukeMap* map, Actor* players, int playerAmount)
         {
             // If no own position found, put to starting position
             Log_InfoF("No starting position for player %d\n", pi);
-            Map_InitActor(map, &players[pi]);
+            DukeMap_InitActor(map, &players[pi]);
         }
     }
 }
-void Map_SetActorToStart(DukeMap* map, Actor* actor)
+void DukeMap_SetActorToStart(DukeMap* map, Actor* actor)
 {
     actor->position= map->startPosition;
     actor->yawRad = Math_DukeAngleToRad(map->startAngle);
@@ -64,14 +64,14 @@ void Map_SetActorToStart(DukeMap* map, Actor* actor)
     actor->elevation = Map_GetSectorFloorHeight(map, map->startingSector) + actor->standingHeight;
 }
 
-void Map_SetCameraToStart(DukeMap* map, Viewpoint* camera)
+void DukeMap_SetCameraToStart(DukeMap* map, Viewpoint* camera)
 {
     camera->position= Vector3New(map->startPosition.x, map->startElevation, map->startPosition.y);
     camera->yawRad = Math_DukeAngleToRad(map->startAngle);
     camera->sector = map->startingSector;
 }
 
-void Map_InitActor(DukeMap* map, Actor* player)
+void DukeMap_InitActor(DukeMap* map, Actor* player)
 {
     player->position= map->startPosition;
     player->yawRad = Math_DukeAngleToRad(map->startAngle);
@@ -79,7 +79,7 @@ void Map_InitActor(DukeMap* map, Actor* player)
     player->elevation = Map_GetSectorFloorHeight(map, map->startingSector) + player->standingHeight;
 }
 
-void Map_FindIslandSectors(DukeMap* map)
+void DukeMap_FindIslandSectors(DukeMap* map)
 {
     if (map == nullptr)
     {
@@ -111,7 +111,7 @@ void Map_FindIslandSectors(DukeMap* map)
     }
 }
 
-void Map_PrintInfo(DukeMap* map)
+void DukeMap_PrintInfo(DukeMap* map)
 {
     Log_InfoF("Duke Map Version:%d Start pos:(%.2f,%.2f), Start elevation %.2f Start angle:%d Start Sector:%d\n",
               map->version,

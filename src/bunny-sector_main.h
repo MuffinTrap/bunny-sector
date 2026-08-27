@@ -2,6 +2,8 @@
 
 #include <mgdl.h>
 #include "duke/dukemap.h"
+#include "doom/doom-map.h"
+#include "bunny-sector-map.h"
 
 
 #ifdef __cplusplus
@@ -14,6 +16,7 @@ bool BunnySector_Init();
 void BunnySector_StartMap(MapId mapId);
 void BunnySector_UpdateMap(MapId mapId, float deltaTime);
 void BunnySector_RenderMap(MapId mapId);
+BunnyMapType BunnySector_GetMapType(MapId mapid);
 
 
 s16 BunnySector_GetTextureId(zstr* textureFilename);
@@ -41,10 +44,15 @@ bool buns_Intersect(double a1x, double a1y,
 
 
 // Get data from active map
+
+// DUKE
 Sector* BunnySector_GetSector(s16 sectorNumber);
 Wall* BunnySector_GetWall(s16 wallIndex);
 Wall* BunnySector_GetWallEnd(Wall* wall);
 s16 BunnySector_GetSectorAmount();
+
+// DOOM
+DoomMap* BunnySector_GetDoomMap(MapId mapId);
 
 // Actor functions
 Actor* BunnySector_GetActor(int actorId);
