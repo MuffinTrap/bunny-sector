@@ -166,6 +166,25 @@ void OutlineWall(float ax, float ayt, float ayb, float az,
 // MATH FUNCTIONS
 // //////////////
 
+int NormalizeAngleDeg(int deg)
+{
+	deg = deg % 360;
+	if (deg < 0) { return deg + 360;}
+	else{ return deg; }
+}
+float NormalizeAngleRad(float rad)
+{
+	while(rad < 0)
+	{
+		rad += M_PI * 2;
+	}
+	while(rad >= M_PI * 2)
+	{
+		rad -= M_PI * 2;
+	}
+	return rad;
+}
+
 bool Overlap(float a0,float a1,float b0,float b1)
 {
 	return(fminf(a0,a1) <= fmaxf(b0,b1) && fminf(b0,b1) <= fmaxf(a0,a1));
@@ -356,6 +375,7 @@ void ProcessWallTopDown(Vector2 trans1, Vector2 trans2, float playerRadius, bool
 	bool front2 = Vector2DotProduct(trans2, FORWARD_2D) > 0;
 
 	bool behind = false;
+	bool clipped = false;
 	// Is wall completely behind player?
 	if (!front1 && !front2)
 	{
@@ -370,11 +390,19 @@ void ProcessWallTopDown(Vector2 trans1, Vector2 trans2, float playerRadius, bool
 			if (clipOk) {
 				trans1 = outPoint;
 			}
+			else
+			{
+				clipped = true;
+			}
 		}
 		if (front2==false){
 			bool clipOk = ClipWall(trans1, trans2, 1, true, outPoint);
 			if (clipOk) {
 				trans2 = outPoint;
+			}
+			else
+			{
+				clipped = true;
 			}
 		}
 	}
@@ -384,6 +412,10 @@ void ProcessWallTopDown(Vector2 trans1, Vector2 trans2, float playerRadius, bool
 	color32 wallColor = Debug_White;
 	if (behind ) {
 		wallColor = Debug_DarkGray;
+	}
+	else if (clipped)
+	{
+		wallColor = Debug_Blue;
 	}
 	else if (isPortal) {
 		wallColor = Debug_Red;
@@ -403,7 +435,7 @@ void ProcessWallTopDown(Vector2 trans1, Vector2 trans2, float playerRadius, bool
 		Vector2 walldir = Vector2Subtract(trans2, trans1);
 		Vector2 wallNormal = Vector2Normalize(Vector2Rotate(walldir , DEG2RAD * 90));
 
-		Vector2 wallcenter = Vector2Add(trans1, Vector2Scale(walldir, 0.5));
+		Vector2 wallcenter = Vector2Add(trans1, Vector2Scale(walldir, 1.0));
 		mgdl_DrawLineV(wallcenter, Vector2Add(wallcenter, Vector2Scale(wallNormal, 10)), wallColor);
 		if (isPortal == false)
 		{
@@ -430,9 +462,14 @@ void ProcessWallTopDown(Vector2 trans1, Vector2 trans2, float playerRadius, bool
 		}
 	}
 	*/
+	glBegin(GL_LINES);
+		mgdl_glColor32(wallColor);
+		glVertex2f(trans1.x, trans1.y);
+		glVertex2f(trans2.x, trans2.y);
+	glEnd();
 
-	mgdl_DrawLine(trans1.x, trans1.y,
-				  trans2.x, trans2.y, wallColor);
+	//mgdl_DrawLine(trans1.x, trans1.y,
+				  //trans2.x, trans2.y, wallColor);
 }
 
 
@@ -446,6 +483,23 @@ void Init2D_YDown()
 
 // DEBUG DRAWING
 // //////////////
+
+void DrawPlayerFOV()
+{
+	// Player view cone for fov debug
+	mgdl_DrawLineV(frustumOrigo, frustumLeft, Debug_Green);
+	mgdl_DrawLineV(frustumOrigo, frustumRight, Debug_Blue);
+}
+
+void DrawPlayerPositionAndAngle(Actor@ actor)
+{
+	DoomVertex@ outPlayerPos = actor.GetDoomPosition();
+	mgdl_DrawTextFloat("Player x: ", outPlayerPos.x, text_x, NextY(), 8, Debug_Yellow);
+	mgdl_DrawTextFloat("Player y: ", outPlayerPos.y, text_x, NextY(), 8, Debug_Yellow);
+	mgdl_DrawTextFloat("Player d: ", RAD2DEG * actor.yawRad, text_x, NextY(), 8, Debug_Yellow);
+	mgdl_DrawTextFloat("Player vfov: ", RAD2DEG * VFOVRAD, text_x, NextY(), 8, Debug_Yellow);
+	mgdl_DrawTextFloat("Player gl vfov: ", BunnySector_GetOpenGLCameraVerticalFOVDeg(), text_x, NextY(), 8, Debug_Yellow);
+}
 
 
 void DrawGizmo()

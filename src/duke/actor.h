@@ -1,6 +1,7 @@
 #pragma once
 #include <mgdl.h>
 #include "duke_types.h"
+#include "../doom/doom_types.h"
 
 struct DukeMap;
 struct RenderSettings2D;
@@ -23,6 +24,7 @@ struct Actor
     float verticalDrive; /**< Is going up or down */
 
     // Position in duke units
+    DoomVertex doomPosition;
     Vector2 position; /**< Where actor is */
     float elevation;
     Vector2 prevPosition; /**< Place to store position before moving */
@@ -73,3 +75,4 @@ float Actor_ApplyVerticalMove(Actor* actor, float gravity, float deltaTime);
 void Player_UpdateMove(Actor* player, WiiController* controller, RenderSettings2D* settings2D, RenderSettingsOpenGL* settingsGL, DukeMap* map, int amountPlayers);
 bool IsPointInsideRect(RectF rect, Vector2 point);
 Viewpoint Actor_GetViewpoint(Actor* actor);
+DoomVertex* Actor_GetDoomPosition(Actor* actor);

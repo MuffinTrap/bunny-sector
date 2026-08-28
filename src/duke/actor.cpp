@@ -241,3 +241,9 @@ Vector3 Actor_ApplyDrive2(Actor* actor, float deltaTime)
 	Vector3 destination = Vector3New(floorDestination.x, heightDestination, floorDestination.y);
 	return destination;
 }
+
+DoomVertex* Actor_GetDoomPosition(Actor* actor)
+{
+	return &actor->doomPosition;
+}
+

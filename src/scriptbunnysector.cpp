@@ -5,6 +5,7 @@
 #include "duke/dukemap.h"
 #include "duke/actor.h"
 #include "doom/doom_types.h"
+#include <mgdl.h>
 
 void RegisterDukeMap(mgdl_AngelScript* angel)
 {
@@ -109,9 +110,14 @@ void RegisterDoomMap(mgdl_AngelScript* angel)
 	as_engine->RegisterGlobalFunction("DoomMap@ BunnySector_GetDoomMap(MapId mapId)", asFUNCTION(BunnySector_GetDoomMap), asCALL_CDECL);
 }
 
+static float ANGEL_PI = M_PI;
+
 void RegisterBunnySector(mgdl_AngelScript* angel)
 {
 	asIScriptEngine* as_engine = angel->engine;
+
+	// TODO move to mgdl
+	as_engine->RegisterGlobalProperty("const float M_PI", &ANGEL_PI);
 	as_engine->RegisterTypedef("MapId", "int");
 
 	as_engine->RegisterGlobalFunction("bool BunnySector_Init()", asFUNCTION(BunnySector_Init), asCALL_CDECL);
@@ -175,6 +181,8 @@ as_engine->RegisterGlobalFunction("void BunnySector_SetOpenGLCameraVerticalFOVDe
 	as_engine->RegisterObjectProperty("Actor", "s16 sectorNumber", asOFFSET(Actor, sectorNumber));
 	as_engine->RegisterObjectProperty("Actor", "float elevation", asOFFSET(Actor, elevation));
 	as_engine->RegisterObjectProperty("Actor", "bool noclip", asOFFSET(Actor, noclip));
+	as_engine->RegisterObjectProperty("Actor", "float radius", asOFFSET(Actor, radius));
+	as_engine->RegisterObjectMethod("Actor", "DoomVertex@ GetDoomPosition()", asFUNCTION(Actor_GetDoomPosition), asCALL_CDECL_OBJFIRST);
 
 	// ACTOR FUNCTIONS
 	as_engine->RegisterGlobalFunction("Actor@ BunnySector_GetActor(int actorId)", asFUNCTION(BunnySector_GetActor), asCALL_CDECL);

@@ -273,6 +273,7 @@ static void read_thing() {
 	if (line_has("{"))
 	{
 		DoomThing* t = &map->things[thingAmount];
+		DoomThing_Init(t);
 		while (true)
 		{
 			read_line();
@@ -429,6 +430,7 @@ static void read_linedef() {
 	if (line_has("{"))
 	{
 		DoomLinedef* t = &map->linedefs[linedefAmount];
+		DoomLinedef_Init(t);
 		while (true)
 		{
 			read_line();
@@ -463,6 +465,7 @@ static void read_sidedef()
 	if (line_has("{"))
 	{
 		DoomSidedef* t = &map->sidedefs[sidedefAmount];
+		DoomSidedef_Init(t);
 		while (true)
 		{
 			read_line();
@@ -503,6 +506,7 @@ static void read_sector() {
 	if (line_has("{"))
 	{
 		DoomSector* t = &map->sectors[sectorAmount];
+		DoomSector_Init(t);
 		while (true)
 		{
 			read_line();
@@ -797,6 +801,37 @@ static void read_sector() {
 		mgdl_FreeGeneralMemory(lineBuffer);
 		mgdl_FreeGeneralMemory(identifierBuffer);
 		mgdl_FreeGeneralMemory(textureNameBuffer);
+
+		// NOTE DANGER
+		// SLADE stores maps with Y increasing up.
+		// so we need to rotate all coordinates by 180 degrees
+		// FLIP THE Y!
+		/*
+		float rotation = 180.0f;
+		float cosres = cosf(DEG2RAD * rotation);
+		float sinres = sinf(DEG2RAD * rotation);
+		*/
+		for (int i = 0; i < map->thingAmount; i++)
+		{
+			/*
+			float x = map->things[i].x;
+			float y = map->things[i].y;
+			map->things[i].x = x*cosres - y*sinres;
+			map->things[i].y = x*sinres + y*cosres;
+			map->things[i].angleDeg += rotation;
+			*/
+			//map->things[i].y *= -1.0f;
+		}
+		for (int i = 0; i < map->vertexAmount; i++)
+		{
+			/*
+			float x = map->vertices[i].x;
+			float y = map->vertices[i].y;
+			map->vertices[i].x = x*cosres - y*sinres;
+			map->vertices[i].y = x*sinres + y*cosres;
+			*/
+			//map->vertices[i].y *= -1.0f;
+		}
 
 		return map;
 	}

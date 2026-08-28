@@ -40,6 +40,11 @@ void DoomMap_AllocateSubsectors(DoomMap* map, int subSectorAmount)
 void DoomMap_SetActorToStart(DoomMap* map, Actor* actor)
 {
 	// Find thing 0
+	actor->doomPosition.x = map->things[0].x;
+	actor->doomPosition.y = map->things[0].y;
+	actor->position.x = actor->doomPosition.x;
+	actor->position.y = actor->doomPosition.y;
+	actor->yawRad = DEG2RAD * map->things[0].angleDeg;
 
 }
 

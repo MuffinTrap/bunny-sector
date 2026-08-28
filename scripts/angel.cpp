@@ -29,7 +29,7 @@ void angelscript_init()
 	BunnySector_Init();
 	dukeMapId = BunnySector_LoadMap("assets/doome1m1.map", 1);
 	doomMapId = BunnySector_LoadMap("assets/doomroom.wad", 1);
-	BunnySector_StartMap(dukeMapId);
+	BunnySector_StartMap(doomMapId);
 
 	// Match 2D render to OpenGL render
 	RenderInit(BunnySector_GetOpenGLCameraVerticalFOVDeg());
@@ -115,8 +115,6 @@ void movePlayer(float deltatime)
 		vertical = 0.0f;
 	}
 
-
-
 	Vector2 wasd = mgdl_GetJoystick(0, Joystick_Nunchuk);
 	forward = -wasd.y;
 	turn = wasd.x;
@@ -152,6 +150,9 @@ void adjustFov(float deltatime)
 }
 void angelscript_frame(float deltatime)
 {
+	BunnySector_SetActorSpeeds(0, 0.1f, 0.2f);
+	movePlayer(deltatime);
+	BunnySector_MoveActorFreely(0, deltatime);
 	RenderDoomMap(BunnySector_GetDoomMap(doomMapId));
 }
 

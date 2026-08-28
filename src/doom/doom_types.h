@@ -41,6 +41,8 @@ struct DoomLinedef
 };
 typedef struct DoomLinedef DoomLinedef;
 
+void DoomLinedef_Init(DoomLinedef* def);
+
 struct DoomSidedef
 {
 	int offsetx;
@@ -53,6 +55,7 @@ struct DoomSidedef
 };
 typedef struct DoomSidedef DoomSidedef;
 
+void DoomSidedef_Init(DoomSidedef* def);
 
 struct DoomSector
 {
@@ -61,12 +64,13 @@ struct DoomSector
 
 	textureId texturefloor;
 	textureId textureceiling;
-	s8 lightlevel;
+	u8 lightlevel;
 	int special;
 	int id;
 };
 typedef struct DoomSector DoomSector;
 
+void DoomSector_Init(DoomSector* def);
 
 enum THING_FLAG
 {
@@ -98,6 +102,8 @@ struct DoomThing
 };
 typedef struct DoomThing DoomThing;
 
+void DoomThing_Init(DoomThing* def);
+
 struct Fixed16
 {
 	s16 whole;
@@ -113,6 +119,8 @@ struct DoomSegment
 	u8 lineSide;
 };
 typedef struct DoomSegment DoomSegment;
+
+void DoomSegment_Init(DoomSegment* def);
 
 struct DoomSubSector
 {

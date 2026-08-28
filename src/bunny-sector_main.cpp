@@ -289,6 +289,8 @@ void BunnySector_SetActorDriveInput(int actorId, float forward, float strafe, fl
 void BunnySector_MoveActorFreely(int actorId, float deltatime)
 {
 	demoActor.position = Actor_ApplyDrive(&demoActor, deltatime);
+	demoActor.doomPosition.x = demoActor.position.x;
+	demoActor.doomPosition.y = demoActor.position.y;
 }
 
 void BunnySector_SetActorSpeeds(int actorId, float walkSpeedMultiplier, float turnSpeedMultiplier)

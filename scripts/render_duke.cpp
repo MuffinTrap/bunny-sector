@@ -7,16 +7,9 @@ bool RENDER_2D_WALLS = false;
 int WALL_LIMIT = -1;
 int REQUEST_LIMIT = -1;
 
-// File variables
-
-
 // Arrays for storing top and bottom limits
 int[] TOP_LIMITS(SCREEN_WIDTH);
 int[] BOTTOM_LIMITS(SCREEN_WIDTH);
-
-
-
-
 
 // Array for storing Z buffer
 int[] ZBuffer(SCREEN_WIDTH);
@@ -377,12 +370,9 @@ glPushMatrix();
 	float playerRadius = BunnySector_GetActorRadius(0);
 
 	glTranslatef(screen_half_width, screen_half_height, 0);
+
+	DrawPlayerPositionAndAngle(player);
 	
-	mgdl_DrawTextFloat("Player x: ", outPlayerPos.x, text_x, NextY(), 8, Debug_Yellow);
-	mgdl_DrawTextFloat("Player y: ", outPlayerPos.y, text_x, NextY(), 8, Debug_Yellow);
-	mgdl_DrawTextFloat("Player d: ", RAD2DEG * playerAngle, text_x, NextY(), 8, Debug_Yellow);
-	mgdl_DrawTextFloat("Player vfov: ", RAD2DEG * VFOVRAD, text_x, NextY(), 8, Debug_Yellow);
-	mgdl_DrawTextFloat("Player gl vfov: ", BunnySector_GetOpenGLCameraVerticalFOVDeg(), text_x, NextY(), 8, Debug_Yellow);
 	//mgdl_DrawTextFloat("Player fx: ", outPlayerDir.x, 16, NextY(), 8, Debug_Yellow);
 	//mgdl_DrawTextFloat("Player fy: ", outPlayerDir.y, 16, NextY(), 8, Debug_Yellow);
 	
@@ -425,10 +415,7 @@ glPushMatrix();
 		}
 			
 	}
-
-	// Player view cone for fov debug
-	mgdl_DrawLineV(frustumOrigo, frustumLeft, Debug_Green);
-	mgdl_DrawLineV(frustumOrigo, frustumRight, Debug_Blue);
+	DrawPlayerFOV();
 
 glPopMatrix();
 }
