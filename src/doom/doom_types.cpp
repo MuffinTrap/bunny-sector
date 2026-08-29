@@ -1,5 +1,10 @@
 #include "doom_types.h"
 
+int BB_TOP = 0;
+int BB_BOT = 1;
+int BB_LFT = 2;
+int BB_RGT = 3;
+
 bool ChildIsNode(ChildId id)
 {
 	//              12345678
@@ -70,4 +75,27 @@ void DoomThing_Init(DoomThing* def)
 	def->arg2 = 0;
 	def->arg3 = 0;
 	def->arg4 = 0;
+}
+
+ChildId DoomNode_GetChild(DoomNode* node, unsigned int index)
+{
+	return node->children[index];
+}
+s16 DoomNode_GetBBox0(DoomNode* node, unsigned int index)
+{
+	return node->bbox0[index];
+}
+s16 DoomNode_GetBBox1(DoomNode* node, unsigned int index)
+{
+	return node->bbox1[index];
+}
+s16 DoomNode_GetBBox(DoomNode* node, unsigned int index) // Combined 0-7 index
+{
+	if (index < 4){
+		return node->bbox0[index];
+	}
+	else
+	{
+		return node->bbox1[index-4];
+	}
 }

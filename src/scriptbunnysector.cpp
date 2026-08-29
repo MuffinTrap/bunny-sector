@@ -63,16 +63,15 @@ void RegisterDoomMap(mgdl_AngelScript* angel)
 		as_engine->RegisterObjectProperty("DoomNode", "s16 y", asOFFSET(DoomNode, y));
 		as_engine->RegisterObjectProperty("DoomNode", "s16 dx", asOFFSET(DoomNode, dx));
 		as_engine->RegisterObjectProperty("DoomNode", "s16 dy", asOFFSET(DoomNode, dy));
-		as_engine->RegisterObjectProperty("DoomNode", "s16 top0", asOFFSET(DoomNode, top0));
-		as_engine->RegisterObjectProperty("DoomNode", "s16 bottom0", asOFFSET(DoomNode, bottom0));
-		as_engine->RegisterObjectProperty("DoomNode", "s16 left0", asOFFSET(DoomNode, left0));
-		as_engine->RegisterObjectProperty("DoomNode", "s16 right0", asOFFSET(DoomNode, right0));
-		as_engine->RegisterObjectProperty("DoomNode", "s16 top1", asOFFSET(DoomNode, top1));
-		as_engine->RegisterObjectProperty("DoomNode", "s16 bottom1", asOFFSET(DoomNode, bottom1));
-		as_engine->RegisterObjectProperty("DoomNode", "s16 left1", asOFFSET(DoomNode, left1));
-		as_engine->RegisterObjectProperty("DoomNode", "s16 right1", asOFFSET(DoomNode, right1));
-		as_engine->RegisterObjectProperty("DoomNode", "ChildId child0", asOFFSET(DoomNode, child0));
-		as_engine->RegisterObjectProperty("DoomNode", "ChildId child1", asOFFSET(DoomNode, child1));
+		as_engine->RegisterObjectMethod("DoomNode", "s16 get_bbox0(uint) property", asFUNCTION(DoomNode_GetBBox0), asCALL_CDECL_OBJFIRST);
+		as_engine->RegisterObjectMethod("DoomNode", "s16 get_bbox1(uint) property", asFUNCTION(DoomNode_GetBBox1), asCALL_CDECL_OBJFIRST);
+		as_engine->RegisterObjectMethod("DoomNode", "s16 get_bbox(uint) property", asFUNCTION(DoomNode_GetBBox), asCALL_CDECL_OBJFIRST);
+		as_engine->RegisterObjectMethod("DoomNode", "ChildId get_children(uint) property", asFUNCTION(DoomNode_GetChild), asCALL_CDECL_OBJFIRST);
+
+		as_engine->RegisterGlobalProperty("const int BB_TOP", &BB_TOP);
+		as_engine->RegisterGlobalProperty("const int BB_BOT", &BB_BOT);
+		as_engine->RegisterGlobalProperty("const int BB_LFT", &BB_LFT);
+		as_engine->RegisterGlobalProperty("const int BB_RGT", &BB_RGT);
 
 	as_engine->RegisterObjectType("DoomSubSector", 0, asOBJ_REF|asOBJ_NOCOUNT);
 	as_engine->RegisterObjectProperty("DoomSubSector", "u32 segmentAmount", asOFFSET(DoomSubSector, segmentAmount));

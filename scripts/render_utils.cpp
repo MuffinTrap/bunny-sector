@@ -1,4 +1,7 @@
 
+bool DEBUG_PRINT = false;
+bool PRINT = false;
+bool RENDER_2D_WALLS = false;
 
 int SCREEN_WIDTH = 640;
 int SCREEN_HEIGHT = 480;
@@ -472,6 +475,163 @@ void ProcessWallTopDown(Vector2 trans1, Vector2 trans2, float playerRadius, bool
 				  //trans2.x, trans2.y, wallColor);
 }
 
+
+// Returns true if this wall should be drawn
+
+// Output of ProcessWall when doing 2D DRAWING
+// These are in screen space units
+Vector2 A_XZ;
+Vector2 B_XZ;
+
+
+bool ProcessWall( Vector2 trans1, Vector2 trans2,
+	s16 nextsector,
+	float limitLeft, float limitRight)
+{
+	if (DEBUG_PRINT) {
+		if (nextsector >= 0)
+		{
+			mgdl_LogTextInt("Portal wall to ", nextsector);
+		}
+		else
+		{
+			mgdl_LogText("Normal wall");
+		}
+
+	}
+	if (PRINT) {
+		mgdl_DrawTextFloat("A.z", trans1.x, text_x, NextY(), 8, Debug_Yellow);
+		mgdl_DrawTextFloat("A.x", trans1.y, text_x, NextY(), 8, Debug_Yellow);
+		mgdl_DrawTextFloat("B.z", trans2.x, text_x, NextY(), 8, Debug_Yellow);
+		mgdl_DrawTextFloat("B.", trans2.y, text_x, NextY(), 8, Debug_Yellow);
+	}
+
+	bool front1 = Vector2DotProduct(trans1, FORWARD_2D) > 0;
+	bool front2 = Vector2DotProduct(trans2, FORWARD_2D) > 0;
+
+	// What happens to this wall?
+	bool draw = true;
+	bool behind = false;
+	bool clipped = false;
+	bool backface = false;
+	bool outsideWindow = false;
+
+	// Is wall completely behind player?
+	if (!front1 && !front2)
+	{
+		behind = true;
+		draw = false;
+		if (DEBUG_PRINT){mgdl_LogText("X behind");}
+	}
+	// Clip _if_ needed!
+	else if (front1 || front2)
+	{
+		Vector2 outPoint;
+		if (front1==false) {
+			//mgdl_DrawText("A behind!",8, NextY(), 8, Debug_Yellow);
+			bool clipOk = ClipWall(trans1, trans2, -1, false, outPoint);
+			if (clipOk) {
+				trans1 = outPoint;
+			}
+			else {
+				clipped = true;
+				draw = false;
+				if (DEBUG_PRINT){mgdl_LogText("X A clipped");}
+			}
+		}
+		if (front2==false){
+			//mgdl_DrawText("B behind!",8, NextY(), 8, Debug_Yellow);
+			bool clipOk = ClipWall(trans1, trans2, 1, false, outPoint);
+			if (clipOk) {
+				trans2 = outPoint;
+			}
+			else {
+				clipped = true;
+				draw = false;
+				if (DEBUG_PRINT){mgdl_LogText("X B clipped");}
+
+			}
+		}
+
+		if (draw)
+		{
+			// Normalize to the front of player; Z is forward
+			float az =  Vector2DotProduct(trans1, FORWARD_2D);
+			float bz =  Vector2DotProduct(trans2, FORWARD_2D);
+			float ax =  Vector2DotProduct(trans1, RIGHT_2D);
+			float bx =  Vector2DotProduct(trans2, RIGHT_2D);
+			// Make sure z is not zero
+			//if (az < NEARZ) { az = NEARZ; }
+			//if (bz < NEARZ) { bz = NEARZ; }
+
+
+			// TODO Use convert when this works
+
+			// TODO We only really care about the X coordinates
+			if (ax > bx)
+			{
+				backface = true;
+				draw = false;
+				if (DEBUG_PRINT){mgdl_LogText("X backface");}
+			}
+
+			// Check if wall is inside limits wholly or partially
+			// Limits are in screen units
+			float ascreenx = ax/az;
+			float bscreenx = bx/bz;
+			if( bscreenx < limitLeft || ascreenx > limitRight)
+			{
+				outsideWindow = true;
+				draw = false;
+				if (DEBUG_PRINT){mgdl_LogText("X outside W");}
+			}
+
+			// Draw this wall.
+			// Is it a portal?
+			bool isportal = nextsector >= 0;
+			if (isportal && draw) {
+				if (DEBUG_PRINT) {
+					mgdl_LogTextInt("Found portal to ", nextsector);
+				}
+
+				// Limits for drawing and the new request
+				float beginx = fmaxf(ascreenx, limitLeft);
+				float endx = fminf(bscreenx, limitRight);
+				if (endx > beginx && CanPushRequest()) {
+					PushRequest(nextsector,  beginx, endx);
+					if (DEBUG_PRINT) {
+						mgdl_LogTextInt("Pushed", nextsector);
+						LogReq();
+					}
+				}
+				else if (DEBUG_PRINT) {
+					mgdl_LogTextFloat("Outside limits: beginx", beginx);
+					mgdl_LogTextFloat("Outside limits: endx", endx);
+				}
+			}
+
+			if (draw) {
+
+				A_XZ.x = ax;
+				A_XZ.y = az;
+				B_XZ.x = bx;
+				B_XZ.y = bz;
+				return true;
+			} // Draw or not?
+		} // if one point in front
+	} // is behind ?
+
+	// Show rejection reason
+	if (PRINT) {
+		if (draw) { mgdl_DrawText("Draw!",text_x,NextY(),8, Debug_White);		}
+		if (behind ) { mgdl_DrawText("Behind",text_x,NextY(),8,Debug_Red);		}
+		if (clipped ) { mgdl_DrawText("Clipped",text_x,NextY(),8,Debug_Red);		}
+		if (backface) { mgdl_DrawText("Backface",text_x,NextY(),8,Debug_Red);	}
+		if (outsideWindow ) { mgdl_DrawText("Outside W",text_x,NextY(),8,Debug_Red);	}
+	}
+
+	return false;
+}
 
 // RENDER SETUP AND STATE
 

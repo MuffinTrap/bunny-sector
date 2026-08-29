@@ -8,158 +8,184 @@ bool ChildIsSector(ChildId childId)
 	return (childId & 0x80000000 ) > 0;
 }
 
-
-// What angle from player to given point
-float PointToAngle(Vector2 p, Vector2 v)
+// NOTE Sides are in player view space
+bool SeesSide(Vector2 sideA, Vector2 sideB)
 {
-	Vector2 delta = Vector2Subtract(v, p);
-	return atan2(delta.y, delta.x);
-}
-
-bool SeesSide(Vector2 sideA, Vector2 sideB, Vector2 p, float yawRad)
-{
-	float angle1 = PointToAngle(p, sideA);
-	float angle2 = PointToAngle(p, sideB);
-
-	// Angle between the two points from players view
-	float span = NormalizeAngleRad(angle1 - angle2);
-	// Normalize so that player looks at angle 0
-	angle1 -= yawRad;
-
-
-	float span1 = NormalizeAngleRad(angle1 + HFOVRAD/2.0f);
-	if (span1 > HFOVRAD)
+	if (sideA.x < 0 && sideB.x < 0)
 	{
-		if (span1 >= span + HFOVRAD)
+		// A and B are behind player
+		return false;
+	}
+	// NOTE if very close to side and
+	// angle to A is more than 180, atan2 will flip around
+	// Clamp to -pi
+	float angleA = 0.0f;
+	if (sideA.y > 0 && sideA.x < 0)
+	{
+		// A is on the right side and behind: clamp to -pi
+		angleA = -M_PI;
+	}
+	else
+	{
+		angleA = atan2(sideA.y, sideA.x);
+	}
+	float angleB = 0.0f;
+	if (sideB.y < 0 && sideB.x < 0)
+	{
+		sideB.x = M_PI;
+
+	}
+	else
+	{
+		angleB = atan2(sideB.y, sideB.x);
+	}
+	if (angleB < angleA)
+	{
+		// Side is facing away
+		return false;
+	}
+	// Negative angle to the left, positive to right
+	float LL = -HFOVRAD/2.0f;
+	float RL = HFOVRAD/2.0f;
+	if (DEBUG_PRINT)
+	{
+		mgdl_DrawTextFloat("Angle to LL ", RAD2DEG*LL, text_x, NextY(),8, Debug_Green);
+		mgdl_DrawTextFloat("Angle to RL ", RAD2DEG*RL, text_x, NextY(),8, Debug_Blue);
+		mgdl_DrawTextFloat("Angle to A ", RAD2DEG*angleA, text_x, NextY(), 8, Debug_Yellow);
+	}
+	if (angleA <= LL)
+	{
+		// A over the left limit: -HFOVRAD/2
+
+
+		// Angle between the two points from players view
+		// if span > 0, then seeing the front of side
+		float span = (angleB - angleA);
+		if (DEBUG_PRINT)
+		{
+			mgdl_DrawTextFloat("Span ", RAD2DEG*span, text_x, NextY(),8, Debug_Green);
+			mgdl_DrawTextFloat("Angle to B ", RAD2DEG*angleB, text_x, NextY(),8, Debug_Green);
+			mgdl_DrawTextFloat("Angle to A + span ", RAD2DEG*angleB, text_x, NextY(),8, Debug_Green);
+		}
+		if (angleA + span > LL)
+		{
+			// but B is inside view or over to right
+			return true;
+		}
+		else
 		{
 			return false;
 		}
 	}
-	return true;
+	else{
+		// A inside left limit
+		// Side is visible if A is also inside right limit
+		return angleA < RL;
+	}
 }
 
 // Is the bounding box clipping or inside the player's FOV?
 bool PlayerSeesNode(Actor@ player, s16 top, s16 bot, s16 left, s16 right)
 {
 	// Which side of the box the player is (quaranteed to be outside)
+
+	// Used for rotating the points and checking
+	// world space relation to the box
 	DoomVertex@ dp = player.GetDoomPosition();
-	Vector2 p = Vector2New(dp.x, dp.y);
+	Vector2 pp = Vector2New(dp.x, dp.y);
 
 	// Vertices of the corners relative to player
-	Vector2 A = WorldToCamera(Vector2New(left, bot), p, player.yawRad);
-	Vector2 B = WorldToCamera(Vector2New(left, top), p, player.yawRad);
-	Vector2 C = WorldToCamera(Vector2New(right, top), p, player.yawRad);
-	Vector2 D = WorldToCamera(Vector2New(right, bot), p, player.yawRad);
-	/*  B - C
+	Vector2 A = WorldToCamera(Vector2New(left, bot), pp, player.yawRad);
+	Vector2 B = WorldToCamera(Vector2New(left, top), pp, player.yawRad);
+	Vector2 C = WorldToCamera(Vector2New(right, top), pp, player.yawRad);
+	Vector2 D = WorldToCamera(Vector2New(right, bot), pp, player.yawRad);
+	/*  A - D
 	 *  |   |
-	 *  A - D
+	 *  B - C
 	 */
 
+	DrawCross(A, Debug_White);
 
 	int SAME = 0;
 	int LEFT = -1;
 	int RIGHT = 1;
 	int ABOVE = -1;
 	int BELOW = 1;
-	int sides = 1; // How many sides player sees
-	Vector2 side1A;
-	Vector2 side1B;
-	Vector2 side2A;
-	Vector2 side2B;
-
-	// Test player should see side B-A
-	// Angle mismatch
-	if (SeesSide(A, B, p, player.yawRad))
-	{
-		mgdl_DrawLineV(B, A, Debug_White);
-	}
+	Vector2 sideA;
+	Vector2 sideB;
 
 	int xdiff = SAME;
 	int ydiff = SAME;
-	if (p.y > top)
+	if (pp.y < bot)
 	{
 		ydiff = ABOVE;
-		mgdl_DrawLine(0, 0, B.x, B.y, Debug_White);
-		mgdl_DrawLine(0, 0, C.x, C.y, Debug_White);
 	}
-	else if (p.y < bot)
+	else if (pp.y > top)
 	{
 		ydiff = BELOW;
-		mgdl_DrawLine(0, 0, A.x, A.y, Debug_Yellow);
-		mgdl_DrawLine(0, 0, D.x, D.y, Debug_Yellow);
 	}
-	if (p.x < left)
+	if (pp.x < left)
 	{
 		xdiff = LEFT;
-		mgdl_DrawLine(0, 0, B.x, B.y, Debug_Blue);
-		mgdl_DrawLine(0, 0, A.x, A.y, Debug_Blue);
 	}
-	else if (p.x > right)
+	else if (pp.x > right)
 	{
 		xdiff = RIGHT;
-		mgdl_DrawLine(0, 0, C.x, C.y, Debug_Green);
-		mgdl_DrawLine(0, 0, D.x, D.y, Debug_Green);
 	}
 	if (xdiff == LEFT)
 	{
 		// Sides go from left to right from players point of view
-		side1A = B;
-		side1B = A;
 		if (ydiff == ABOVE)
 		{
-			side2A = C;
-			side2B = B;
-			sides = 2;
+			sideA = D;
+			sideB = B;
 		}
 		else if (ydiff == BELOW)
 		{
-			side2A = A;
-			side2B = D;
-			sides = 2;
+			sideA = A;
+			sideB = C;
+		}
+		else
+		{
+			sideA = A;
+			sideB = B;
 		}
 	}
 	else if (xdiff == RIGHT)
 	{
-		side1A = D;
-		side1B = C;
 		if (ydiff == ABOVE)
 		{
-			side2A = C;
-			side2B = B;
-			sides = 2;
+			sideA = C;
+			sideB = A;
 		}
 		else if (ydiff == BELOW)
 		{
-			side2A = A;
-			side2B = D;
-			sides = 2;
+			sideA = B;
+			sideB = D;
+		}
+		else
+		{
+			sideA = C;
+			sideB = D;
 		}
 	}
 	else
 	{
 		if (ydiff == ABOVE)
 		{
-			side1A = C;
-			side1B = B;
+			sideA = D;
+			sideB = A;
 		}
 		else if (ydiff == BELOW)
 		{
-			side1A = A;
-			side1B = D;
+			sideA = B;
+			sideB = C;
 		}
 	}
 
-	// Always test side 1
-	bool see2 = false;
-	bool see1 = SeesSide(side1A, side1B, p, player.yawRad);
-	if ( see1 == false && sides == 2)
-	{
-		// Test side 2 if available
-		see2 = SeesSide(side2A, side2B, p, player.yawRad);
-	}
-	// no side 2 to test, not visible
 
-	if (see1 == false && see2 == false)
+	bool see1 = SeesSide(sideA, sideB);
+	if (see1 == false)
 	{
 		// Draw Cross over rejected bounding box
 		glBegin(GL_LINES);
@@ -173,33 +199,54 @@ bool PlayerSeesNode(Actor@ player, s16 top, s16 bot, s16 left, s16 right)
 	else
 	{
 		// Draw outline around seen box
-		glBegin(GL_LINES);
-			glColor3f(1.0f, 0.0f, 0.0f);
+		glBegin(GL_LINE_LOOP);
+			glColor3f(0.0f, 1.0f, 0.0f);
 			glVertex2f(A.x, A.y);
 			glVertex2f(B.x, B.y);
 
-			glColor3f(0.0f, 1.0f, 0.0f);
-			glVertex2f(B.x, B.y);
 			glVertex2f(C.x, C.y);
 
-			glColor3f(0.0f, 0.0f, 1.0f);
-			glVertex2f(C.x, C.y);
 			glVertex2f(D.x, D.y);
 
-			glColor3f(1.0f, 0.0f, 1.0f);
-			glVertex2f(D.x, D.y);
 			glVertex2f(A.x, A.y);
 		glEnd();
 	}
-	return see1 || see2;
+
+	return see1;
 }
 
 // NOTE Same as Map_IsInsideWall?
-bool IsOnBackSide(DoomNode@ node, DoomVertex@ v)
+int GetChildSide(DoomNode@ node, DoomVertex@ v)
 {
+	if (node.dx == 0)
+	{
+		// Vertical cut
+		if (v.x < node.x)
+		{
+			if (node.dy > 0) {return 1;}
+			else {return 0;}
+		}
+		if (node.dy < 0) {return 1;}
+		else {return 0;}
+	}
+	if (node.dy == 0)
+	{
+		// Horizontal cut
+		if (v.y < node.y)
+		{
+			if (node.dx > 0) {return 1;}
+			else {return 0;}
+		}
+		if (node.dx < 0) {return 1;}
+		else {return 0;}
+	}
 	float dx = v.x - node.x;
 	float dy = v.y - node.y;
-	return dx * node.dy - dy * node.dx <= 0;
+	if( dx * node.dy < dy * node.dx)
+	{
+		return 1;
+	}
+	return 0;
 }
 
 int drawOrder = 0;
@@ -241,6 +288,12 @@ void DrawSubSector(DoomMap@ map, Actor@ player, DoomSubSector@ sub)
 		{
 			ProcessWallTopDown(trans2, trans1, player.radius, false);
 		}
+
+		// Check if wall is facing away
+		if (SeesSide(trans2, trans1))
+		{
+			ProcessWall(trans2, trans1, -1, -2.0f, 2.0f);
+		}
 	}
 	drawOrder += 1;
 }
@@ -263,28 +316,25 @@ void DrawNode(DoomMap@ map, Actor@ player, DoomNode@ node)
 	DoomVertex@ playerpos = player.GetDoomPosition();
 	// This determines which branch is done first so that
 	// eventually the players subsector is drawn first
-	bool onChild1Area = IsOnBackSide(node, playerpos);
 
 	// Check if player even sees the other side.
 	// If not, then then no need to traverse the tree in that direction
 
-	if (onChild1Area)
-	{
-		DrawNodeChild(map, player, node.child1);
+	int childSide = GetChildSide(node, playerpos);
 
-		// Do we see the other child at all
-		if (PlayerSeesNode(player, node.top0, node.bottom0, node.left0, node.right0))
-		{
-			DrawNodeChild(map, player, node.child0);
-		}
-	}
-	else
+	DrawNodeChild(map, player, node.children[childSide]);
+
+	// The other child:
+	int indexExtra = (childSide^1) * 4;
+
+	// Do we see the other child at all
+	if (PlayerSeesNode(player,
+		node.bbox[indexExtra + BB_TOP],
+		node.bbox[indexExtra + BB_BOT],
+		node.bbox[indexExtra + BB_LFT],
+		node.bbox[indexExtra + BB_RGT]))
 	{
-		DrawNodeChild(map, player, node.child0);
-		if (PlayerSeesNode(player, node.top1, node.bottom1, node.left1, node.right1))
-		{
-			DrawNodeChild(map, player, node.child1);
-		}
+		DrawNodeChild(map, player, node.children[childSide ^ 1]);
 	}
 
 	/*
@@ -322,7 +372,7 @@ glPushMatrix();
 
 	// Draw Nodes and bounding boxes
 	DoomNode@ root = map.GetRootNode();
-	//DrawNode(map, player, root);
+	DrawNode(map, player, root);
 
 
 	DrawCross(Vector2New(0,0), Debug_Blue);
@@ -330,7 +380,7 @@ glPushMatrix();
 	DrawPlayerPositionAndAngle(player);
 
 	// Testing the player sees node
-	PlayerSeesNode (player, 40, 20, 70, 90);
+	//PlayerSeesNode (player, 60, 10, 70, 120);
 
 glPopMatrix();
 

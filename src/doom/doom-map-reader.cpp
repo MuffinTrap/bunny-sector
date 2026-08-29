@@ -780,20 +780,20 @@ static void read_sector() {
 			n->dx = dx;
 			n->dy = dy;
 
-			n->top0 = Top0;
-			n->bottom0 = Bottom0;
-			n->left0 = Left0;
-			n->right0 = Right0;
+			n->bbox0[BB_TOP] = Top0;
+			n->bbox0[BB_BOT] = Bottom0;
+			n->bbox0[BB_LFT] = Left0;
+			n->bbox0[BB_RGT] = Right0;
 			// Child 1 bounding box
-			n->top1 = Top1;
-			n->bottom1 = Bottom1;
-			n->left1 = Left1;
-			n->right1 = Right1;
+			n->bbox1[BB_TOP] = Top1;
+			n->bbox1[BB_BOT] = Bottom1;
+			n->bbox1[BB_LFT] = Left1;
+			n->bbox1[BB_RGT] = Right1;
 
 			// Bit 31 : 1 subsector
 			// Bit 31 : 0 node
-			n->child0 = child0;
-			n->child1 = child1;
+			n->children[0] = child0;
+			n->children[1] = child1;
 		}
 
 		fclose(mapfile);

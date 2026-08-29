@@ -153,7 +153,15 @@ void angelscript_frame(float deltatime)
 	BunnySector_SetActorSpeeds(0, 0.1f, 0.2f);
 	movePlayer(deltatime);
 	BunnySector_MoveActorFreely(0, deltatime);
+
+	if (mgdl_IsButtonDown(0, Button2))
+	{
+		RENDER_2D_WALLS = true;
+	}
+
 	RenderDoomMap(BunnySector_GetDoomMap(doomMapId));
+
+	RENDER_2D_WALLS = false;
 }
 
 void angelscript_frame_duke(float deltatime)
@@ -177,6 +185,7 @@ void angelscript_frame_duke(float deltatime)
 	float aspect = mgdl_GetScreenWidth()/mgdl_GetScreenHeight();
 	if (mgdl_IsButtonDown(0, Button2))
 	{
+		RENDER_2D_WALLS = true;
 		RenderMapSoftware(deltatime);
 	}
 	else

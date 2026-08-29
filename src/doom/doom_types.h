@@ -135,28 +135,32 @@ DoomSegment* DoomSubSector_GetSegment(u32 index, DoomSubSector* obj);
 
 bool ChildIsNode(ChildId id);
 
+
+extern int BB_TOP;
+extern int BB_BOT;
+extern int BB_LFT;
+extern int BB_RGT;
+
 struct DoomNode
 {
+	// Dividing line start and direction of it
 	s16 x;
 	s16 y;
 	s16 dx;
 	s16 dy;
 
 	// Child 0 bounding box
-	s16 top0 ;
-	s16 bottom0 ;
-	s16 left0 ;
-	s16 right0 ;
+	s16 bbox0[4];
 	// Child 1 bounding box
-	s16 top1 ;
-	s16 bottom1 ;
-	s16 left1 ;
-	s16 right1 ;
+	s16 bbox1[4];
 
 	// Bit 31 : 1 subsector
 	// Bit 31 : 0 node
-	ChildId child0 ;
-	ChildId child1 ;
+	ChildId children[2];
 };
 typedef struct DoomNode DoomNode;
+ChildId DoomNode_GetChild(DoomNode* node, unsigned int index);
+s16 DoomNode_GetBBox0(DoomNode* node, unsigned int index);
+s16 DoomNode_GetBBox1(DoomNode* node, unsigned int index);
+s16 DoomNode_GetBBox(DoomNode* node, unsigned int index); // Combined 0-7 index
 
