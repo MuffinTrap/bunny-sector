@@ -58,7 +58,7 @@ Actor Actor_CreateDefaultActor(int idNumber)
 Viewpoint Actor_GetViewpoint(Actor* actor)
 {
 	Viewpoint p;
-	p.position = Vector3New(actor->position.x, actor->elevation + actor->standingHeight * actor->eyeHeightNormalized, actor->position.y);
+	p.position = Vector3New(actor->position.x, actor->elevation, actor->position.y);
 	p.sector = actor->sectorNumber;
 	p.yawRad = actor->yawRad;
 	p.pitchRad = actor->pitchRad;
@@ -115,13 +115,17 @@ Vector2 Actor_ApplyDrive(Actor* actor, float deltaTime)
 float Actor_ApplyVerticalMove(Actor* actor, float gravity, float deltaTime)
 {
 	float verticalAcceleration = gravity;
-	if (abs(actor->verticalDrive) > deadzone)
+	if (actor->verticalDrive > deadzone)
 	{
 		// Apply falling/jumping
 		if (actor->verticalDrive > 0)
 		{
 			verticalAcceleration += actor->verticalDrive * actor->verticalAccelerationUp;
 		}
+	}
+	if (gravity == 0.0f && actor->verticalDrive < -deadzone)
+	{
+		verticalAcceleration += actor->verticalDrive * actor->verticalAccelerationDown;
 	}
 
 	actor->verticalVelocity += verticalAcceleration * deltaTime;

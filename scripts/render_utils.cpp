@@ -1,6 +1,6 @@
 
-bool DEBUG_PRINT = false;
-bool PRINT = false;
+bool DEBUG_DRAW = false;
+bool DEBUG_LOG = false;
 bool RENDER_2D_WALLS = false;
 
 int SCREEN_WIDTH = 640;
@@ -28,6 +28,76 @@ Vector2 frustumRight;
 // The distance in build maps are big. 1 meter is about 1024
 float NEARZ = 1.0f;
 float FARZ = 1000 * 1024.0f;
+
+
+// Output of ProcessWall when doing 2D DRAWING
+// These are in screen space units
+Vector2 A_XZ;
+Vector2 B_XZ;
+
+// Parameters needed by DrawWall2D
+
+// Always needed
+float PLAYER_Y;
+float SECTOR_FLOORY;
+float SECTOR_CEILINGY;
+
+// If drawing a portal
+int SECTOR_NEIGHBOR_ID;
+int SECTOR_NEIGHBOR_FLOORY;
+int SECTOR_NEIGHBOR_CEILINGY;
+
+// Always needed but can be same for all
+int DRAW_LIMIT_LEFT_CANVAS;
+int DRAW_LIMIT_RIGHT_CANVAS;
+
+// Arrays for storing top and bottom limits
+int[] DRAW_LIMIT_TOPS(SCREEN_WIDTH);
+int[] DRAW_LIMIT_BOTTOMS(SCREEN_WIDTH);
+
+// Written by OutlineWall
+int OUTLINE_START_X;
+int OUTLINE_END_X;
+
+// Written by DrawWall2D
+int DRAW_START_X;
+int DRAW_END_X;
+
+void RenderInit(int VerticalFovDegrees)
+{
+	//SCREEN_WIDTH = mgdl_GetScreenWidth();
+	//SCREEN_HEIGHT = mgdl_GetScreenHeight();
+	CanvasSize = Vector2New(SCREEN_WIDTH, SCREEN_HEIGHT); // Canvas is where we draw
+	SetVerticalFovDeg(VerticalFovDegrees);
+
+	mgdl_LogTextFloat("Canvas aspect ratio ", CanvasSize.x/CanvasSize.y);
+	mgdl_LogTextFloat("VFOV DEG", VFOVRAD * RAD2DEG);
+	mgdl_LogTextFloat("HFOV DEG ", HFOVRAD * RAD2DEG);
+	mgdl_LogTextFloat("Viewport width ", ViewPortSize.x);
+	mgdl_LogTextFloat("Viewport height ", ViewPortSize.y);
+	mgdl_LogTextFloat("Canvas width ", CanvasSize.x);
+	mgdl_LogTextFloat("Canvase height ", CanvasSize.y);
+}
+// Public functions
+void SetNearZ(float nearz)
+{
+	if (nearz >= 0.0001f && nearz < FARZ)
+	{
+		NEARZ = nearz;
+	}
+}
+void SetFarZ(float farz)
+{
+	if (farz > NEARZ)
+	{
+		FARZ = farz;
+	}
+}
+
+float GetVerticalFovDeg()
+{
+	return RAD2DEG * VFOVRAD;
+}
 
 // This can be changed during gameplay
 void SetVerticalFovDeg(float fovDeg)
@@ -103,7 +173,6 @@ Vector2 WorldToCamera(Vector2 point, Vector2 CameraPosition, float cameraYaw)
 // NOTE: This is to replace the above transforms when everything works
 // to make code faster
 
-/*
 Vector2 GetConvertXY()
 {
 	float aspect=CanvasSize.x/CanvasSize.y;
@@ -113,7 +182,6 @@ Vector2 GetConvertXY()
 		CanvasSize.y/ViewPortSize.y
 	);
 }
-*/
 
 // WALL DRAWING
 // /////////////
@@ -163,6 +231,9 @@ void OutlineWall(float ax, float ayt, float ayb, float az,
 	mgdl_DrawLine(x1,ybotleft, x2, ybotright, color);
 	mgdl_DrawLine(x1,ybotleft, x1, ybotleft, color);
 	mgdl_DrawLine(x2,ytopright, x2, ybotright, color);
+
+	OUTLINE_START_X = x1;
+	OUTLINE_END_X = x2;
 }
 
 
@@ -306,7 +377,7 @@ bool ClipWall(Vector2 A, Vector2 B, int side, bool drawDebugs, Vector2 &out poin
 		bool isValidClip = ClipLineToFrustum(A, B, -1, clip1);
 
 		if (isValidClip == false) {
-			if (DEBUG_PRINT) { mgdl_LogText("Invalid A intersect point");}
+			if (DEBUG_LOG) { mgdl_LogText("Invalid A intersect point");}
 			return false;
 		}
 
@@ -314,7 +385,7 @@ bool ClipWall(Vector2 A, Vector2 B, int side, bool drawDebugs, Vector2 &out poin
 		float dotclip1 = Vector2DotProduct(clip1, FORWARD_2D);
 		float Bclip = Vector2DotProduct(B, FORWARD_2D);
 		if (dotclip1 > 0 && dotclip1 < Bclip) {
-			if (drawDebugs && PRINT) {
+			if (drawDebugs && DEBUG_LOG) {
 				mgdl_DrawLineV(A, clip1, Debug_Green);
 				DrawCross(clip1, Debug_Green);
 				mgdl_DrawTextFloat("A to Clip1 x:", clip1.x, text_x,NextY(),8,Debug_Green);
@@ -323,7 +394,7 @@ bool ClipWall(Vector2 A, Vector2 B, int side, bool drawDebugs, Vector2 &out poin
 			point = clip1;
 			return true;
 		}
-		else if (DEBUG_PRINT) {
+		else if (DEBUG_LOG) {
 			if (dotclip1 < 0) {
 				mgdl_LogText("A Clip point behind");
 			}
@@ -339,14 +410,14 @@ bool ClipWall(Vector2 A, Vector2 B, int side, bool drawDebugs, Vector2 &out poin
 		bool isValidClip = ClipLineToFrustum(A, B,  1, clip2);
 
 		if (isValidClip == false) {
-			if (DEBUG_PRINT) { mgdl_LogText("Invalid B intersect point");}
+			if (DEBUG_LOG) { mgdl_LogText("Invalid B intersect point");}
 			return false;
 		}
 
 		float dotclip2 = Vector2DotProduct(clip2, FORWARD_2D);
 		float Aclip = Vector2DotProduct(A, FORWARD_2D);
 		if (dotclip2 > 0 && dotclip2 < Aclip) {
-			if (drawDebugs && PRINT) {
+			if (drawDebugs && DEBUG_LOG) {
 				mgdl_DrawLineV(B, clip2, Debug_Blue);
 				DrawCross(clip2, Debug_Blue);
 				mgdl_DrawTextFloat("B to Clip2 x:", clip2.x, text_x,NextY(),8,Debug_Blue);
@@ -355,7 +426,7 @@ bool ClipWall(Vector2 A, Vector2 B, int side, bool drawDebugs, Vector2 &out poin
 			point = clip2;
 			return true;
 		}
-		else if (DEBUG_PRINT) {
+		else if (DEBUG_LOG) {
 			if (dotclip2 < 0) {
 				mgdl_LogText("B Clip point behind");
 			}
@@ -412,7 +483,7 @@ void ProcessWallTopDown(Vector2 trans1, Vector2 trans2, float playerRadius, bool
 
 	Vector2 moveEnd = Vector2Scale(FORWARD_2D, 100);
 
-	color32 wallColor = Debug_White;
+	color32 wallColor = Debug_Green;
 	if (behind ) {
 		wallColor = Debug_DarkGray;
 	}
@@ -478,28 +549,12 @@ void ProcessWallTopDown(Vector2 trans1, Vector2 trans2, float playerRadius, bool
 
 // Returns true if this wall should be drawn
 
-// Output of ProcessWall when doing 2D DRAWING
-// These are in screen space units
-Vector2 A_XZ;
-Vector2 B_XZ;
 
 
 bool ProcessWall( Vector2 trans1, Vector2 trans2,
-	s16 nextsector,
-	float limitLeft, float limitRight)
+	int limitLeft, int limitRight)
 {
-	if (DEBUG_PRINT) {
-		if (nextsector >= 0)
-		{
-			mgdl_LogTextInt("Portal wall to ", nextsector);
-		}
-		else
-		{
-			mgdl_LogText("Normal wall");
-		}
-
-	}
-	if (PRINT) {
+	if (DEBUG_DRAW) {
 		mgdl_DrawTextFloat("A.z", trans1.x, text_x, NextY(), 8, Debug_Yellow);
 		mgdl_DrawTextFloat("A.x", trans1.y, text_x, NextY(), 8, Debug_Yellow);
 		mgdl_DrawTextFloat("B.z", trans2.x, text_x, NextY(), 8, Debug_Yellow);
@@ -521,7 +576,7 @@ bool ProcessWall( Vector2 trans1, Vector2 trans2,
 	{
 		behind = true;
 		draw = false;
-		if (DEBUG_PRINT){mgdl_LogText("X behind");}
+		if (DEBUG_LOG){mgdl_LogText("X behind");}
 	}
 	// Clip _if_ needed!
 	else if (front1 || front2)
@@ -536,7 +591,7 @@ bool ProcessWall( Vector2 trans1, Vector2 trans2,
 			else {
 				clipped = true;
 				draw = false;
-				if (DEBUG_PRINT){mgdl_LogText("X A clipped");}
+				if (DEBUG_LOG){mgdl_LogText("X A clipped");}
 			}
 		}
 		if (front2==false){
@@ -548,7 +603,7 @@ bool ProcessWall( Vector2 trans1, Vector2 trans2,
 			else {
 				clipped = true;
 				draw = false;
-				if (DEBUG_PRINT){mgdl_LogText("X B clipped");}
+				if (DEBUG_LOG){mgdl_LogText("X B clipped");}
 
 			}
 		}
@@ -566,63 +621,32 @@ bool ProcessWall( Vector2 trans1, Vector2 trans2,
 
 
 			// TODO Use convert when this works
+			Vector2 Atop= CameraToViewport(Vector2New(ax,0),az);
+
+			Vector2 Btop = CameraToViewport(Vector2New(bx,0),bz);
+			Atop = ViewportToCanvas(Atop);
+
+			Btop = ViewportToCanvas(Btop);
 
 			// TODO We only really care about the X coordinates
-			if (ax > bx)
+			if (Atop.x > Btop.x)
 			{
 				backface = true;
 				draw = false;
-				if (DEBUG_PRINT){mgdl_LogText("X backface");}
-			}
-
-			// Check if wall is inside limits wholly or partially
-			// Limits are in screen units
-			float ascreenx = ax/az;
-			float bscreenx = bx/bz;
-			if( bscreenx < limitLeft || ascreenx > limitRight)
-			{
-				outsideWindow = true;
-				draw = false;
-				if (DEBUG_PRINT){mgdl_LogText("X outside W");}
-			}
-
-			// Draw this wall.
-			// Is it a portal?
-			bool isportal = nextsector >= 0;
-			if (isportal && draw) {
-				if (DEBUG_PRINT) {
-					mgdl_LogTextInt("Found portal to ", nextsector);
-				}
-
-				// Limits for drawing and the new request
-				float beginx = fmaxf(ascreenx, limitLeft);
-				float endx = fminf(bscreenx, limitRight);
-				if (endx > beginx && CanPushRequest()) {
-					PushRequest(nextsector,  beginx, endx);
-					if (DEBUG_PRINT) {
-						mgdl_LogTextInt("Pushed", nextsector);
-						LogReq();
-					}
-				}
-				else if (DEBUG_PRINT) {
-					mgdl_LogTextFloat("Outside limits: beginx", beginx);
-					mgdl_LogTextFloat("Outside limits: endx", endx);
-				}
+				if (DEBUG_LOG){mgdl_LogText("X backface");}
 			}
 
 			if (draw) {
-
 				A_XZ.x = ax;
 				A_XZ.y = az;
 				B_XZ.x = bx;
 				B_XZ.y = bz;
-				return true;
 			} // Draw or not?
 		} // if one point in front
 	} // is behind ?
 
 	// Show rejection reason
-	if (PRINT) {
+	if (DEBUG_DRAW) {
 		if (draw) { mgdl_DrawText("Draw!",text_x,NextY(),8, Debug_White);		}
 		if (behind ) { mgdl_DrawText("Behind",text_x,NextY(),8,Debug_Red);		}
 		if (clipped ) { mgdl_DrawText("Clipped",text_x,NextY(),8,Debug_Red);		}
@@ -630,10 +654,22 @@ bool ProcessWall( Vector2 trans1, Vector2 trans2,
 		if (outsideWindow ) { mgdl_DrawText("Outside W",text_x,NextY(),8,Debug_Red);	}
 	}
 
-	return false;
+	return draw;
 }
 
 // RENDER SETUP AND STATE
+
+void StartFrame()
+{
+	ResetTextY();
+	// NOTE our origo is at center
+	for (int i = 0; i < SCREEN_WIDTH; i++)
+	{
+		DRAW_LIMIT_TOPS[i] = -SCREEN_HEIGHT/2;
+		DRAW_LIMIT_BOTTOMS[i] = SCREEN_HEIGHT/2-1;
+	}
+	Init2D_YDown();
+}
 
 void Init2D_YDown()
 {
@@ -653,9 +689,11 @@ void DrawPlayerFOV()
 
 void DrawPlayerPositionAndAngle(Actor@ actor)
 {
-	DoomVertex@ outPlayerPos = actor.GetDoomPosition();
-	mgdl_DrawTextFloat("Player x: ", outPlayerPos.x, text_x, NextY(), 8, Debug_Yellow);
-	mgdl_DrawTextFloat("Player y: ", outPlayerPos.y, text_x, NextY(), 8, Debug_Yellow);
+	buns_Vec2 outp;
+	BunnySector_GetActorPositionV2(0, outp);
+	mgdl_DrawTextFloat("Player x: ", outp.x, text_x, NextY(), 8, Debug_Yellow);
+	mgdl_DrawTextFloat("Player y: ", outp.y, text_x, NextY(), 8, Debug_Yellow);
+	mgdl_DrawTextFloat("Player elevation: ", actor.elevation, text_x, NextY(), 8, Debug_Yellow);
 	mgdl_DrawTextFloat("Player d: ", RAD2DEG * actor.yawRad, text_x, NextY(), 8, Debug_Yellow);
 	mgdl_DrawTextFloat("Player vfov: ", RAD2DEG * VFOVRAD, text_x, NextY(), 8, Debug_Yellow);
 	mgdl_DrawTextFloat("Player gl vfov: ", BunnySector_GetOpenGLCameraVerticalFOVDeg(), text_x, NextY(), 8, Debug_Yellow);
@@ -696,4 +734,239 @@ void DrawCross(Vector2 point, color32 color)
 	mgdl_DrawLine(
 		point.x, point.y - size,
 		point.x, point.y + size, color);
+}
+
+void DrawWall2D(bool fill)
+{
+	float ax = A_XZ.x;
+	float az = A_XZ.y;
+	float bx = B_XZ.x;
+	float bz = B_XZ.y;
+	float playerY = PLAYER_Y;
+	float sectorceilingy = SECTOR_CEILINGY;
+	float sectorfloory = SECTOR_FLOORY;
+	bool isportal = SECTOR_NEIGHBOR_ID >= 0;
+	int nextsector = SECTOR_NEIGHBOR_ID;
+	int limitLeft = DRAW_LIMIT_LEFT_CANVAS;
+	int limitRight = DRAW_LIMIT_RIGHT_CANVAS;
+
+	Vector2 Atop= CameraToViewport(Vector2New(ax,sectorceilingy-playerY),az);
+	Vector2 Abot= CameraToViewport(Vector2New(bx,sectorfloory-playerY),az);
+
+	Vector2 Btop = CameraToViewport(Vector2New(bx,sectorceilingy-playerY),bz);
+	Vector2 Bbot = CameraToViewport(Vector2New(bx,sectorfloory-playerY),bz);
+
+	if (DEBUG_DRAW) {
+		mgdl_DrawTextFloat("Aview x:", Atop.x, text_x, NextY(), 8, Debug_Yellow);
+		mgdl_DrawTextFloat("Aview y:", Atop.y, text_x, NextY(), 8, Debug_Yellow);
+
+		mgdl_DrawTextFloat("Bview x:", Btop.x, text_x, NextY(), 8, Debug_Yellow);
+		mgdl_DrawTextFloat("Bview y:", Btop.y, text_x, NextY(), 8, Debug_Yellow);
+	}
+
+	Atop = ViewportToCanvas(Atop);
+	Abot = ViewportToCanvas(Abot);
+
+	Btop = ViewportToCanvas(Btop);
+	Bbot = ViewportToCanvas(Bbot);
+	if (DEBUG_LOG)
+	{
+		mgdl_LogTextFloat("Acanvas x", Atop.x);
+		mgdl_LogTextFloat("Acanvas y", Atop.y);
+	}
+
+	if (isportal) {
+		float neighborfloory = SECTOR_NEIGHBOR_FLOORY;
+		float neighborceilingy = SECTOR_NEIGHBOR_CEILINGY;
+
+		// if this floor height is less than adjacent: Greate wall in between: goes up
+		if (sectorfloory < neighborfloory)
+		{
+			// Calculate top using neighbor floory
+			Vector2 NAtop= CameraToViewport(Vector2New(ax,neighborfloory-playerY),az);
+			Vector2 NBtop= CameraToViewport(Vector2New(bx,neighborfloory-playerY),bz);
+			NAtop = ViewportToCanvas(NAtop);
+			NBtop = ViewportToCanvas(NBtop);
+
+			OutlineWall(
+				NAtop.x, NAtop.y, Abot.y, az,
+			   NBtop.x, NBtop.y, Bbot.y, bz,
+			   limitLeft, limitRight,
+			   Debug_Blue);
+		}
+
+		// Other sector shows through here
+		/*
+		 *						OutlineWall(
+		 *							Atop.x, Atop.y, Abot.y, az,
+		 *							Btop.x, Btop.y, Bbot.y, bz,
+		 *							limitLeft, limitRight,
+		 *							Debug_Red);
+		 */
+
+		// Ceiling:
+		// If this ceiling is higher than adjacent: Greate wall in between: goes down
+		if (sectorceilingy > neighborceilingy)
+		{
+			// Calculate bottom using neighbor ceilingy
+			Vector2 NAbot= CameraToViewport(Vector2New(ax,neighborceilingy-playerY),az);
+			Vector2 NBbot= CameraToViewport(Vector2New(bx,neighborceilingy-playerY),bz);
+			NAbot = ViewportToCanvas(NAbot);
+			NBbot = ViewportToCanvas(NBbot);
+
+			OutlineWall(
+				Atop.x, Atop.y, NAbot.y, az,
+			   Btop.x, Btop.y, NBbot.y, bz,
+			   limitLeft, limitRight,
+			   Debug_Green);
+		}
+	}
+	else {
+
+		OutlineWall(
+			Atop.x, Atop.y, Abot.y, az,
+			Btop.x, Btop.y, Bbot.y, bz,
+			limitLeft, limitRight,
+			Debug_White);
+
+		DRAW_START_X = OUTLINE_START_X;
+		DRAW_END_X = OUTLINE_END_X;
+	}
+
+}
+void DrawWall2DFill(float ax, float ayt, float ayb, float az,
+	float bx, float byt, float byb, float bz,
+	int limitLeft, int limitRight,
+	color32 color, bool isPortal, bool isTop)
+{
+	if (bx == ax) {
+		return;
+	}
+
+	float xchange = (bx-ax); // Whole x change, not clipped
+	float xmax = fmaxf(ax, limitLeft);
+	float xoutside = xmax-ax;
+
+	// Clamp start and end x/C
+	ax=xmax;
+	bx = fminf(bx, limitRight);
+
+	// How much y and z change on every x step
+	float ytopchange = (byt-ayt)/xchange;
+	float ybotchange = (byb-ayb)/xchange;
+	float zchange = (bz-az)/xchange;
+
+	// If part of wall is not on screen, need to advance y and z
+	// accordingly
+	if (xoutside > 0) // Wall starts outside screen
+	{
+		ayt += ytopchange * xoutside;
+		ayb += ybotchange * xoutside;
+		az  += zchange    * xoutside;
+	}
+	int sx = int(floor(ax));
+	int ex = int(floor(bx));
+	bool drawStrip = true;
+	glBegin(GL_LINES);
+	for (int x = sx; x < ex; x++)
+	{
+		int bufferIndex = zBufferIndexOffset + x;
+		if (isPortal == false)
+		{
+			// When drawing walls, care about Z buffer
+			drawStrip = az < ZBuffer[bufferIndex];
+		}
+		if (drawStrip)
+		{
+			// Ceiling
+			/*
+			mgdl_glColor32(Debug_DarkGray);
+			glVertex2f(x, TOP_LIMITS[bufferIndex]);
+			glVertex2f(x, ayb-1);
+			*/
+			// When drawing walls, dont care about limits
+			float dyt = ayt;
+			float dyb = ayb;
+			dyt = clampf(ayt, DRAW_LIMIT_TOPS[bufferIndex], DRAW_LIMIT_BOTTOMS[bufferIndex]);
+			dyb = clampf(ayb, DRAW_LIMIT_TOPS[bufferIndex], DRAW_LIMIT_BOTTOMS[bufferIndex]);
+			if (isPortal)
+			{
+				// Drawing top part where neighbor ceiling is lower than ours
+				if (isTop)
+				{
+					DRAW_LIMIT_TOPS[bufferIndex] = clampf(dyt, DRAW_LIMIT_TOPS[bufferIndex], SCREEN_HEIGHT/2-1);
+				}
+				else
+				{
+					// Drawing bottom part where neighbor floor is higher than ours
+					DRAW_LIMIT_BOTTOMS[bufferIndex] = clampf(dyb, -SCREEN_HEIGHT/2, DRAW_LIMIT_BOTTOMS[bufferIndex]);
+				}
+			}
+
+			// Wall
+			mgdl_glColor32(color);
+			glVertex2f(x, dyt);
+			glVertex2f(x, dyb);
+
+			// Floor
+			/*
+			mgdl_glColor32(Debug_Blue);
+			glVertex2f(x, ayb+1);
+			glVertex2f(x, BOTTOM_LIMITS[bufferIndex]);
+			*/
+
+			if (isPortal == false){
+				ZBuffer[bufferIndex]=az;
+			}
+		}
+
+		// Advance to next strip
+
+		ayt		+=ytopchange;
+		ayb		+=ybotchange;
+		az		+=zchange;
+	}
+	glEnd();
+}
+
+void DrawWall3D(Vector2 left, Vector2 right, s16 picnumMiddle, s16 picnumBottom, s16 picnumTop, s8 shade)
+{
+	Vector2 wallNormal = Vector2RightNormal(left, right);
+	if (SECTOR_NEIGHBOR_ID >= 0)
+	{
+		// Calculate top and bottom parts
+
+		// Create wall that goes down or up to adjacent sector: Note! both sectors dont need to do this. Only lower one
+
+		// if this floor height is less than adjacent: Greate wall in between: goes up
+		if (SECTOR_FLOORY < SECTOR_NEIGHBOR_FLOORY)
+		{
+			//BunnySector_DrawWall(wall, end, floory, neighbor.floory, wall.picnum, wall.shade);
+			BunnySector_DrawWallF(left.x, left.y, right.x, right.y, wallNormal.x, wallNormal.y, SECTOR_FLOORY, SECTOR_NEIGHBOR_FLOORY, picnumBottom, shade);
+		}
+
+
+		// Ceiling:
+		// If this ceiling is higher than adjacent: Greate wall in between: goes down
+		if (SECTOR_CEILINGY > SECTOR_NEIGHBOR_CEILINGY)
+		{
+			//Wall@ otherWall = BunnySector_GetWall(wall.nextwall);
+			//DrawQuad(startPoint, endPoint, wallNormal, neighbor.ceilingy, ceilingy, otherWall.picnum, otherWall.shade, 1.0f);
+			BunnySector_DrawWallF(left.x, left.y, right.x, right.y, wallNormal.x, wallNormal.y, SECTOR_CEILINGY, SECTOR_NEIGHBOR_CEILINGY, picnumTop, shade);
+		}
+
+		if (picnumMiddle >= 0)
+		{
+			// TODO Masked portal from higher floor to lower ceiling
+			BunnySector_DrawWallF(left.x, left.y, right.x, right.y, wallNormal.x, wallNormal.y, MaxI(SECTOR_FLOORY, SECTOR_NEIGHBOR_FLOORY),
+			MinI(SECTOR_CEILINGY, SECTOR_NEIGHBOR_CEILINGY),
+			picnumMiddle, shade);
+		}
+	}
+	else
+	{
+		//BunnySector_DrawWall(wall, end, floory, ceilingy, wall.picnum, wall.shade);
+        //DrawQuad(startPoint, endPoint, wallNormal, floory, ceilingy, wall.picnum, wall.shade, 1.0f);
+		BunnySector_DrawWallF(left.x, left.y, right.x, right.y, wallNormal.x, wallNormal.y, SECTOR_CEILINGY, SECTOR_FLOORY, picnumMiddle, shade);
+	}
 }

@@ -4,9 +4,6 @@
 int WALL_LIMIT = -1;
 int REQUEST_LIMIT = -1;
 
-// Arrays for storing top and bottom limits
-int[] TOP_LIMITS(SCREEN_WIDTH);
-int[] BOTTOM_LIMITS(SCREEN_WIDTH);
 
 // Array for storing Z buffer
 int[] ZBuffer(SCREEN_WIDTH);
@@ -76,8 +73,8 @@ void EndDrawRequestForSector()
 class SectorRequest
 {
 	s16 number;
-	float left; // Left limit in screen units
-	float right; // Right limit in screen units
+	int left; // Left limit in canvas units
+	int right; // Right limit in canvas units
 
 	SectorRequest()
 	{
@@ -86,7 +83,7 @@ class SectorRequest
 		right = -1.0f;
 	}
 
-	SectorRequest(int pnum, float pleft, float pright)
+	SectorRequest(int pnum, int pleft, int pright)
 	{
 		number = pnum;
 		left = pleft;
@@ -104,8 +101,7 @@ u8[] SectorDrawTimes(SECTOR_MAX);
 // Sector draw requests
 int REQUEST_AMOUNT = 128;
 // Ring buffer of requests
-SectorRequest[] requests(REQUEST_AMOUNT);
-int requestFill = 0; // How many unread
+SectorRequest[] requests(REQUEST_AMOUNT); int requestFill = 0; // How many unread
 
 // Read and write indices
 int requestRead = 0;
@@ -123,7 +119,7 @@ void ResetRequests()
 }
 
 
-void PushRequest(int sectornumber, float left, float right)
+void PushRequest(int sectornumber, int left, int right)
 {
 	requests[requestWrite] = SectorRequest(sectornumber, left, right);
 	requestWrite = (requestWrite + 1) % REQUEST_AMOUNT;
@@ -168,100 +164,6 @@ void LogReq()
 	mgdl_LogTextInt("  Fill:", requestFill);
 }
 
-void FillWall(float ax, float ayt, float ayb, float az,
-	float bx, float byt, float byb, float bz,
-	int limitLeft, int limitRight,
-	color32 color, bool isPortal, bool isTop)
-{
-	if (bx == ax) {
-		return;
-	}
-
-	float xchange = (bx-ax); // Whole x change, not clipped
-	float xmax = fmaxf(ax, limitLeft);
-	float xoutside = xmax-ax;
-	
-	// Clamp start and end x/C
-	ax=xmax;
-	bx = fminf(bx, limitRight);
-
-	// How much y and z change on every x step
-	float ytopchange = (byt-ayt)/xchange;
-	float ybotchange = (byb-ayb)/xchange;
-	float zchange = (bz-az)/xchange;
-
-	// If part of wall is not on screen, need to advance y and z
-	// accordingly
-	if (xoutside > 0) // Wall starts outside screen
-	{
-		ayt += ytopchange * xoutside;
-		ayb += ybotchange * xoutside;
-		az  += zchange    * xoutside;
-	}
-	int sx = int(floor(ax));
-	int ex = int(floor(bx));
-	bool drawStrip = true;
-	glBegin(GL_LINES);
-	for (int x = sx; x < ex; x++)
-	{
-		int bufferIndex = zBufferIndexOffset + x;
-		if (isPortal == false)
-		{
-			// When drawing walls, care about Z buffer
-			drawStrip = az < ZBuffer[bufferIndex];
-		}
-		if (drawStrip)
-		{
-			// Ceiling
-			/*
-			mgdl_glColor32(Debug_DarkGray);
-			glVertex2f(x, TOP_LIMITS[bufferIndex]);
-			glVertex2f(x, ayb-1);
-			*/
-			// When drawing walls, dont care about limits
-			float dyt = ayt;
-			float dyb = ayb;
-			dyt = clampf(ayt, TOP_LIMITS[bufferIndex], BOTTOM_LIMITS[bufferIndex]);
-			dyb = clampf(ayb, TOP_LIMITS[bufferIndex], BOTTOM_LIMITS[bufferIndex]);
-			if (isPortal)
-			{
-				// Drawing top part where neighbor ceiling is lower than ours
-				if (isTop)
-				{
-					TOP_LIMITS[bufferIndex] = clampf(dyt, TOP_LIMITS[bufferIndex], SCREEN_HEIGHT/2-1);
-				}
-				else
-				{
-					// Drawing bottom part where neighbor floor is higher than ours
-					BOTTOM_LIMITS[bufferIndex] = clampf(dyb, -SCREEN_HEIGHT/2, BOTTOM_LIMITS[bufferIndex]);
-				}
-			}
-
-			// Wall
-			mgdl_glColor32(color);
-			glVertex2f(x, dyt);
-			glVertex2f(x, dyb);
-
-			// Floor
-			/*
-			mgdl_glColor32(Debug_Blue);
-			glVertex2f(x, ayb+1);
-			glVertex2f(x, BOTTOM_LIMITS[bufferIndex]);
-			*/
-
-			if (isPortal == false){
-				ZBuffer[bufferIndex]=az;
-			}
-		}
-
-		// Advance to next strip
-
-		ayt		+=ytopchange;
-		ayb		+=ybotchange;
-		az		+=zchange;
-	}
-	glEnd();
-}
 
 
 void DrawRequestDebug()
@@ -382,7 +284,7 @@ glPushMatrix();
 	for (s16 sectorIndex = 0; sectorIndex < sectorAmount; sectorIndex++)
 	{
 	
-			if (PRINT) {
+			if (DEBUG_DRAW) {
 				mgdl_DrawTextInt("Sector", sectorIndex, text_x, NextY(), 8, Debug_White);
 			}
 		Sector@ sector = BunnySector_GetSector(sectorIndex);
@@ -401,7 +303,7 @@ glPushMatrix();
 			Vector2 trans2 = WorldToCamera(wall2, playerPos, playerAngle);
 			ProcessWallTopDown(trans1, trans2, playerRadius,start.nextsector >= 0);
 
-			if (PRINT && wallIndex == 1) {
+			if (DEBUG_DRAW && wallIndex == 1) {
 				mgdl_DrawTextInt("Wall", wallIndex, text_x, NextY(), 8, Debug_White);
 				mgdl_DrawTextFloat("A.z", trans1.x, text_x, NextY(), 8, Debug_White);
 				mgdl_DrawTextFloat("A.x", trans1.y, text_x, NextY(), 8, Debug_White);
@@ -445,7 +347,7 @@ void RenderMuffin()
 
 	buns_Vec2 outPlayerPos;
 	BunnySector_GetActorPositionV2(0, outPlayerPos);
-	float playerY = player.elevation;
+	PLAYER_Y = player.elevation;
 	Vector2 playerPos = Vector2(outPlayerPos.x, outPlayerPos.y);
 
 	buns_Vec2 outPlayerDir;
@@ -453,7 +355,7 @@ void RenderMuffin()
 	Vector2 playerDir = Vector2(outPlayerDir.x, outPlayerDir.y);
 	float playerAngle = player.yawRad;
 
-	if (DEBUG_PRINT){
+	if (DEBUG_LOG){
 		mgdl_LogText("---------Start");
 		LogReq();
 	}
@@ -463,10 +365,9 @@ void RenderMuffin()
 	s16 sectorAmount = BunnySector_GetSectorAmount();
 
 	// Start processing requests
-	if (DEBUG_PRINT) { mgdl_LogTextInt("Push: ", player.sectorNumber);}
+	if (DEBUG_LOG) { mgdl_LogTextInt("Push: ", player.sectorNumber);}
 
-	float aspect = (CanvasSize.x/CanvasSize.y);
-	PushRequest(player.sectorNumber, -aspect/2.0f, aspect/2.0f);
+	PushRequest(player.sectorNumber, -SCREEN_WIDTH/2, SCREEN_WIDTH/2);
 
 	while (RequestLeft())
 	{
@@ -474,7 +375,7 @@ void RenderMuffin()
 			requestCount > sectorAmount ||
 			(REQUEST_LIMIT > 0 && requestCount >= REQUEST_LIMIT)
 		) {
-			if (DEBUG_PRINT){
+			if (DEBUG_LOG){
 				mgdl_LogText("Hit limit");
 			}
 			break;
@@ -487,13 +388,15 @@ void RenderMuffin()
 			continue;
 		}
 		Sector@ sector = BunnySector_GetSector(now.number);
+		SECTOR_FLOORY = sector.floory;
+		SECTOR_CEILINGY = sector.ceilingy;
 
-		if (DEBUG_PRINT) {
+		if (DEBUG_LOG) {
 			mgdl_LogTextInt("Pop", now.number);
 			LogReq();
 		}
 		
-		if (PRINT) { 
+		if (DEBUG_DRAW) {
 			mgdl_DrawTextInt("Sector: ", now.number, text_x, NextY(), 8, Debug_White);
 		}
 
@@ -506,7 +409,7 @@ void RenderMuffin()
 				break;
 			}
 
-			if (PRINT) {
+			if (DEBUG_DRAW) {
 				mgdl_DrawTextInt("Wall: ", wallIndex, text_x, NextY(),8, Debug_White);
 			}
 
@@ -517,105 +420,53 @@ void RenderMuffin()
 			Vector2 trans2 = WorldToCamera(Vector2New(end.x, end.z), playerPos, playerAngle);
 			
 			bool draw = ProcessWall( trans1, trans2,
-				start.nextsector,
 				now.left, now.right
 				);
 
 			if (draw)
 			{
+				bool isportal = start.nextsector >= 0;
+				if (isportal) {
+					if (DEBUG_LOG) {
+						mgdl_LogTextInt("Found portal to ", start.nextsector);
+					}
+					Sector@ N = BunnySector_GetSector(start.nextsector);
+					SECTOR_NEIGHBOR_ID = start.nextsector;
+					SECTOR_NEIGHBOR_CEILINGY = N.ceilingy;
+					SECTOR_NEIGHBOR_FLOORY = N.floory;
+
+					// DOOM does limits differently so this is here only
+					Vector2 ALeft = CameraToViewport(Vector2New(A_XZ.x, 0.0f), A_XZ.y);
+					Vector2 BRight = CameraToViewport(Vector2New(B_XZ.x, 0.0f), B_XZ.y);
+					ALeft = ViewportToCanvas(ALeft);
+					BRight = ViewportToCanvas(BRight);
+
+					// Limits for drawing and the new request
+					float beginx = fmaxf(ALeft.x, now.left);
+					float endx = fminf(BRight.x, now.right);
+					if (endx > beginx && CanPushRequest()) {
+						PushRequest(start.nextsector,  beginx, endx);
+						if (DEBUG_LOG) {
+							mgdl_LogTextInt("Pushed", start.nextsector);
+							LogReq();
+						}
+					}
+					else if (DEBUG_LOG) {
+						mgdl_LogTextFloat("Outside limits: beginx", beginx);
+						mgdl_LogTextFloat("Outside limits: endx", endx);
+					}
+				}
 				if (!RENDER_2D_WALLS) {
 					DrawWall(start, end, sector.floory, sector.ceilingy);
 				}
 				else
 				{
-					float ax = A_XZ.x;
-					float az = A_XZ.y;
-					float bx = B_XZ.x;
-					float bz = B_XZ.y;
-
-					Vector2 Atop= CameraToViewport(Vector2New(ax,sector.ceilingy-playerY),az);
-					Vector2 Abot= CameraToViewport(Vector2New(bx,sector.floory-playerY),az);
-
-					Vector2 Btop = CameraToViewport(Vector2New(bx,sector.ceilingy-playerY),bz);
-					Vector2 Bbot = CameraToViewport(Vector2New(bx,sector.floory-playerY),bz);
-
-					if (PRINT) {
-						mgdl_DrawTextFloat("Aview x:", Atop.x, text_x, NextY(), 8, Debug_Yellow);
-						mgdl_DrawTextFloat("Aview y:", Atop.y, text_x, NextY(), 8, Debug_Yellow);
-
-						mgdl_DrawTextFloat("Bview x:", Btop.x, text_x, NextY(), 8, Debug_Yellow);
-						mgdl_DrawTextFloat("Bview y:", Btop.y, text_x, NextY(), 8, Debug_Yellow);
-					}
-
-					Atop = ViewportToCanvas(Atop);
-					Abot = ViewportToCanvas(Abot);
-
-					Btop = ViewportToCanvas(Btop);
-					Bbot = ViewportToCanvas(Bbot);
-					if (DEBUG_PRINT)
-					{
-						mgdl_LogTextFloat("Acanvas x", Atop.x);
-						mgdl_LogTextFloat("Acanvas y", Atop.y);
-					}
-
 					// TODO Convert to canvas units from now.left and now.right
-					int limitLeft = -screen_half_width;
-					int limitRight = screen_half_width;
+					DRAW_LIMIT_LEFT_CANVAS = now.left;
+					DRAW_LIMIT_RIGHT_CANVAS = now.right;
 
-					bool isportal = start.nextsector >= 0;
-					if (isportal) {
-						Sector@ neighbor = BunnySector_GetSector(start.nextsector);
+					DrawWall2D(false);
 
-						// if this floor height is less than adjacent: Greate wall in between: goes up
-						if (sector.floory < neighbor.floory)
-						{
-							// Calculate top using neighbor floory
-							Vector2 NAtop= CameraToViewport(Vector2New(ax,neighbor.floory-playerY),az);
-							Vector2 NBtop= CameraToViewport(Vector2New(bx,neighbor.floory-playerY),bz);
-							NAtop = ViewportToCanvas(NAtop);
-							NBtop = ViewportToCanvas(NBtop);
-
-							OutlineWall(
-								NAtop.x, NAtop.y, Abot.y, az,
-								NBtop.x, NBtop.y, Bbot.y, bz,
-								limitLeft, limitRight,
-								Debug_Blue);
-						}
-
-						// Other sector shows through here
-						/*
-						OutlineWall(
-							Atop.x, Atop.y, Abot.y, az,
-							Btop.x, Btop.y, Bbot.y, bz,
-							limitLeft, limitRight,
-							Debug_Red);
-							*/
-
-						// Ceiling:
-						// If this ceiling is higher than adjacent: Greate wall in between: goes down
-						if (sector.ceilingy > neighbor.ceilingy)
-						{
-							// Calculate bottom using neighbor ceilingy
-							Vector2 NAbot= CameraToViewport(Vector2New(ax,neighbor.ceilingy-playerY),az);
-							Vector2 NBbot= CameraToViewport(Vector2New(bx,neighbor.ceilingy-playerY),bz);
-							NAbot = ViewportToCanvas(NAbot);
-							NBbot = ViewportToCanvas(NBbot);
-
-							OutlineWall(
-								Atop.x, Atop.y, NAbot.y, az,
-								Btop.x, Btop.y, NBbot.y, bz,
-								limitLeft, limitRight,
-								Debug_Green);
-						}
-					}
-					else {
-
-						OutlineWall(
-							Atop.x, Atop.y, Abot.y, az,
-							Btop.x, Btop.y, Bbot.y, bz,
-							limitLeft, limitRight,
-							Debug_White);
-					}
 				} // if RENDER_2D_WALLS
 			}// if draw
 		}
@@ -627,7 +478,7 @@ void RenderMuffin()
 		glPopMatrix();
 		//DrawRequestDebug();
 	}
-	if (DEBUG_PRINT)
+	if (DEBUG_LOG)
 	{
 		mgdl_LogText("------End");
 	}
@@ -669,7 +520,6 @@ glPushMatrix();
 		Vector2 trans1 = WorldToCamera(wallpoints[wi], playerPos, playerAngle);
 		Vector2 trans2 = WorldToCamera(wallpoints[nexti], playerPos, playerAngle);
 		ProcessWall( trans1, trans2,
-			-1, // no neighbor
 			-2.0f, 2.0f);
 	}
 glPopMatrix();
@@ -709,42 +559,6 @@ void DrawWall(Wall@  wall, Wall@ end, s32 floory, s32 ceilingy)
 	}
 }
 
-
-// Public functions
-void SetNearZ(float nearz)
-{
-	if (nearz >= 0.0001f && nearz < FARZ)
-	{
-		NEARZ = nearz;
-	}
-}
-void SetFarZ(float farz)
-{
-	if (farz > NEARZ)
-	{
-		FARZ = farz;
-	}
-}
-
-float GetVerticalFovDeg()
-{
-	return RAD2DEG * VFOVRAD;
-}
-
-void StartFrame()
-{
-	// NOTE our origo is at center
-	for (int i = 0; i < SCREEN_WIDTH; i++)
-	{
-		TOP_LIMITS[i] = -SCREEN_HEIGHT/2;
-		BOTTOM_LIMITS[i] = SCREEN_HEIGHT/2-1;
-	}
-	ClearZBuffer();
-
-	ResetDrawCounters();
-
-	ResetTextY();
-}
 
 
 bool TIC_TEST = false;
@@ -793,22 +607,13 @@ glPushMatrix();
 glPopMatrix();
 }
 
-void RenderInit(int VerticalFovDegrees)
+void StartFrame_Duke()
 {
-	//SCREEN_WIDTH = mgdl_GetScreenWidth();
-	//SCREEN_HEIGHT = mgdl_GetScreenHeight();
-	CanvasSize = Vector2New(SCREEN_WIDTH, SCREEN_HEIGHT); // Canvas is where we draw
-	SetVerticalFovDeg(VerticalFovDegrees);
-
-	mgdl_LogTextFloat("Canvas aspect ratio ", CanvasSize.x/CanvasSize.y);
-	mgdl_LogTextFloat("VFOV DEG", VFOVRAD * RAD2DEG);
-	mgdl_LogTextFloat("HFOV DEG ", HFOVRAD * RAD2DEG);
-	mgdl_LogTextFloat("Viewport width ", ViewPortSize.x);
-	mgdl_LogTextFloat("Viewport height ", ViewPortSize.y);
-	mgdl_LogTextFloat("Canvas width ", CanvasSize.x);
-	mgdl_LogTextFloat("Canvase height ", CanvasSize.y);
+	ClearZBuffer();
+	ResetDrawCounters();
 }
 
+// ----- PUBLIC FUNCTIONS ------
 
 void RenderMiniMap()
 {
@@ -819,36 +624,18 @@ void RenderMiniMap()
 
 void RenderMapSoftware(float deltatime)
 {
-	glClearColor(0.3f, 0.2f, 0.3f, 1.0f);
 
-	StartFrame();
-	Init2D_YDown();
-
-	// Draw debug infos
-	if (mgdl_IsButtonPressed(0, Button1))
-	{
-		DEBUG_PRINT = true;
-	}
-	if (false)
-	{
-		IntersectTest(deltatime);
-	}
-	else if (TIC_TEST) {
+	if (TIC_TEST) {
 		BunnySector_MoveActorFreely(0, deltatime);
-
 		Actor@ player = BunnySector_GetActor(0);
 		player.noclip = true;
 		RenderTICMap(wallpoints, 12);
 		RenderTopDownList(wallpoints, 12, 1.0f);
 	}
 	RenderMuffin();
-
-	DEBUG_PRINT = false;
-	RENDER_2D_WALLS = false;
 }
 
 void RenderMap(float deltatime)
 {
-	StartFrame();
 	RenderMuffin();
 }

@@ -39,6 +39,17 @@
 
 #if USE_ANGEL_AS_SCRIPT
 
+int MinI(int a, int b)
+{
+    if (a < b) {return a;}
+    else { return b;}
+}
+int MaxI(int a, int b)
+{
+    if (a > b) {return a;}
+    else { return b;}
+}
+
 // AngelScript functions for C math functions
 float sqrtf(float value)
 {
@@ -138,6 +149,7 @@ Vector2 Vector2One(void)
 {
     return Vector2(1.0f, 1.0f);
 }
+
 
 class Vector3
 {
@@ -650,6 +662,13 @@ Vector2 Vector2Refract(Vector2 v, Vector2 n, float r)
     return result;
 }
 
+// By muffintrap
+// Calculate the normalized normal vector 90 degrees
+Vector2 Vector2RightNormal(Vector2 v1, Vector2 v2)
+{
+    Vector2 to = Vector2Normalize(Vector2Subtract(v2, v1));
+    return Vector2(-to.y, to.x);
+}
 
 //----------------------------------------------------------------------------------
 // Module Functions Definition - Vector3 math

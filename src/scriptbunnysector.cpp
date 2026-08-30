@@ -50,8 +50,20 @@ void RegisterDoomMap(mgdl_AngelScript* angel)
 		as_engine->RegisterObjectProperty("DoomSegment", "u8 lineSide", asOFFSET(DoomSegment, lineSide));
 
 	as_engine->RegisterObjectType("DoomLinedef", 0, asOBJ_REF|asOBJ_NOCOUNT);
+		as_engine->RegisterObjectProperty("DoomLinedef", "int sidefront", asOFFSET(DoomLinedef, sidefront));
+		as_engine->RegisterObjectProperty("DoomLinedef", "int sideback", asOFFSET(DoomLinedef, sideback));
+
 	as_engine->RegisterObjectType("DoomSidedef", 0, asOBJ_REF|asOBJ_NOCOUNT);
+		as_engine->RegisterObjectProperty("DoomSidedef", "int sector", asOFFSET(DoomSidedef, sector));
+		as_engine->RegisterObjectProperty("DoomSidedef", "s16 texturetop", asOFFSET(DoomSidedef, texturetop));
+		as_engine->RegisterObjectProperty("DoomSidedef", "s16 texturemiddle", asOFFSET(DoomSidedef, texturemiddle));
+		as_engine->RegisterObjectProperty("DoomSidedef", "s16 texturebottom", asOFFSET(DoomSidedef, texturebottom));
+
 	as_engine->RegisterObjectType("DoomSector", 0, asOBJ_REF|asOBJ_NOCOUNT);
+		as_engine->RegisterObjectProperty("DoomSector", "int heightfloor", asOFFSET(DoomSector, heightfloor));
+		as_engine->RegisterObjectProperty("DoomSector", "int heightceiling", asOFFSET(DoomSector, heightceiling));
+		as_engine->RegisterObjectProperty("DoomSector", "u8 lightlevel", asOFFSET(DoomSector, lightlevel));
+
 	as_engine->RegisterObjectType("DoomThing", 0, asOBJ_REF|asOBJ_NOCOUNT);
 		as_engine->RegisterObjectProperty("DoomThing", "float x", asOFFSET(DoomThing, x));
 		as_engine->RegisterObjectProperty("DoomThing", "float y", asOFFSET(DoomThing, y));
@@ -74,11 +86,8 @@ void RegisterDoomMap(mgdl_AngelScript* angel)
 		as_engine->RegisterGlobalProperty("const int BB_RGT", &BB_RGT);
 
 	as_engine->RegisterObjectType("DoomSubSector", 0, asOBJ_REF|asOBJ_NOCOUNT);
-	as_engine->RegisterObjectProperty("DoomSubSector", "u32 segmentAmount", asOFFSET(DoomSubSector, segmentAmount));
-
-	// Access segments array through a property accessor
-	as_engine->RegisterObjectMethod("DoomSubSector", "DoomSegment@ get_segments(uint) property", asFUNCTION(DoomSubSector_GetSegment), asCALL_CDECL_OBJLAST);
-
+		as_engine->RegisterObjectProperty("DoomSubSector", "u32 firstSegment", asOFFSET(DoomSubSector, firstSegment));
+		as_engine->RegisterObjectProperty("DoomSubSector", "u32 segmentAmount", asOFFSET(DoomSubSector, segmentAmount));
 
 
 	as_engine->RegisterObjectType("DoomMap", 0, asOBJ_REF|asOBJ_NOCOUNT);
@@ -120,7 +129,7 @@ void RegisterBunnySector(mgdl_AngelScript* angel)
 	as_engine->RegisterTypedef("MapId", "int");
 
 	as_engine->RegisterGlobalFunction("bool BunnySector_Init()", asFUNCTION(BunnySector_Init), asCALL_CDECL);
-	as_engine->RegisterGlobalFunction("MapId BunnySector_LoadMap(const zstr &in mapfilename, int dukesPerUnit)", asFUNCTIONPR(BunnySector_LoadMap, (const zstr&, int), MapId), asCALL_CDECL);
+	as_engine->RegisterGlobalFunction("MapId BunnySector_LoadMap(const zstr &in mapfilename)", asFUNCTIONPR(BunnySector_LoadMap, (const zstr&), MapId), asCALL_CDECL);
 	as_engine->RegisterGlobalFunction("void BunnySector_StartMap(MapId mapId)", asFUNCTION(BunnySector_StartMap), asCALL_CDECL);
 	as_engine->RegisterGlobalFunction("void BunnySector_RenderMap(MapId mapId)", asFUNCTION(BunnySector_RenderMap), asCALL_CDECL);
 	as_engine->RegisterGlobalFunction("void BunnySector_UpdateMap(MapId mapId, float deltaTime)", asFUNCTION(BunnySector_UpdateMap), asCALL_CDECL);
@@ -152,6 +161,8 @@ void RegisterBunnySector(mgdl_AngelScript* angel)
 	// Register functions to access map data
 
 	// Register OpenGL Drawing functions
+	as_engine->RegisterGlobalFunction("void BunnySector_SetOpenGLUnitsToMeter(float scale)", asFUNCTION(BunnySector_SetOpenGLUnitsToMeter), asCALL_CDECL);
+
 
 	as_engine->RegisterGlobalFunction("void BunnySector_DrawSectorFloorOrCeiling(s16 sectorNumber, bool floor, s16 picnum, s8 shade)", asFUNCTION(BunnySector_DrawSectorFloorOrCeiling), asCALL_CDECL);
 
@@ -168,6 +179,7 @@ void RegisterBunnySector(mgdl_AngelScript* angel)
 	as_engine->RegisterGlobalFunction("void BunnySector_DrawWall(Wall@ start, Wall@ end, s32 floory, s32 ceilingy, s16 picnum, s8 shade)", asFUNCTION(BunnySector_DrawWall), asCALL_CDECL);
 
 	// Register Camera functions
+as_engine->RegisterGlobalFunction("void BunnySector_DrawCameraInfo(float x, float y)", asFUNCTION(BunnySector_DrawCameraInfo), asCALL_CDECL);
 
 as_engine->RegisterGlobalFunction("float BunnySector_GetOpenGLCameraVerticalFOVDeg()", asFUNCTION(BunnySector_GetOpenGLCameraVerticalFOVDeg), asCALL_CDECL);
 as_engine->RegisterGlobalFunction("void BunnySector_SetOpenGLCameraVerticalFOVDeg(float degrees)",asFUNCTION(BunnySector_SetOpenGLCameraVerticalFOVDeg), asCALL_CDECL);

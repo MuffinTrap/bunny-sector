@@ -12,13 +12,20 @@ void Map_SetActorToStart(BunnySector_Map* map, Actor* actor)
 			DoomMap_SetActorToStart(map->mapPtr.doomMap, actor);
 		break;
 		case Map_Invalid:
-			//nop
+			mgdl_assert_test(false);
 			break;
 	}
 }
 
 void Map_MoveActorInMap(BunnySector_Map* map, float delta, Actor* actor)
 {
+
+	switch(map->m_type)
+	{
+		case Map_Duke:
+			DukeMap_MoveActorInMap(map->mapPtr.dukeMap, delta, actor);
+			break;
+	}
 }
 
 

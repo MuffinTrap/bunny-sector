@@ -57,6 +57,8 @@ struct RenderSettingsOpenGL
 };
 typedef struct RenderSettingsOpenGL RenderSettingsOpenGL;
 
+void RenderSettingsOpenGL_SetUnitToMeter(RenderSettingsOpenGL* setting, float unitsToMeter);
+
 #ifdef __cplusplus
 extern "C" {
 #endif

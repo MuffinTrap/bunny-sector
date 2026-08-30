@@ -4,6 +4,7 @@
 #include <mgdl/mgdl-color.h>
 #include <mgdl/mgdl-vectorfunctions.h>
 
+#include "../bunny-sector-types.h"
 
 #include "build-render.h"
 #include "dukemap.h"
@@ -76,20 +77,27 @@ RenderSettings2D GetDefaultRenderSettings2D()
 }
 RenderSettingsOpenGL GetDefaultRenderSettingsOpenGL()
 {
-    float dukeUnitsPerMetre = 1024.0f;// NOTE CHECKED
+    float unitsPerMetre = 1.0f;
     float texCoordPerMetre = 1.0f; // NOTE CHECKED
 
     RenderSettingsOpenGL renderGL;
 
-    renderGL.scale = 1.0f/dukeUnitsPerMetre;
+    renderGL.scale = 1.0f/unitsPerMetre;
     renderGL.spriteDefaultWidth = 1024;
     renderGL.spriteDefaultHeight = 8024;
 
-    renderGL.near = 1.0f/dukeUnitsPerMetre;
-    renderGL.far = 100.0f;
+    renderGL.near = 1.0f/unitsPerMetre;
+    renderGL.far = 100.0f * unitsPerMetre;
     renderGL.FOVyDegrees = 80.0f;
     renderGL.aspectRatio = mgdl_GetAspectRatio();
     return renderGL;
+}
+
+void RenderSettingsOpenGL_SetUnitToMeter(RenderSettingsOpenGL* setting, float unitsToMeter)
+{
+    setting->scale = 1.0f/unitsToMeter;
+    setting->near = 1.0f/unitsToMeter;
+    setting->far = 100 * unitsToMeter;
 }
 
 SectorRender* BuildRender_GetDrawnSectorNumbers()
@@ -834,7 +842,7 @@ void BuildRender_DrawTopDown(Viewpoint* players, DukeMap* map, RenderSettingsOpe
                 pc = Debug_White;
             }
             float dotSize = 512.0f;
-            float playerArrowSize = 1024.0f;
+            float playerArrowSize = DUKE_UNITS_TO_METER;
 
             // PLAYER ARROW
             // //////////////////

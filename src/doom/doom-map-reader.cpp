@@ -262,13 +262,13 @@ static textureId readTextureId()
 
 	zstr textureName = zstr_from_len(textureNameBuffer, index);
 	textureId tid = BunnySector_GetTextureId(&textureName);
+	printf("Doom map has texture %s mapped to id %d\n", zstr_cstr(&textureName), tid);
 	zstr_free(&textureName);
 	return tid;
 }
 
 static void read_thing() {
 
-	printf("Read thing\n");
 	read_line();
 	if (line_has("{"))
 	{
@@ -398,7 +398,6 @@ static void read_thing() {
 }
 static void read_vertex() {
 
-	printf("Read vertex\n");
 	read_line();
 	if (line_has("{"))
 	{
@@ -425,7 +424,6 @@ static void read_vertex() {
 
 static void read_linedef() {
 
-	printf("Read linedef\n");
 	read_line();
 	if (line_has("{"))
 	{
@@ -450,6 +448,14 @@ static void read_linedef() {
 			{
 				t->special = readInt();
 			}
+			else if (line_startswith(SIDEFRONT))
+			{
+				t->sidefront = readInt();
+			}
+			else if (line_startswith(SIDEBACK))
+			{
+				t->sideback = readInt();
+			}
 			else if (line_has("}"))
 			{
 				break;
@@ -460,7 +466,6 @@ static void read_linedef() {
 }
 static void read_sidedef()
 {
-	printf("Read sidedef\n");
 	read_line();
 	if (line_has("{"))
 	{
@@ -548,7 +553,7 @@ static void read_sector() {
 
 }
 
-    DoomMap* Doom_ReadMapFromFile(const char* mapfilename, int dukesPerUnit)
+    DoomMap* Doom_ReadMapFromFile(const char* mapfilename)
 	{
 		mapfile = fopen(mapfilename, "r");
 		if (mapfile == NULL)
@@ -697,32 +702,32 @@ static void read_sector() {
 		u32 NumSubsectors = ReadDWORD();
 		DoomMap_AllocateSubsectors(map, NumSubsectors);
 		printf("NumSubsectors %d\n", NumSubsectors);
+		int segmentsRead = 0;
 		for (int ni = 0; ni < NumSubsectors; ni++)
 		{
 			u32 NumSegs = ReadDWORD();
-			printf("Segments in subsector %d : %d\n", ni, NumSegs);
+			map->subsectors[ni].firstSegment = segmentsRead;;
 			map->subsectors[ni].segmentAmount = NumSegs;
-			map->subsectors[ni].segments = (DoomSegment*)mgdl_AllocateGeneralMemory(NumSegs * sizeof(DoomSegment));
+			printf("Subsector %d Segments; %d : First segment %d\n", ni, NumSegs, segmentsRead);
+			segmentsRead += NumSegs;
 		}
+
 		u32 NumSegs = ReadDWORD();
+		mgdl_assert_test(NumSegs == segmentsRead);
 		printf("NumSeg %d\n", NumSegs);
 		DoomMap_AllocateSegments(map, NumSegs);
-		for (int subi = 0; subi < NumSubsectors; subi++)
+		for (int si = 0; si < map->segmentAmount; si++)
 		{
-			DoomSubSector* s = &map->subsectors[subi];
-			for (int si = 0; si < s->segmentAmount; si++)
-			{
-				u32 v1 = ReadDWORD(); // Vertex index
-				u32 partner = ReadDWORD(); // Segment index
-				u16 line = ReadWORD(); // Linedef index
-				u8 side = ReadByte(); // Linedef side
-				printf("Seg %d: V1 %d partner %d line %d side %d\n", si, v1, partner, line, side);
+			u32 v1 = ReadDWORD(); // Vertex index
+			u32 partner = ReadDWORD(); // Segment index
+			u16 line = ReadWORD(); // Linedef index
+			u8 side = ReadByte(); // Linedef side
+			printf("Seg %d: V1 %d partner %d line %d side %d\n", si, v1, partner, line, side);
 
-				s->segments[si].v1 = v1;
-				s->segments[si].partnerSegment = partner;
-				s->segments[si].linedef = line;
-				s->segments[si].lineSide = side;
-			}
+			map->segments[si].v1 = v1;
+			map->segments[si].partnerSegment = partner;
+			map->segments[si].linedef = line;
+			map->segments[si].lineSide = side;
 		}
 
 		u32 NumNodes = ReadDWORD();
@@ -836,8 +841,8 @@ static void read_sector() {
 		return map;
 	}
 
-	DoomMap * Doom_ReadMapFromFile(const zstr& mapfilename, int dukesPerUnit)
+	DoomMap * Doom_ReadMapFromFile(const zstr& mapfilename)
 	{
-		return Doom_ReadMapFromFile(zstr_cstr(&mapfilename), dukesPerUnit);
+		return Doom_ReadMapFromFile(zstr_cstr(&mapfilename));
 	}
 

@@ -10,6 +10,7 @@
 extern "C" {
 #endif
 
+
 typedef int MapId;
 
 bool BunnySector_Init();
@@ -79,6 +80,8 @@ void BunnySector_DrawWall(Wall* start , Wall* end, s32 floory, s32 ceilingy, s16
 void BunnySector_DrawSectorFloorOrCeiling(s16 sectorNumber, bool floor, s16 picnum, s8 shade);
 void BunnySector_EndWallDrawing();
 
+void BunnySector_SetOpenGLUnitsToMeter(float scale);
+
 #ifdef __cplusplus
 }
 #endif
@@ -89,12 +92,14 @@ void BunnySector_EndWallDrawing();
  * @param dukesPerUnit All dimensions are divided by this to convert to meters. 1024 is a good default.
  * @returns Map id. Negative number indicates failed load and is an error code?
  */
-MapId BunnySector_LoadMap(const zstr& mapfilename, int dukesPerUnit);
+MapId BunnySector_LoadMap(const zstr& mapfilename);
 /**
  * @brief Loads a map from file and returns map id
  * @param mapfilename Name of the map file
  * @param dukesPerUnit All dimensions are divided by this to convert to meters. 1024 is a good default.
  * @returns Map id. Negative number indicates failed load and is an error code?
  */
-MapId BunnySector_LoadMap(const char* mapfilename, int dukesPerUnit);
+MapId BunnySector_LoadMap(const char* mapfilename);
+
+void BunnySector_DrawCameraInfo(float x, float y);
 

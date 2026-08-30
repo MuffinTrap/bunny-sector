@@ -4,6 +4,8 @@
 #include "render_duke.cpp"
 #include "render_doom.cpp"
 
+float angel_unitstometer = 32.0f;
+
 //#include "../src/bunny-sector_main.h"
 //#include <mgdl.h>
 
@@ -27,8 +29,8 @@ void angelscript_init()
 	int screenHeight = mgdl_GetScreenHeight();
 
 	BunnySector_Init();
-	dukeMapId = BunnySector_LoadMap("assets/doome1m1.map", 1);
-	doomMapId = BunnySector_LoadMap("assets/doomroom.wad", 1);
+	doomMapId = BunnySector_LoadMap("assets/doomroom.wad");
+	//dukeMapId = BunnySector_LoadMap("assets/doome1m1.map");
 	BunnySector_StartMap(doomMapId);
 
 	// Match 2D render to OpenGL render
@@ -150,23 +152,58 @@ void adjustFov(float deltatime)
 }
 void angelscript_frame(float deltatime)
 {
-	BunnySector_SetActorSpeeds(0, 0.1f, 0.2f);
-	movePlayer(deltatime);
-	BunnySector_MoveActorFreely(0, deltatime);
-
 	if (mgdl_IsButtonDown(0, Button2))
 	{
 		RENDER_2D_WALLS = true;
 	}
-
-	RenderDoomMap(BunnySector_GetDoomMap(doomMapId));
+	if (mgdl_IsButtonDown(0, Button1))
+	{
+		DEBUG_DRAW = true;
+	}
+		angelscript_frame_doom(deltatime);
+		//angelscript_frame_duke(deltatime);
 
 	RENDER_2D_WALLS = false;
+	DEBUG_DRAW = false;
+}
+void angelscript_frame_doom(float deltatime)
+{
+	BunnySector_SetOpenGLUnitsToMeter(angel_unitstometer);
+	BunnySector_SetActorSpeeds(0, 0.1f, 0.2f);
+	movePlayer(deltatime);
+
+	BunnySector_MoveActorFreely(0, deltatime);
+
+	float aspect = mgdl_GetScreenWidth()/mgdl_GetScreenHeight();
+	glClearColor(0.3f, 0.2f, 0.3f, 1.0f);
+
+	StartFrame();
+	if (RENDER_2D_WALLS)
+	{
+		RenderDoomMap(BunnySector_GetDoomMap(doomMapId));
+	}
+	else
+	{
+		BunnySector_Setup3D(aspect, aspect);
+		BunnySector_AlignCameraToActor(0);
+		BunnySector_StartWallDrawing();
+		//glPushMatrix();
+		//glScalef(1.0f/angel_unitstometer, 1.0f/ angel_unitstometer, 1.0f/angel_unitstometer);
+		//glBegin(GL_QUADS);
+		//glColor3f(1.0f, 0.0f, 1.0f);
+			RenderDoomMap(BunnySector_GetDoomMap(doomMapId));
+		//glEnd();
+		//glPopMatrix();
+		BunnySector_EndWallDrawing();
+	}
+
+	RenderMiniMapDoom(BunnySector_GetDoomMap(doomMapId));
+
+	DrawDebugs();
 }
 
 void angelscript_frame_duke(float deltatime)
 {
-
 	BunnySector_SetActorSpeeds(0, 1.0f, 0.7f);
 	movePlayer(deltatime);
 	adjustFov(deltatime);
@@ -179,21 +216,24 @@ void angelscript_frame_duke(float deltatime)
 	{
 		BunnySector_UpdateMap(dukeMapId, deltatime);
 	}
-	//BunnySector_RenderMap(dukeMapId); // This calls the old build render stuff
 
+
+	glClearColor(0.3f, 0.2f, 0.3f, 1.0f);
+
+	StartFrame_Duke();
 	// Hold down 2 to see software render result
 	float aspect = mgdl_GetScreenWidth()/mgdl_GetScreenHeight();
-	if (mgdl_IsButtonDown(0, Button2))
+	if (RENDER_2D_WALLS)
 	{
-		RENDER_2D_WALLS = true;
 		RenderMapSoftware(deltatime);
 	}
 	else
 	{
+		//BunnySector_RenderMap(dukeMapId); // This calls the old build render stuff
 		BunnySector_Setup3D(aspect, aspect);
 		BunnySector_AlignCameraToActor(0);
 		BunnySector_StartWallDrawing();
-		RenderMap(deltatime);
+			RenderMap(deltatime);
 		BunnySector_EndWallDrawing();
 	}
 

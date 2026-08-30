@@ -67,7 +67,7 @@ void OpenGLRender_Deinit();
  * @returns True if registering succeeded: there was space in array
  */
 bool OpenGLRender_RegisterTexture(s16 picnum, Texture* texture);
-void OpenGLRender_ReadMaterialsXML(const char* materialsfile, zstr* TextureFileNames, int lastTextureIndex);
+void OpenGLRender_ReadMaterialsXML(const char* materialsfile, zstr** TextureFileNames, int* lastTextureIndex);
 bool OpenGLRender_RegisterMaterial(s16 picnum, Material* material, MapMaterialType materialType);
 bool OpenGLRender_RegisterMapMaterial(s16 picnum, MapMaterial* material);
 
@@ -123,6 +123,10 @@ void OpenGLRender_AnimateSprites();
 Texture* OpenGLRender_GetTexture(s16 picnum);
 void OpenGLRender_SetColor(color32 oc);
 void OpenGLRender_DrawDot(Vector2 point, float size, color32 color);
+
+void OpenGLRender_SetUnitsToMeter(float unitsToMeter);
+
+s16 OpenGLRender_GetPicnumForName(zstr* textureName);
 
 #ifdef __cplusplus
 }

@@ -61,7 +61,12 @@ static RectF zeroOffset;
 // What OpenGL settings are active
 
 static float activeScale = 1.0f;
+static float unitsPerMeter = 1.0f;
 
+void OpenGLRender_SetUnitsToMeter(float unitsToMeter)
+{
+    unitsPerMeter = unitsToMeter;
+}
 /**
  * @brief Sets OpenGL to draw from vertexBuffer
  */
@@ -284,7 +289,7 @@ static Vector2 CalculateFloorOrCeilingUV(const Sector* sector, float x, float z)
     // NOTE The texture will repeat like crazy because these are duke units
     float tx = xdiff/xrange * sector->maxTexCoord.x;
     float tz = zdiff/zrange * sector->maxTexCoord.y;
-    return Vector2New(tx/1024.0f, tz/1024.0f);
+    return Vector2New(tx/unitsPerMeter, tz/unitsPerMeter);
 }
 
 void SetWrap(GLuint textureName)
@@ -362,7 +367,7 @@ XML structure
 
 */
 
-void OpenGLRender_ReadMaterialsXML(const char* materialsfile, zstr* TextureFileNames, int lastTextureIndex)
+void OpenGLRender_ReadMaterialsXML(const char* materialsfile, zstr** TextureFileNames, int *lastTextureIndex)
 {
     s16 extraPicnums = 0;
 	if (mgdl_DoesFileExist(materialsfile) == false)
@@ -405,20 +410,23 @@ void OpenGLRender_ReadMaterialsXML(const char* materialsfile, zstr* TextureFileN
 		tinyxml2::XMLElement* nameElement = materialElement->FirstChildElement("name");
 		if (nameElement)
 		{
-			Log_InfoF("material %d has name %d\n", materialindex, nameElement->GetText());
+			Log_InfoF("material %d has name %s\n", materialindex, nameElement->GetText());
             // picnum is the index
             zstr namez = zstr_from(nameElement->GetText());
 
+            /*
             // Do we already have a index for this texture
-            for (int i = 0; i < lastTextureIndex; i++)
+            for (int i = 0; i < *lastTextureIndex; i++)
             {
-                zstr* ati = &TextureFileNames[i];
+                zstr* ati = TextureFileNames[i];
                 if (zstr_eq(&namez, ati))
                 {
                     picnum = i;
+                    Log_InfoF("material %d already has picnum %d\n", materialindex, picnum);
                     break;
                 }
             }
+            */
             zstr_free(&namez);
 		}
 		TextureHandle textureH = -1;
@@ -443,17 +451,35 @@ void OpenGLRender_ReadMaterialsXML(const char* materialsfile, zstr* TextureFileN
             if (Handle_IsValid(textureH))
             {
                 // Give picnum that is different from the ones in TextureFileNames
-                picnum = lastTextureIndex + extraPicnums;
-                extraPicnums += 1;
+                picnum = *lastTextureIndex;
+             //   *lastTextureIndex = *lastTextureIndex + 1;
+            //    *TextureFileNames[*lastTextureIndex] = namez;
             }
-            zstr_free(&namez);
+            else
+            {
+                zstr_free(&namez);
+            }
         }
 
-        if (Handle_IsValid(textureH) && picnum >= 0)
+        if (Handle_IsValid(textureH))
         {
+            if (picnum < 0)
+            {
+
+                picnum = *lastTextureIndex;
+                *lastTextureIndex = *lastTextureIndex + 1;
+            }
             mgdl_SetTextureFilterMin(textureH, TextureFilterModes::MipmapLinear);
             Texture* texture = AssetManager_GetTexture(textureH);
-            OpenGLRender_RegisterTexture(picnum, texture);
+
+            if (OpenGLRender_RegisterTexture(picnum, texture))
+            {
+                Log_InfoF("->\tmaterial %d registered to picnum %d\n", materialindex, picnum);
+            }
+            else
+            {
+                Log_InfoF("!   material %d failed to register to picnum %d\n", materialindex, picnum);
+            }
         }
 		// TODO Check for material type
 		
@@ -533,6 +559,26 @@ bool OpenGLRender_RegisterMapMaterial(s16 picnum, MapMaterial* material)
     return false;
 
 }
+/*
+s16 OpenGLRender_GetPicnumForName(zstr* textureName)
+{
+    printf("Get picnum for name %d\n", zstr_cstr(textureName));
+    for (int i = 0; i < nextFreeMaterialSlot; i++)
+    {
+        if (zstr_eq(&TextureFileNames[i], textureName))
+        {
+            for (int pi = 0; pi < nextFreeMaterialSlot; pi++)
+            {
+                if (picnumToMaterialArray[pi] == i)
+                {
+                    return pi;
+                }
+            }
+        }
+    }
+    return 0;
+}
+*/
 
 /** TODO remove settings3D. Scale should be set globally already
  */
@@ -567,7 +613,7 @@ void DrawQuad(Vector2 start, Vector2 end, const Vector2 normalXZ, s32 floorY, s3
 void OpenGLRender_DrawWallV(Vector2 start, Vector2 end, Vector2 normalXZ, s32 floorY, s32 ceilingY,  s16 picnum, s8 shade)
 {
     // printf("DrawVallV %.2f %.2f -> %.2f %.2f, f : %d c: %d\n", start.x, start.y, end.x, end.y, floorY, ceilingY);
-    DrawQuad(start, end, normalXZ, floorY, ceilingY, picnum, shade, 1.0f/1024.0f);
+    DrawQuad(start, end, normalXZ, floorY, ceilingY, picnum, shade, 1.0f/unitsPerMeter);
 }
 
 void OpenGLRender_DrawWall(DukeMap* map, Wall* w, float floorY, float ceilingY, RenderSettingsOpenGL* settings)
@@ -660,7 +706,7 @@ void OpenGLRender_DrawFloorOrCeiling(DukeMap* map, s16 sectorIndex, bool floor)
 void OpenGLRender_DrawSprite(Vector3 position, float width, float height, float spriteAngle, float playerAngle, SpriteAlignment alignment, SpritePivot pivot, s16 picnum, s8 brightnessOffset)
 {
 
-    static const float pushOut = 8.0f; // In Duke units: 1024 is one meter
+    static const float pushOut = unitsPerMeter * 0.08f;
 	if (alignment == Sprite_FACE)
 	{
 		spriteAngle = playerAngle + Deg2Rad(180);
@@ -899,7 +945,7 @@ static void StopCountingFloorBufferSize(DukeMap* map)
     //Log_InfoF("Tesselator created %d indices in total\n", floorIndexBufferSize);
     Tesselator_Deinit();
 
-    /*
+    /* DEBUG LOGGING
     Log_Info("Floor Vertex buffer:\n");
     for (u32 v = 0; v < floorBufferSizeVertices; v++)
     {
@@ -1104,6 +1150,7 @@ void OpenGLRender_WriteToObj(BunnySector_Map* map, const char* filename, RenderS
                                 mgdl_BufferPrintf("%s", "Ceiling buffer"));
     }
 
+    // NOTE Why commented out?
 //        ObjExport_WriteVertices(&floorBuffer[indices.vertexIndex * FLOOR_BUFFER_VERTEX_SIZE], indices.vertexCount, FLOOR_BUFFER_VERTEX_SIZE, sector->ceilingy, mgdl_BufferPrintf("Sector %d ceiling", si));
     // FACES
     u16 wallVertexBuffer = 0;

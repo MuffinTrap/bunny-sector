@@ -3,15 +3,17 @@
 #include <mgdl.h>
 #include <stdio.h>
 #include "opengl-render.h"
+#include "../bunny-sector-types.h"
 
 static const int HeightToWidth = 16;
 
-DukeMap* Duke_ReadMapFromFile(const zstr& mapfilename, int dukesPerUnit)
+DukeMap* Duke_ReadMapFromFile(const zstr& mapfilename)
 {
-    return Duke_ReadMapFromFile(zstr_cstr(&mapfilename), dukesPerUnit);
+    return Duke_ReadMapFromFile(zstr_cstr(&mapfilename));
 }
-DukeMap* Duke_ReadMapFromFile(const char* mapfilename, int dukesPerUnit)
+DukeMap* Duke_ReadMapFromFile(const char* mapfilename)
 {
+    float dukesPerUnit = 1.0f;//DUKE_UNITS_TO_METER;
 	if (dukesPerUnit < 1)
 	{
 		dukesPerUnit = 1;

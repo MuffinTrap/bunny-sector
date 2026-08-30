@@ -1,6 +1,8 @@
 #include "bunny-sector_main.h"
 #include "bunny-sector-map.h"
+#include "bunny-sector-types.h"
 #include <mgdl.h>
+#include <mgdl/mgdl-script-api.h>
 
 #include "duke/dukemapreader.h"
 #include "duke/build-render.h"
@@ -25,10 +27,12 @@ static Camera* defaultCamera = nullptr;
 static Actor demoActor;
 static Texture* defaultChecker = nullptr;
 
+static float bunny_UnitsToMeter = 1.0f;
+
 static void s_AlignCameraToViewpoint(Viewpoint* info, Camera* camera)
 {
 	Vector3 cameraPosition = Vec3DukePosToOpenGL(info->position, &defaultOpenGL);
-	float adjustedYaw = (-1.0f * info->yawRad) - DEG2RAD*90; // This is correct when angle is 0.0f
+	float adjustedYaw = (-1.0f * info->yawRad)- DEG2RAD*90; // This is correct when angle is 0.0f
 	Vector3 rotations = Vector3New(info->pitchRad, adjustedYaw, 0.0f);
 	Matrix rotation = MatrixRotateXYZ(rotations);
 	Vector3 forward = mgdl_GetGLWorldForward();
@@ -58,18 +62,24 @@ bool BunnySector_Init()
 
 	TextureFileNames = (zstr*)mgdl_AllocateGeneralMemory(TEXTURE_NAME_AMOUNT * sizeof(zstr));
 	freeTextureId = 0;
+	for (int i = 0; i < TEXTURE_NAME_AMOUNT; i++)
+	{
+		TextureFileNames[i] = zstr_init();
+	}
 
 	OpenGLRender_Init();
 	OpenGLRender_RegisterTexture(RENDERER_PICNUM_DEFAULT, defaultChecker);
 	// Get rest of the textures from file
 
+
+
+	OpenGLRender_ReadMaterialsXML("assets/materials.xml", &TextureFileNames, &freeTextureId);
+	/* NOTE TODO Figure this out
 	for (int i = 0; i < freeTextureId; i++)
 	{
 		printf("Texture %d : %s\n", i, zstr_cstr(&TextureFileNames[i]));
 	}
-
-
-	OpenGLRender_ReadMaterialsXML("assets/materials.xml", TextureFileNames, freeTextureId);
+	*/
 	BuildRender_Init();
 	defaultOpenGL = GetDefaultRenderSettingsOpenGL();
 	defaultView = GetDefaultCameraInfo();
@@ -79,15 +89,16 @@ bool BunnySector_Init()
 	return true;
 }
 
-int BunnySector_LoadMap(const char* mapfilename, int dukesPerUnit)
+int BunnySector_LoadMap(const char* mapfilename)
 {
 	zstr mapname = zstr_from(mapfilename);
 	int mapid;
+	mapid = BunnySector_LoadMap(mapname);
 	zstr_free(&mapname);
 	return mapid;
 }
 
-int BunnySector_LoadMap(const zstr& mapfilename, int dukesPerUnit)
+int BunnySector_LoadMap(const zstr& mapfilename)
 {
 	// Do we have this map already?
 	int firstFree = -1;
@@ -129,11 +140,22 @@ int BunnySector_LoadMap(const zstr& mapfilename, int dukesPerUnit)
 	loaded->mapPtr.dukeMap = nullptr;
 	if (maptype == Map_Duke)
 	{
-		loaded->mapPtr.dukeMap = Duke_ReadMapFromFile(mapfilename, dukesPerUnit);
+		loaded->mapPtr.dukeMap = Duke_ReadMapFromFile(mapfilename);
 	}
 	else if (maptype == Map_Doom)
 	{
-		loaded->mapPtr.doomMap = Doom_ReadMapFromFile(mapfilename, dukesPerUnit);
+		loaded->mapPtr.doomMap = Doom_ReadMapFromFile(mapfilename);
+
+		DoomMap_PrintInfo(loaded->mapPtr.doomMap);
+
+		// Connect textureId's to picnums in OpengGLRenderer
+		DoomMap* dmap = loaded->mapPtr.doomMap;
+		/*
+		for (int i = 0; i < dmap->sideAmount; i++)
+		{
+			dmap->sidedefs[i].texturemiddle = OpenGLRender_GetPicnumForName(TextureFileNames[dmap->sidedefs[i].texturemiddle]);
+		}
+		*/
 	}
 	if (loaded->mapPtr.doomMap!= nullptr || loaded->mapPtr.dukeMap != nullptr)
 	{
@@ -156,6 +178,18 @@ void BunnySector_StartMap(MapId mapId)
 		BunnySector_Map* map = mapsArray[mapId];
 		if (map != nullptr)
 		{
+			activeMap = map;
+
+			if (map->m_type == Map_Duke)
+			{
+				RenderSettingsOpenGL_SetUnitToMeter(&defaultOpenGL, DUKE_UNITS_TO_METER);
+				BunnySector_SetOpenGLUnitsToMeter(DUKE_UNITS_TO_METER);
+			}
+			else
+			{
+				RenderSettingsOpenGL_SetUnitToMeter(&defaultOpenGL, DOOM_UNITS_TO_METER);
+				BunnySector_SetOpenGLUnitsToMeter(DOOM_UNITS_TO_METER);
+			}
 			Map_SetActorToStart(map, &demoActor);
 			printf("BunnySector startmap put actor to %.2f, %.2f\n", demoActor.position.x, demoActor.position.y);
 			defaultView = Actor_GetViewpoint(&demoActor);
@@ -212,7 +246,7 @@ void BunnySector_AlignCameraToActor(int actorId)
 	// NOTE Must set GL_PROJECTION first then GL_MODELVIEW
 
 
-	demoActor.sectorNumber = 0; //Map_FindSectorV2(activeMap, demoActor.sectorNumber, demoActor.position);
+	demoActor.sectorNumber = Map_FindSectorV2(activeMap->mapPtr.dukeMap, demoActor.sectorNumber, demoActor.position);
 	defaultView = Actor_GetViewpoint(&demoActor);
 
 	s_AlignCameraToViewpoint(&defaultView, defaultCamera);
@@ -227,6 +261,19 @@ void BunnySector_AlignCameraToActor(int actorId)
 				defaultCamera->farZ);
 
 	Camera_Apply(defaultCamera); // Sets GL_MODELVIEW
+
+
+}
+void BunnySector_DrawCameraInfo(float x, float y)
+{
+	y+=16;
+	mgdl_DrawTextFloat(zstr_from("Camera x "), defaultCamera->position.x, x, y, 8, Debug_Red);
+	mgdl_DrawTextFloat(zstr_from("Camera y "), defaultCamera->position.y, x, y+8, 8, Debug_Red);
+	mgdl_DrawTextFloat(zstr_from("Camera z "), defaultCamera->position.z, x, y+16, 8, Debug_Red);
+	mgdl_DrawTextFloat(zstr_from("Camera dx"), defaultCamera->direction.x, x, y+16+8, 8, Debug_Red);
+	mgdl_DrawTextFloat(zstr_from("Camera dy "), defaultCamera->direction.y, x, y+16+16, 8, Debug_Red);
+	mgdl_DrawTextFloat(zstr_from("Camera dz "), defaultCamera->direction.z, x, y+16+24, 8, Debug_Red);
+
 }
 void BunnySector_Setup3D(float viewAspect, float cameraAspect)
 {
@@ -245,6 +292,19 @@ void BunnySector_Setup3D(float viewAspect, float cameraAspect)
 
 	Viewport viewPort = mgdl_GetViewport();
 	glViewport(viewPort.left, viewPort.bottom, viewPort.width, viewPort.height);
+	switch(activeMap->m_type)
+	{
+		case Map_Invalid:
+			break;
+		case Map_Duke:
+			RenderSettingsOpenGL_SetUnitToMeter(&defaultOpenGL, bunny_UnitsToMeter);
+			OpenGLRender_SetUnitsToMeter(bunny_UnitsToMeter);
+			break;
+		case Map_Doom:
+			RenderSettingsOpenGL_SetUnitToMeter(&defaultOpenGL, bunny_UnitsToMeter);
+			OpenGLRender_SetUnitsToMeter(bunny_UnitsToMeter);
+			break;
+	};
 }
 
 void BunnySector_RenderMap(MapId mapId)
@@ -261,7 +321,7 @@ void BunnySector_RenderMap(MapId mapId)
 
 			BunnySector_AlignCameraToActor(0);
 
-			//BuildRender_Draw3D(&defaultView, map, &defaultOpenGL);
+			BuildRender_Draw3D(&defaultView, map->mapPtr.dukeMap, &defaultOpenGL);
 
 			glPopMatrix();
 		}
@@ -288,6 +348,17 @@ void BunnySector_SetActorDriveInput(int actorId, float forward, float strafe, fl
 
 void BunnySector_MoveActorFreely(int actorId, float deltatime)
 {
+	demoActor.elevation = Actor_ApplyVerticalMove(&demoActor, 0.0f, deltatime);
+	if (demoActor.elevation < -1.0f)
+	{
+		demoActor.elevation = -1.0f;
+		demoActor.verticalVelocity = 0;
+	}
+	if (demoActor.elevation > 300.0f)
+	{
+		demoActor.elevation = 299.0f;
+		demoActor.verticalVelocity = 0;
+	}
 	demoActor.position = Actor_ApplyDrive(&demoActor, deltatime);
 	demoActor.doomPosition.x = demoActor.position.x;
 	demoActor.doomPosition.y = demoActor.position.y;
@@ -303,19 +374,19 @@ Sector* BunnySector_GetSector(s16 sectorNumber)
 {
 	//Sector* sp = Map_GetSector(activeMap, sectorNumber);
 	//Log_InfoF("Get sector %d floory %d ceilingy %d\n", sectorNumber, sp->floory, sp->ceilingy);
-	return nullptr;// Map_GetSector(activeMap, sectorNumber);
+	return Map_GetSector(activeMap->mapPtr.dukeMap, sectorNumber);
 }
 Wall* BunnySector_GetWall(s16 wallIndex)
 {
-	return nullptr; //Map_GetWall(activeMap, wallIndex);
+	return Map_GetWall(activeMap->mapPtr.dukeMap, wallIndex);
 }
 Wall* BunnySector_GetWallEnd(Wall* wall)
 {
-	return nullptr; //Map_GetWallEnd(activeMap, wall);
+	return Map_GetWallEnd(activeMap->mapPtr.dukeMap, wall);
 }
 s16 BunnySector_GetSectorAmount()
 {
-	return 0; //activeMap->sectorAmount;
+	return activeMap->mapPtr.dukeMap->sectorAmount;
 }
 
 float BunnySector_GetActorRadius(int actorId)
@@ -357,6 +428,11 @@ void BunnySector_EndWallDrawing()
 	OpenGLRender_EndDrawingPolygons();
 }
 
+void BunnySector_SetOpenGLUnitsToMeter(float scale)
+{
+	bunny_UnitsToMeter = scale;
+}
+
 void BunnySector_DrawWallF(float startx, float startz, float endx, float endz, float normalx, float normalz, s32 floory, s32 ceilingy, s16 picnum, s8 shade)
 {
 	OpenGLRender_DrawWallV(Vector2New(startx, startz), Vector2New(endx, endz), Vector2New(normalx, normalz), floory, ceilingy, picnum, shade);
@@ -364,13 +440,13 @@ void BunnySector_DrawWallF(float startx, float startz, float endx, float endz, f
 void BunnySector_DrawWall(Wall* start, Wall* end, s32 floory, s32 ceilingy, s16 picnum, s8 shade)
 {
 	//printf("BunnySector_DrawWall gets %d, %d \n", start->x, start->z);
-	// OpenGLRender_DrawWallV(Vector2New(start->x, start->z), Vector2New(end->x, end->z), Map_GetWallNormal(activeMap, start), floory, ceilingy, picnum, shade);
+	OpenGLRender_DrawWallV(Vector2New(start->x, start->z), Vector2New(end->x, end->z), Map_GetWallNormal(activeMap->mapPtr.dukeMap, start), floory, ceilingy, picnum, shade);
 }
 
 void BunnySector_DrawSectorFloorOrCeiling(s16 sectorNumber, bool floor, s16 picnum, s8 shade)
 {
-	//OpenGLRender_DrawFloorOrCeiling(activeMap, sectorNumber, floor);
-	//OpenGLRender_DrawFloorOrCeiling(activeMap, sectorNumber, false);
+	OpenGLRender_DrawFloorOrCeiling(activeMap->mapPtr.dukeMap, sectorNumber, floor);
+	OpenGLRender_DrawFloorOrCeiling(activeMap->mapPtr.dukeMap, sectorNumber, false);
 }
 
 #define V2_CROSS(ax, ay, bx, by)(ax * by - ay * bx)
@@ -400,7 +476,6 @@ bool BunnySector_Intersect(double a1x, double a1y, double a2x, double a2y, doubl
 
 s16 BunnySector_GetTextureId(zstr* textureFilename)
 {
-
 	if (freeTextureId >= TEXTURE_NAME_AMOUNT -1)
 	{
 		// All indices in use

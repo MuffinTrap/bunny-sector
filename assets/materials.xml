@@ -1,23 +1,23 @@
 <materials>
 	<folder>assets</folder>
 	<material>
-		<picnum>1171</picnum>
+		<name>CEIL5_1</name>
 		<texture>white_wall.png</texture>
 	</material>
 	<material>
-		<picnum>1156</picnum>
+		<name>BROWN144</name>
 		<texture>dark_stone_floor.png</texture>
 	</material>
 	<material>
-		<picnum>191</picnum>
+		<name>BIGDOOR2</name>
 		<texture>light_stone_floor.png</texture>
 	</material>
 	<material>
-		<picnum>718</picnum>
+		<name>STEP2</name>
 		<texture>dark_stone_floor.png</texture>
 	</material>
 	<material>
-		<picnum>576</picnum>
+		<name>FLAT18</name>
 		<texture>beige_ceiling.png</texture>
 	</material>
 </materials>

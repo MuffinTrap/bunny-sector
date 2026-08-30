@@ -44,6 +44,7 @@ void DoomMap_SetActorToStart(DoomMap* map, Actor* actor)
 	actor->doomPosition.y = map->things[0].y;
 	actor->position.x = actor->doomPosition.x;
 	actor->position.y = actor->doomPosition.y;
+	actor->elevation = 0.0f;
 	actor->yawRad = DEG2RAD * map->things[0].angleDeg;
 
 }
@@ -64,15 +65,36 @@ void DoomMap_PrintInfo(DoomMap* map)
 
 	for (int i = 0; i < map->sectorAmount; i++)
 	{
-		printf("Sector %d id: %d\n", i, map->sectors[i].id);
+		printf("Sector %d id: %d floor %d, ceiling %d\n", i,
+			   map->sectors[i].id,
+			   map->sectors[i].heightfloor,
+			   map->sectors[i].heightceiling
+			   );
 	}
 	for (int i = 0; i < map->sideAmount; i++)
 	{
-		printf("Side def %d sector: %d texture mid: %d\n", i, map->sidedefs[i].sector, map->sidedefs[i].texturemiddle);
+		printf("Side def %d sector: %d texture mid: %d\n", i,
+			   map->sidedefs[i].sector, map->sidedefs[i].texturemiddle);
 	}
 	for (int i = 0; i < map->lineAmount; i++)
 	{
-		printf("Line def %d from: %d to: %d\n", i, map->linedefs[i].v1, map->linedefs[i].v2);
+		printf("Line def %d. id %d from: %d to: %d front side %d back side %d\n", i,
+		map->linedefs[i].id,
+		map->linedefs[i].v1,
+		map->linedefs[i].v2,
+		map->linedefs[i].sidefront,
+		map->linedefs[i].sideback
+		);
+	}
+	for (int i = 0; i < map->segmentAmount; i++)
+	{
+		printf("Segment %d. V1: %d, partner: %d, linedef: %d, side %d\n",
+			   i,
+			   map->segments[i].v1,
+			   map->segments[i].partnerSegment,
+			   map->segments[i].linedef,
+			   map->segments[i].lineSide
+		);
 	}
 
 }

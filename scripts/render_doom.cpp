@@ -1,4 +1,85 @@
 
+bool RENDER_WALLS_DOOM = true;
+
+// Keeping track which ares of the screen have been drawn
+class WallSegment
+{
+	int start;
+	int end;
+	WallSegment()
+	{
+		start = 0;
+		end = 0;
+	}
+
+	WallSegment(int left, int right)
+	{
+		start = left;
+		end = right;
+	}
+}
+
+int WALL_SEGMENT_AMOUNT = 64;
+WallSegment[] wallSegments(WALL_SEGMENT_AMOUNT);
+int lastWallSegment = 0;
+
+int MAX_16 = 0x7FFF;
+
+void ResetWallSegments()
+{
+	wallSegments[0] = WallSegment(-MAX_16, -1);
+	wallSegments[1] = WallSegment(SCREEN_WIDTH, MAX_16);
+	lastWallSegment = 2;
+}
+
+// This is complicated, do later
+void PushWallSegment(int startx, int endx)
+{
+	int index = 0;
+	for(int i = 0; i < WALL_SEGMENT_AMOUNT; i++)
+	{
+		WallSegment seg = wallSegments[i];
+		// Find the first segment on the left side of pushed
+		// If pushing 0-? then the first segment is found
+		// because -1 < 0-1 is false
+		if (seg.end < startx-1)
+		{
+			continue;
+		}
+		else
+		{
+			index = i;
+			break;
+		}
+	}
+	WallSegment seg = wallSegments[index];
+	if (startx < seg.start)
+	{
+		if (endx < seg.start -1)
+		{
+			// New segment is not adjacent to seg
+			// Move all one step to right
+			for (int i = index; i < lastWallSegment; i++)
+			{
+				wallSegments[i+1].start = wallSegments[i].start;
+				wallSegments[i+1].end = wallSegments[i].end;
+			}
+			lastWallSegment += 1;
+
+			wallSegments[index].start = startx;
+			wallSegments[index].end = endx;
+			return;
+		}
+		else
+		{
+			// pushed segment is adjacent to seg
+			seg.start = startx;
+			return;
+		}
+	}
+
+}
+
 bool ChildIsNode(ChildId childId)
 {
 	return (childId & 0x80000000 ) == 0;
@@ -24,6 +105,10 @@ bool SeesSide(Vector2 sideA, Vector2 sideB)
 	{
 		// A is on the right side and behind: clamp to -pi
 		angleA = -M_PI;
+		if (DEBUG_DRAW)
+		{
+			DrawCross(sideA, Debug_Red);
+		}
 	}
 	else
 	{
@@ -32,22 +117,21 @@ bool SeesSide(Vector2 sideA, Vector2 sideB)
 	float angleB = 0.0f;
 	if (sideB.y < 0 && sideB.x < 0)
 	{
+		// B is on the left side and behind, clamp to M_PI
 		sideB.x = M_PI;
-
+		if (DEBUG_DRAW)
+		{
+			DrawCross(sideB, Debug_Red);
+		}
 	}
 	else
 	{
 		angleB = atan2(sideB.y, sideB.x);
 	}
-	if (angleB < angleA)
-	{
-		// Side is facing away
-		return false;
-	}
 	// Negative angle to the left, positive to right
 	float LL = -HFOVRAD/2.0f;
 	float RL = HFOVRAD/2.0f;
-	if (DEBUG_PRINT)
+	if (DEBUG_DRAW)
 	{
 		mgdl_DrawTextFloat("Angle to LL ", RAD2DEG*LL, text_x, NextY(),8, Debug_Green);
 		mgdl_DrawTextFloat("Angle to RL ", RAD2DEG*RL, text_x, NextY(),8, Debug_Blue);
@@ -57,16 +141,16 @@ bool SeesSide(Vector2 sideA, Vector2 sideB)
 	{
 		// A over the left limit: -HFOVRAD/2
 
-
-		// Angle between the two points from players view
-		// if span > 0, then seeing the front of side
-		float span = (angleB - angleA);
-		if (DEBUG_PRINT)
+			float span = (angleB - angleA);
+		if (DEBUG_DRAW)
 		{
 			mgdl_DrawTextFloat("Span ", RAD2DEG*span, text_x, NextY(),8, Debug_Green);
 			mgdl_DrawTextFloat("Angle to B ", RAD2DEG*angleB, text_x, NextY(),8, Debug_Green);
 			mgdl_DrawTextFloat("Angle to A + span ", RAD2DEG*angleB, text_x, NextY(),8, Debug_Green);
 		}
+
+		// Angle between the two points from players view
+		// if span > 0, then seeing the front of side
 		if (angleA + span > LL)
 		{
 			// but B is inside view or over to right
@@ -104,7 +188,6 @@ bool PlayerSeesNode(Actor@ player, s16 top, s16 bot, s16 left, s16 right)
 	 *  B - C
 	 */
 
-	DrawCross(A, Debug_White);
 
 	int SAME = 0;
 	int LEFT = -1;
@@ -185,21 +268,28 @@ bool PlayerSeesNode(Actor@ player, s16 top, s16 bot, s16 left, s16 right)
 
 
 	bool see1 = SeesSide(sideA, sideB);
-	if (see1 == false)
+	if (DEBUG_DRAW)
 	{
-		// Draw Cross over rejected bounding box
-		glBegin(GL_LINES);
-			glColor3f(0.5f, 1.0f, 1.0f);
+		if (see1 == false)
+		{
+			// Draw Cross over rejected bounding box
+			glBegin(GL_LINES);
+			glColor3f(0.0f, 0.5f, 0.5f);
 			glVertex2f(A.x, A.y);
 			glVertex2f(C.x, C.y);
 			glVertex2f(B.x, B.y);
 			glVertex2f(D.x, D.y);
-		glEnd();
-	}
-	else
-	{
-		// Draw outline around seen box
-		glBegin(GL_LINE_LOOP);
+
+			// Show the test side
+			glColor3f(0.2f, 1.0f, 1.0f);
+			glVertex2f(sideA.x, sideA.y);
+			glVertex2f(sideB.x, sideB.y);
+			glEnd();
+		}
+		else
+		{
+			// Draw outline around seen box
+			glBegin(GL_LINE_LOOP);
 			glColor3f(0.0f, 1.0f, 0.0f);
 			glVertex2f(A.x, A.y);
 			glVertex2f(B.x, B.y);
@@ -209,7 +299,8 @@ bool PlayerSeesNode(Actor@ player, s16 top, s16 bot, s16 left, s16 right)
 			glVertex2f(D.x, D.y);
 
 			glVertex2f(A.x, A.y);
-		glEnd();
+			glEnd();
+		}
 	}
 
 	return see1;
@@ -256,22 +347,34 @@ void DrawSubSector(DoomMap@ map, Actor@ player, DoomSubSector@ sub)
 	DoomVertex@ pp = player.GetDoomPosition();
 	Vector2 playerPos = Vector2New(pp.x, pp.y);
 	float playerAngle = player.yawRad;
+	PLAYER_Y = player.elevation + 40;
+
+	// TODO Keep track of screen free space
+	DRAW_LIMIT_LEFT_CANVAS = -SCREEN_WIDTH/2;
+	DRAW_LIMIT_RIGHT_CANVAS = SCREEN_WIDTH/2;
 
 	// NOTE in doom the vertices are stored in counter
 	// clockwise order, but ProcessWallTopDown excepts
 	// left to right
-	for (uint i = 0; i < sub.segmentAmount; i++)
+	uint nexti= 0;
+	uint firstSeg = sub.firstSegment;
+	uint lastSeg = sub.firstSegment + sub.segmentAmount;
+	for (uint i = firstSeg; i < lastSeg; i++)
 	{
-		uint next = (i+1)%sub.segmentAmount;
-		DoomSegment@ seg = sub.segments[i];
-		DoomSegment@ partner = sub.segments[next];
+		DoomSegment@ seg = map.segments[i];
+
+		uint next = i + 1;
+		if (next >= lastSeg) { next = firstSeg;}
+
+		DoomSegment@ partner = map.segments[next];
+
 
 		DoomVertex@ v1 = map.vertices[seg.v1];
 		DoomVertex@ v2 = map.vertices[partner.v1];
 
 		/*
 		glBegin(GL_LINES);
-		mgdl_glColor32(pcolor);
+		mgdl_glColor32(Debug_Yellow);
 		glVertex2f(v1.x, v1.y);
 		glVertex2f(v2.x, v2.y);
 		glEnd();
@@ -283,16 +386,67 @@ void DrawSubSector(DoomMap@ map, Actor@ player, DoomSubSector@ sub)
 		Vector2 trans1 = WorldToCamera(wall1, playerPos, playerAngle);
 		Vector2 trans2 = WorldToCamera(wall2, playerPos, playerAngle);
 
-		DrawCross(Vector2New(trans1.x, trans1.y), Debug_White);
-		if (drawOrder == 0)
+		if (RENDER_WALLS_DOOM == false)
 		{
+			DrawCross(Vector2New(trans1.x, trans1.y), Debug_Yellow);
 			ProcessWallTopDown(trans2, trans1, player.radius, false);
 		}
-
 		// Check if wall is facing away
-		if (SeesSide(trans2, trans1))
+		else if ( SeesSide(trans2, trans1))
 		{
-			ProcessWall(trans2, trans1, -1, -2.0f, 2.0f);
+			bool draw = ProcessWall(trans2, trans1, DRAW_LIMIT_LEFT_CANVAS, DRAW_LIMIT_RIGHT_CANVAS);
+			if (draw)
+			{
+				// Get sector info
+				if (seg.linedef == 0xFFFF)
+				{
+					continue;
+				}
+				DoomLinedef@ linedef = map.linedefs[seg.linedef];
+				DoomSidedef@ sidedef = map.sidedefs[linedef.sidefront];
+				DoomSector@ sector = map.sectors[sidedef.sector];
+				SECTOR_FLOORY = sector.heightfloor;
+				SECTOR_CEILINGY = sector.heightceiling;
+
+				SECTOR_NEIGHBOR_ID = linedef.sideback;
+				if (linedef.sideback >= 0)
+				{
+					DoomSidedef@ back_sidedef = map.sidedefs[linedef.sideback];
+					DoomSector@ back_sector = map.sectors[back_sidedef.sector];
+					SECTOR_NEIGHBOR_CEILINGY = back_sector.heightceiling;
+					SECTOR_NEIGHBOR_FLOORY = back_sector.heightfloor;
+				}
+				if (RENDER_2D_WALLS)
+				{
+					DrawWall2D(false);
+				}
+				else
+				{
+
+					/*
+				if (linedef.sideback < 0)
+				{
+					glColor3f( (1+i % 7) * 0.15f, (sub.segmentAmount) * 0.05f, 1.0f -(1+i) * 0.15f);
+					// Counterclockwise!
+					glVertex3f(v2.x, sector.heightfloor, v2.y);
+					glVertex3f(v1.x, sector.heightfloor, v1.y);
+					glVertex3f(v1.x, sector.heightceiling, v1.y);
+					glVertex3f(v2.x, sector.heightceiling, v2.y);
+				}
+				*/
+					DrawWall3D(wall1, wall2, sidedef.texturemiddle, sidedef.texturebottom, sidedef.texturetop, sector.lightlevel);
+
+					/*
+					glVertex3f(v1.x, sector.heightfloor, v1.y);
+					glVertex3f(v1.x, sector.heightceiling, v1.y);
+
+					glVertex3f(v2.x, sector.heightfloor, v2.y);
+					glVertex3f(v2.x, sector.heightceiling, v2.y);
+					*/
+				}
+
+				// TODO Update used screen area
+			}
 		}
 	}
 	drawOrder += 1;
@@ -336,6 +490,7 @@ void DrawNode(DoomMap@ map, Actor@ player, DoomNode@ node)
 	{
 		DrawNodeChild(map, player, node.children[childSide ^ 1]);
 	}
+		//DrawNodeChild(map, player, node.children[childSide ^ 1]);
 
 	/*
 	glBegin(GL_LINES);
@@ -346,43 +501,58 @@ void DrawNode(DoomMap@ map, Actor@ player, DoomNode@ node)
 	*/
 }
 
-void RenderDoomMap(DoomMap@ map)
+void RenderMiniMapDoom(DoomMap@ map)
 {
-	drawOrder = 0;
-	ResetTextY();
-
-	glClearColor(0.2f, 0.001f, 0.01f, 1.0f);
 	Init2D_YDown();
+glPushMatrix();
 
 	float screen_half_width = SCREEN_WIDTH / 2.0f;
 	float screen_half_height = SCREEN_HEIGHT / 2.0f;
-
-	Actor@ player = BunnySector_GetActor(0);
-	DoomVertex@ playerpos = player.GetDoomPosition();
-
-
-glPushMatrix();
-	u32 va = map.vertexAmount;
-	int vv = va;
-	mgdl_DrawTextInt("Vertices x: ", vv, 8, 8, 8, Debug_Yellow);
-
 	glTranslatef(screen_half_width, screen_half_height, 0);
 	float scale = 1.00f;
 	glScalef(scale, scale, 1.0f);
 
 	// Draw Nodes and bounding boxes
+
+	RENDER_WALLS_DOOM = false;
+	Actor@ player = BunnySector_GetActor(0);
 	DoomNode@ root = map.GetRootNode();
 	DrawNode(map, player, root);
-
 
 	DrawCross(Vector2New(0,0), Debug_Blue);
 	DrawPlayerFOV();
 	DrawPlayerPositionAndAngle(player);
+	RENDER_WALLS_DOOM = true;
 
 	// Testing the player sees node
-	//PlayerSeesNode (player, 60, 10, 70, 120);
+	//PlayerSeesNode (player, 60, 10, 70, 220);
 
+	mgdl_DrawTextFloat("Units to meter ", angel_unitstometer, text_x, NextY(), 16, Debug_Red);
+	BunnySector_DrawCameraInfo(text_x, NextY());
 glPopMatrix();
+}
 
+void RenderDoomMap(DoomMap@ map)
+{
+	drawOrder = 0;
+
+	Actor@ player = BunnySector_GetActor(0);
+	if (RENDER_2D_WALLS)
+	{
+		glPushMatrix();
+
+			float screen_half_width = SCREEN_WIDTH / 2.0f;
+			float screen_half_height = SCREEN_HEIGHT / 2.0f;
+			glTranslatef(screen_half_width, screen_half_height, 0);
+	}
+
+	// Draw Nodes and bounding boxes
+	DoomNode@ root = map.GetRootNode();
+	DrawNode(map, player, root);
+
+	if (RENDER_2D_WALLS)
+	{
+		glPopMatrix();
+	}
 }
 

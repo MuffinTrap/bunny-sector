@@ -124,14 +124,10 @@ void DoomSegment_Init(DoomSegment* def);
 
 struct DoomSubSector
 {
+	u32 firstSegment;
 	u32 segmentAmount;
-	DoomSegment* segments;
 };
 typedef struct DoomSubSector DoomSubSector;
-
-// Segment property for AngelScript
-DoomSegment* DoomSubSector_GetSegment(u32 index, DoomSubSector* obj);
-
 
 bool ChildIsNode(ChildId id);
 

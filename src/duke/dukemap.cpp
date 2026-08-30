@@ -6,8 +6,11 @@
 #include "actor.h"
 Sector* Map_GetSector(DukeMap* map, s16 sectorNumber)
 {
-    mgdl_assert_print((sectorNumber>= 0 && sectorNumber < map->sectorAmount),"Invalid sector for Map_GetSector");
-    return &map->sectors[sectorNumber];
+    if (sectorNumber>= 0 && sectorNumber < map->sectorAmount)
+    {
+        return &map->sectors[sectorNumber];
+    }
+    return &map->sectors[0];
 }
 
 Wall* Map_GetWallInSector(DukeMap* map, s16 sector, s16 wi)
@@ -491,7 +494,7 @@ MapSprite* Map_GetSprite(DukeMap* map, s16 spriteIndex)
     return &map->sprites[spriteIndex];
 }
 
-void Map_MoveActorInMap(DukeMap* map, float deltaTime, Actor* inoutActor)
+void DukeMap_MoveActorInMap(DukeMap* map, float deltaTime, Actor* inoutActor)
 {
     Vector2 current = inoutActor->position;
     Vector2 destination = Actor_ApplyDrive(inoutActor, deltaTime);

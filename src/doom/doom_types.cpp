@@ -11,19 +11,6 @@ bool ChildIsNode(ChildId id)
 	return  (id & 0x80000000) == 0;
 }
 
-DoomSegment* DoomSubSector_GetSegment(unsigned int index, DoomSubSector* obj)
-{
-	if (index < obj->segmentAmount)
-	{
-		return &obj->segments[index];
-	}
-	else
-	{
-		return &obj->segments[0];
-	}
-}
-
-
 void DoomLinedef_Init(DoomLinedef* def)
 {
 	def->id = -1;
@@ -44,7 +31,6 @@ void DoomSidedef_Init(DoomSidedef* def)
 	def->texturetop = -1;
 	def->texturebottom = -1;
 	def->texturemiddle = -1;
-
 }
 
 void DoomSector_Init(DoomSector* def)
@@ -60,7 +46,10 @@ void DoomSector_Init(DoomSector* def)
 
 void DoomSegment_Init(DoomSegment* def)
 {
-
+	def->v1 = -1;
+	def->linedef = -1;
+	def->partnerSegment = -1;
+	def->lineSide = 0;
 }
 
 void DoomThing_Init(DoomThing* def)
