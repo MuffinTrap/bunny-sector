@@ -20,4 +20,8 @@
 		<name>FLAT18</name>
 		<texture>beige_ceiling.png</texture>
 	</material>
+	<material>
+		<name>MFLR8_1</name>
+		<texture>beige_ceiling.png</texture>
+	</material>
 </materials>

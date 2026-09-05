@@ -1,7 +1,7 @@
 #pragma once
 #include <mgdl.h>
+#include "../bunny-sector-types.h"
 
-typedef s16 textureId; // Texture identifier instead of string
 typedef unsigned int ChildId;
 
 enum LINEDEF_FLAG
@@ -47,9 +47,9 @@ struct DoomSidedef
 {
 	int offsetx;
 	int offsety;
-	textureId texturetop;
-	textureId texturebottom;
-	textureId texturemiddle;
+	MaterialId texturetop;
+	MaterialId texturebottom;
+	MaterialId texturemiddle;
 
 	int sector;
 };
@@ -62,8 +62,8 @@ struct DoomSector
 	int heightfloor;
 	int heightceiling;
 
-	textureId texturefloor;
-	textureId textureceiling;
+	MaterialId texturefloor;
+	MaterialId textureceiling;
 	u8 lightlevel;
 	int special;
 	int id;

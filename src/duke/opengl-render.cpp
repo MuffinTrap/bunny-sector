@@ -31,12 +31,12 @@ static u32 wallIndexBufferSize = 0;
 static u32 wallIndexBufferIndex = 0;
 
 
-// Arrays for storing sprite pointers and matching picnums to Sprites
+// Arrays for storing sprite pointers and matching MaterialId to Sprites
 #define RENDERER_MATERIAL_ARRAY_SIZE 128
-#define RENDERER_PICNUM_TO_MATERIAL_ARRAY_SIZE 2048
+#define RENDERER_MATERIALID_TO_MATERIAL_ARRAY_SIZE 2048
 static sizetype nextFreeMaterialSlot = 0;
 static MapMaterial** materialPtrArray = nullptr;
-static u16* picnumToMaterialArray = nullptr;
+static MaterialId* materialIdToMaterialArray = nullptr;
 
 // Default texture
 // Animation variables for animating sprites
@@ -86,11 +86,11 @@ static void ActivateFloorBuffer(u32 index, const GLfloat* floorBuffer)
     glTexCoordPointer(2, GL_FLOAT, sizeof(float) * 5, &floorBuffer[index + 3]);
 }
 
-MapMaterial* GetMaterialForPicnum(s16 picnum)
+MapMaterial* GetMaterialForMaterialId(MaterialId picnum)
 {
-    if (picnum >= 0 && picnum < RENDERER_PICNUM_TO_MATERIAL_ARRAY_SIZE)
+    if (picnum >= 0 && picnum < RENDERER_MATERIALID_TO_MATERIAL_ARRAY_SIZE)
     {
-        u16 materialIndex = picnumToMaterialArray[picnum];
+        u16 materialIndex = materialIdToMaterialArray[picnum];
         if (materialIndex >= 0 && materialIndex <= RENDERER_MATERIAL_ARRAY_SIZE)
         {
             MapMaterial* material = materialPtrArray[materialIndex];
@@ -181,6 +181,9 @@ static void DrawBufferWithMaterial(MapMaterial* material, Vector3 normal, Buffer
             // Get UVs of frame
 
             break;
+        default:
+            mgdl_assert_printf(false, "Invalid material type on material %s\n", zstr_cstr(&material->mgdlMaterial->name));
+        break;
     }
 
 }
@@ -280,6 +283,7 @@ void OpenGLRender_EndDrawingPolygons()
 /**
  * @brief Calculate the uv coordinates of a floor or ceiling vertex in a sector
  */
+static Vector2 CalculateFloorOrCeilingUV(Vector2 size, Vector2 minPoint, Vector2 maxTexCoord, Vector2 vertex)
 static Vector2 CalculateFloorOrCeilingUV(const Sector* sector, float x, float z)
 {
     float xrange = sector->sizeXZ.x;
@@ -328,12 +332,12 @@ void OpenGLRender_Init()
     vertexIndexBuffer[4] = 3;
     vertexIndexBuffer[5] = 0;
 
-    if (picnumToMaterialArray == nullptr)
+    if (materialIdToMaterialArray == nullptr)
     {
-        picnumToMaterialArray = (u16*)mgdl_AllocateGeneralMemory(RENDERER_PICNUM_TO_MATERIAL_ARRAY_SIZE * sizeof(u16));
-        for (int i = 0; i < RENDERER_PICNUM_TO_MATERIAL_ARRAY_SIZE; i++)
+        materialIdToMaterialArray = (MaterialId*)mgdl_AllocateGeneralMemory(RENDERER_MATERIALID_TO_MATERIAL_ARRAY_SIZE * sizeof(MaterialId));
+        for (int i = 0; i < RENDERER_MATERIALID_TO_MATERIAL_ARRAY_SIZE; i++)
         {
-            picnumToMaterialArray[i] = 0;
+            materialIdToMaterialArray[i] = 0;
         }
     }
     if (materialPtrArray == nullptr)
@@ -347,152 +351,7 @@ void OpenGLRender_Init()
     }
 }
 
-/*
-XML structure
-<materials>
-	<folder>
-	<material>
-		Either:
-		<picnum> // Duke maps
-		or
-		<name> // Doom maps
-		One of:
-			<texture> & <mipmaps>
-			<material type>
-			<function id>
-			
-		Optional:
-		<color>
-		<self luminance>
 
-*/
-
-void OpenGLRender_ReadMaterialsXML(const char* materialsfile, zstr** TextureFileNames, int *lastTextureIndex)
-{
-    s16 extraPicnums = 0;
-	if (mgdl_DoesFileExist(materialsfile) == false)
-	{
-		return;
-	}
-	tinyxml2::XMLDocument materials;
-	tinyxml2::XMLError loadresult = materials.LoadFile(materialsfile);
-	if (loadresult != tinyxml2::XML_SUCCESS)
-	{
-		Log_Error("Failed to load xml file\n");
-	}
-	
-	// First child is <materials>
-	tinyxml2::XMLElement* folderElement = materials.FirstChildElement()->FirstChildElement("folder");
-	if (folderElement)
-	{
-		Log_InfoF("Textures are in folder: %s\n", folderElement->GetText());
-	}
-	else
-	{
-		Log_Error("Did not find <folder> from xml\n");
-	}
-	
-	int materialindex = 0;
-	tinyxml2::XMLElement* materialElement = materials.FirstChildElement()->FirstChildElement("material");
-	if (materialElement == nullptr)
-	{
-		Log_Error("Did not find any <material> from xml\n");
-	}
-	while(materialElement)
-	{
-		int picnum = -1;
-		tinyxml2::XMLElement* picnumElement = materialElement->FirstChildElement("picnum");
-		if (picnumElement)
-		{
-			picnumElement->QueryIntText(&picnum);
-			Log_InfoF("material %d has picnum %d\n", materialindex, picnum);	
-		}
-		tinyxml2::XMLElement* nameElement = materialElement->FirstChildElement("name");
-		if (nameElement)
-		{
-			Log_InfoF("material %d has name %s\n", materialindex, nameElement->GetText());
-            // picnum is the index
-            zstr namez = zstr_from(nameElement->GetText());
-
-            /*
-            // Do we already have a index for this texture
-            for (int i = 0; i < *lastTextureIndex; i++)
-            {
-                zstr* ati = TextureFileNames[i];
-                if (zstr_eq(&namez, ati))
-                {
-                    picnum = i;
-                    Log_InfoF("material %d already has picnum %d\n", materialindex, picnum);
-                    break;
-                }
-            }
-            */
-            zstr_free(&namez);
-		}
-		TextureHandle textureH = -1;
-	
-		tinyxml2::XMLElement* textureElement = materialElement->FirstChildElement("texture");
-		if (textureElement)
-		{
-			Log_InfoF("material %d has texture \"%s\"\n", materialindex, textureElement->GetText());
-			// TODO Check for mipmaps
-		
-		
-			mgdl_BufferPrintf("%s/%s", folderElement->GetText(), textureElement->GetText());
-			textureH = AssetManager_LoadTexture(mgdl_GetPrintfBuffer(), true);
-		}
-		else if (nameElement)
-        {
-            // Try to load a file with same name
-            zstr namez = zstr_from(nameElement->GetText());
-            zstr_cat(&namez, ".png");
-			mgdl_BufferPrintf("%s/%s", folderElement->GetText(), zstr_cstr(&namez));
-			textureH = AssetManager_LoadTexture(mgdl_GetPrintfBuffer(), true);
-            if (Handle_IsValid(textureH))
-            {
-                // Give picnum that is different from the ones in TextureFileNames
-                picnum = *lastTextureIndex;
-             //   *lastTextureIndex = *lastTextureIndex + 1;
-            //    *TextureFileNames[*lastTextureIndex] = namez;
-            }
-            else
-            {
-                zstr_free(&namez);
-            }
-        }
-
-        if (Handle_IsValid(textureH))
-        {
-            if (picnum < 0)
-            {
-
-                picnum = *lastTextureIndex;
-                *lastTextureIndex = *lastTextureIndex + 1;
-            }
-            mgdl_SetTextureFilterMin(textureH, TextureFilterModes::MipmapLinear);
-            Texture* texture = AssetManager_GetTexture(textureH);
-
-            if (OpenGLRender_RegisterTexture(picnum, texture))
-            {
-                Log_InfoF("->\tmaterial %d registered to picnum %d\n", materialindex, picnum);
-            }
-            else
-            {
-                Log_InfoF("!   material %d failed to register to picnum %d\n", materialindex, picnum);
-            }
-        }
-		// TODO Check for material type
-		
-		// TODO check for function id
-		
-		// TODO check others
-		
-		
-		
-		materialElement = materialElement->NextSiblingElement("material");
-		materialindex += 1;
-	}
-}
 
 void OpenGLRender_Deinit()
 {
@@ -507,11 +366,10 @@ void OpenGLRender_Deinit()
         }
     }
     mgdl_FreeGeneralMemory(materialPtrArray);
-    mgdl_FreeGeneralMemory(picnumToMaterialArray);
+    mgdl_FreeGeneralMemory(materialIdToMaterialArray);
 }
 
-
-bool OpenGLRender_RegisterTexture(s16 picnum, Texture* texture)
+MaterialId OpenGLRender_RegisterTexture(Texture* texture)
 {
     if (nextFreeMaterialSlot < RENDERER_MATERIAL_ARRAY_SIZE)
     {
@@ -520,65 +378,57 @@ bool OpenGLRender_RegisterTexture(s16 picnum, Texture* texture)
         addMaterial->diffuseColor[1] = 1.0f;
         addMaterial->diffuseColor[2] = 1.0f;
         addMaterial->diffuseColor[3] = 1.0f;
-        bool ok = OpenGLRender_RegisterMaterial(picnum, addMaterial, Material_Texture);
-        if (ok == false)
+        MaterialId mi = OpenGLRender_RegisterMaterial(addMaterial, Material_Texture);
+        if (mi == INVALID_MATERIAL_ID)
         {
             Material_Free(addMaterial);
         }
-        return ok;
+        return mi;
     }
     else
     {
-        return false;
+        return INVALID_MATERIAL_ID;
     }
 }
 
 // TODO Grass and Function types
-bool OpenGLRender_RegisterMaterial(s16 picnum, Material* material, MapMaterialType materialType)
+MaterialId OpenGLRender_RegisterMaterial(Material* material, MapMaterialType materialType)
 {
     if (nextFreeMaterialSlot < RENDERER_MATERIAL_ARRAY_SIZE)
     {
         MapMaterial* mapMaterial = (MapMaterial*)mgdl_AllocateGraphicsMemory(sizeof(MapMaterial));
         mapMaterial->mgdlMaterial = material;
         mapMaterial->type = materialType;
-        return OpenGLRender_RegisterMapMaterial(picnum, mapMaterial);
+        return OpenGLRender_RegisterMapMaterial(mapMaterial);
     }
     return false;
 }
 
-bool OpenGLRender_RegisterMapMaterial(s16 picnum, MapMaterial* material)
+MaterialId OpenGLRender_RegisterMapMaterial(MapMaterial* material)
 {
     if (nextFreeMaterialSlot < RENDERER_MATERIAL_ARRAY_SIZE)
     {
         materialPtrArray[nextFreeMaterialSlot] = material;
-        picnumToMaterialArray[picnum] = nextFreeMaterialSlot;
+        materialIdToMaterialArray[nextFreeMaterialSlot] = nextFreeMaterialSlot;
+        MaterialId storedId = (MaterialId)nextFreeMaterialSlot;
         nextFreeMaterialSlot += 1;
         SetWrap(material->mgdlMaterial->texture->textureId);
-        return true;
+        return storedId;
     }
-    return false;
-
+    return INVALID_MATERIAL_ID;
 }
-/*
-s16 OpenGLRender_GetPicnumForName(zstr* textureName)
+
+MaterialId OpenGLRender_GetMapMaterialId(MapMaterial* material)
 {
-    printf("Get picnum for name %d\n", zstr_cstr(textureName));
-    for (int i = 0; i < nextFreeMaterialSlot; i++)
+    for(int i = 0; i < nextFreeMaterialSlot; i++)
     {
-        if (zstr_eq(&TextureFileNames[i], textureName))
+        if (materialPtrArray[i] == material)
         {
-            for (int pi = 0; pi < nextFreeMaterialSlot; pi++)
-            {
-                if (picnumToMaterialArray[pi] == i)
-                {
-                    return pi;
-                }
-            }
+            return MaterialId(i);
         }
     }
-    return 0;
+    return INVALID_MATERIAL_ID;
 }
-*/
 
 /** TODO remove settings3D. Scale should be set globally already
  */
@@ -595,7 +445,7 @@ void DrawQuad(Vector2 start, Vector2 end, const Vector2 normalXZ, s32 floorY, s3
     float tex_top = 1.0 * height;
     Vector3 normal = Vector3New(normalXZ.x, 0.0f, normalXZ.y);
 
-    MapMaterial* material = GetMaterialForPicnum(picnum);
+    MapMaterial* material = GetMaterialForMaterialId(picnum);
     ActivateVertexBuffer();
 
     BeginVertexBufferPolygon(normal, BrightnessOffsetToColor(brightnessOffset));
@@ -652,12 +502,8 @@ void OpenGLRender_DrawWall(DukeMap* map, Wall* w, float floorY, float ceilingY, 
 }
 
 
-void OpenGLRender_DrawFloorOrCeiling(DukeMap* map, s16 sectorIndex, bool floor)
+void OpenGLRender_DrawFloorOrCeiling(BunnySector_Map* map, int sectorIndex, u8 shade, float ycoord, MaterialId materialId, bool floor)
 {
-    Sector* sector = Map_GetSector(map, sectorIndex);
-    float ceilingY = sector->ceilingy;
-    float floorY = sector->floory;
-
     glPushMatrix();
     MapMaterial* material = nullptr;
     Vector3 normal;
@@ -666,17 +512,17 @@ void OpenGLRender_DrawFloorOrCeiling(DukeMap* map, s16 sectorIndex, bool floor)
     if (floor)
     {
         glTranslatef(0.0f, floorY, 0.0f);
-        float color = BrightnessOffsetToColor(sector->floorshade);
-        material = GetMaterialForPicnum(sector->floorpicnum);
+        float color = BrightnessOffsetToColor(shade);
+        material = GetMaterialForMaterialId(materialId);
         glNormal3f(floorNormal[0], floorNormal[1], floorNormal[2]);
         normal = Vector3New(floorNormal[0], floorNormal[1], floorNormal[2]);
         glColor3f(color, color, color);
     }
     else
     {
-        glTranslatef(0.0f, ceilingY, 0.0f);
-        float color = BrightnessOffsetToColor(sector->ceilingshade);
-        material = GetMaterialForPicnum(sector->ceilingpicnum);
+        glTranslatef(0.0f, ycoord, 0.0f);
+        float color = BrightnessOffsetToColor(shade);
+        material = GetMaterialForMaterialId(materialId);
         glNormal3f(ceilingNormal[0], ceilingNormal[1], ceilingNormal[2]);
         normal = Vector3New(ceilingNormal[0], ceilingNormal[1], ceilingNormal[2]);
         glColor3f(color, color, color);
@@ -759,7 +605,7 @@ void OpenGLRender_DrawSprite(Vector3 position, float width, float height, float 
         }
     }
 
-    MapMaterial* material = GetMaterialForPicnum(picnum);
+    MapMaterial* material = GetMaterialForMaterialId(picnum);
     if (material->type == Material_SpriteModel)
     {
         DrawMeshOnSprite(material, position, spriteAngle);
@@ -817,11 +663,11 @@ void OpenGLRender_DrawDot(Vector2 point, float size, color32 color)
     glVertex2i(point.x,point.y - size);
 }
 
-static void StartCountingFloorBufferSize(DukeMap* map)
+static void StartCountingFloorBufferSize(BunnySector_Map* map)
 {
     MapFloorVertexData* floorData = &map->floorVertexData;
-    const s16 sectorAmount = map->sectorAmount;
-    const s16 wallAmount = map->wallAmount;
+    const s16 sectorAmount = map->GetSectorAmount();
+    const s16 wallAmount = map->GetWallVertexAmount();
     // Reserve all memory
     if (floorData->floorStartIndices == nullptr)
     {
@@ -848,9 +694,13 @@ static void StartCountingFloorBufferSize(DukeMap* map)
     Tesselator_SetBuffers(floorData->floorBuffer, floorData->floorBufferSizeVertices, floorData->floorIndexBuffer, floorData->floorIndexBufferSize);
 }
 
-static void TesselateFloor(DukeMap* map, u16 sectorIndex)
+static void TesselateFloor(BunnySector_Map* map, u16 sectorIndex)
 {
-    Sector* sector = Map_GetSector(map, sectorIndex);
+    int sectorWallNum = map->GetWallAmountInSector(sectorIndex);
+    int sectorFirstWallIndex = map->GetSectorFirstWallIndex(sectorIndex);
+    Vector2 sectorSize = map->GetSectorSize(sectorIndex);
+    Vector2 sectorMaxTexCoord = map->GetSectorMaxTexCoord(sectorIndex);
+    Vector2 sectorMinPoint = map->GetSectorMinPoint(sectorIndex);
     // Set translation offset, normal and color for the whole polygon
     RectF uvOffset = zeroOffset;
     Tesselator_BufferIndices indicesBefore;
@@ -858,10 +708,16 @@ static void TesselateFloor(DukeMap* map, u16 sectorIndex)
 
         Tesselator_BeginContour();
         // This is where the current contour started
-        int contourStartPoint = sector->wallptr + sector->wallnum -1;
+        int contourStartPoint = sectorFirstWallIndex + sectorWallNum -1;
 
-        Wall* startWall = Map_GetWall(map, contourStartPoint);
-        int contourEndPoint = startWall->point2;
+        // NOTE
+        // In doom map's subsectors there are no islands
+
+        // DANGER
+        //Wall* startWall = Map_GetWall(map, contourStartPoint);
+        //int contourEndPoint = startWall->point2;
+        int contourEndPoint = sectorFirstWallIndex;
+
         /* Because Mapster saves points in clockwise order, but we render
         in counter-clockwise, we need to save the point2 of this vertex
         that is the last point of this contour
@@ -892,14 +748,14 @@ static void TesselateFloor(DukeMap* map, u16 sectorIndex)
         GLfloat vertex[3];
         Vector2 calculatedUV;
         GLfloat uv[2];
-        for (s16 wi = sector->wallnum-1; wi >= 0; wi--)
+        for (s16 wi = sectorWallNum-1; wi >= 0; wi--)
         {
-            Wall* w = Map_GetWallInSectorPtr(map, sector, wi);
+            Vector2 w = map->GetWallVertexInSector(sectorIndex, wi);
 
-            vertex[0] = w->x;
+            vertex[0] = w.x;
             vertex[1] = 0.0f;
-            vertex[2] = w->z;
-            calculatedUV = CalculateFloorOrCeilingUV(sector, w->x, w->z);
+            vertex[2] = w.y;
+            calculatedUV = CalculateFloorOrCeilingUV(sectorSize, sectorMinPoint, sectorMaxTexCoord, w);
             uv[0] = calculatedUV.x;
             uv[1] = calculatedUV.y;
 
@@ -908,11 +764,14 @@ static void TesselateFloor(DukeMap* map, u16 sectorIndex)
             if (pointIndex == contourEndPoint)
             {
                 Tesselator_EndContour();
-                if (wi > 0 && contourEndPoint > sector->wallptr)
+                if (wi > 0 && contourEndPoint > sectorFirstWallIndex)
                 {
-                    Tesselator_BeginContour();
-                    Wall* nextWall = Map_GetWallInSectorPtr(map, sector, (wi - 1));
-                    contourEndPoint = nextWall->point2;
+                    mgdl_assert_print(false, "I thought Doom maps dont have islands");
+                    /*
+                        Tesselator_BeginContour();
+                        Wall* nextWall = Map_GetWallInSectorPtr(map, sector, (wi - 1));
+                        contourEndPoint = nextWall->point2;
+                    */
                 }
 
             }
@@ -931,10 +790,10 @@ static void TesselateFloor(DukeMap* map, u16 sectorIndex)
     floorData->floorStartIndices[sectorIndex].vertexCount = vertexCount;
 }
 
-static void StopCountingFloorBufferSize(DukeMap* map)
+static void StopCountingFloorBufferSize(BunnySector_Map* map)
 {
     MapFloorVertexData* floorData = &map->floorVertexData;
-    Tesselator_BufferIndices lastIndices = floorData->floorStartIndices[map->sectorAmount-1];
+    Tesselator_BufferIndices lastIndices = floorData->floorStartIndices[map->GetSectorAmount()-1];
     // Allocate the needed amount of memory
     u16 lastIndex = lastIndices.indexIndex + lastIndices.indexCount;
     if (lastIndex < floorData->floorIndexBufferSize)
@@ -961,18 +820,18 @@ static void StopCountingFloorBufferSize(DukeMap* map)
     */
 }
 
-void OpenGLRender_CreateFloorBuffers(DukeMap* map)
+void OpenGLRender_CreateFloorBuffers(BunnySector_Map* map)
 {
 
     StartCountingFloorBufferSize(map);
-    for (int si = 0; si < map->sectorAmount; si++)
+    for (int si = 0; si < map->GetSectorAmount(); si++)
     {
         TesselateFloor(map, si);
     }
     StopCountingFloorBufferSize(map);
 }
 
-void OpenGLRender_StartDrawingFloorsFromBuffer(DukeMap* map)
+void OpenGLRender_StartDrawingFloorsFromBuffer(BunnySector_Map* map)
 {
     const MapFloorVertexData* floorData = &map->floorVertexData;
     mgdl_CacheFlushRange(floorData->floorBuffer, floorData->floorBufferSizeVertices * floorData->FLOOR_BUFFER_VERTEX_SIZE * sizeof(GLfloat));
@@ -985,35 +844,32 @@ void OpenGLRender_StartDrawingFloorsFromBuffer(DukeMap* map)
 
 void OpenGLRender_StartObjExport(BunnySector_Map* map, const char* filename, RenderSettingsOpenGL* settings)
 {
-    DukeMap* dmap = map->mapPtr.dukeMap;
-    ObjExport_Start(filename, zstr_cstr(&map->mapfile), dmap->sectorAmount, settings->scale);
+    ObjExport_Start(filename, zstr_cstr(map->GetMapFile()), map->GetSectorAmount(), settings->scale);
 }
 void OpenGLRender_StartFillingWallBuffer(BunnySector_Map* map)
 {
-    DukeMap* dmap = map->mapPtr.dukeMap;
     u32 drawnWalls = 0;
-    for (int si = 0; si < dmap->sectorAmount; si++)
+    for (int si = 0; si < map->GetSectorAmount(); si++)
     {
-        Sector* sector = Map_GetSector(dmap, si);
-        for(int wi = 0; wi < sector->wallnum; wi++)
+        int sectorWallAmount = map->GetWallAmountInSector(si);
+        for(int wi = 0; wi < sectorWallAmount; wi++)
         {
-            Wall* w = Map_GetWallInSectorPtr(dmap, sector, wi);
-            if (w->nextsector >= 0)
+            int n = map->GetNeighbourOfWall(si, wi);
+            if (n >= 0)
             {
                 // Create wall that goes down or up to adjacent sector: Note! both sectors dont need to do this. Only lower one
-                Sector* neighbor = Map_GetSector(dmap, w->nextsector);
-                int n_floorY = neighbor->floory;
-                int n_ceilingY = neighbor->ceilingy;
+                int n_floorY = map->GetFloory(n);
+                int n_ceilingY = map->GetCeilingy(n);
 
                 // if this floor height is less than adjacent: Greate wall in between: goes up
-                if (sector->floory < n_floorY)
+                if (map->GetFloory(si) < n_floorY)
                 {
                     drawnWalls += 1;
                 }
 
                 // Ceiling:
                 // If this ceiling is higher than adjacent: Greate wall in between: goes down
-                if (sector->ceilingy > n_ceilingY)
+                if (map->GetCeilingy(si) > n_ceilingY)
                 {
                     drawnWalls += 1;
                 }
@@ -1066,36 +922,33 @@ void BufferQuad(Vector2 start, Vector2 end, float floorY, float ceilingY, u16 qu
 void OpenGLRender_BufferWalls(BunnySector_Map* map)
 {
 
-    DukeMap* dmap = map->mapPtr.dukeMap;
     u16 quadCounter = 0;
-    for (int si = 0; si < dmap->sectorAmount; si++)
+    for (int si = 0; si < map->GetSectorAmount(); si++)
     {
-        Sector* sector = Map_GetSector(dmap, si);
-        for(int wi = 0; wi < sector->wallnum; wi++)
+        int sectorWallAmount = map->GetWallAmountInSector(si);
+        for(int wi = 0; wi < sectorWallAmount; wi++)
         {
-            Wall* w = Map_GetWallInSectorPtr(dmap, sector, wi);
-            Vector2 start = Vector2New(w->x, w->z);
-            Wall* wend = Map_GetWallEnd(dmap, w);
-            Vector2 end =  Vector2New(wend->x, wend->z);
-            if (w->nextsector >= 0)
+            Vector2 start = map->GetWallVertexInSector(si, wi);
+            Vector2 end =  map->GetNextWallVertex(si, wi);
+            int n = map->GetNeighbourOfWall(si,wi);
+            if (n >= 0)
             {
                 // Create wall that goes down or up to adjacent sector: Note! both sectors dont need to do this. Only lower one
-                Sector* neighbor = Map_GetSector(dmap, w->nextsector);
-                int n_floorY = neighbor->floory;
-                int n_ceilingY = neighbor->ceilingy;
+                int n_floorY = map->GetFloory(n);
+                int n_ceilingY = map->GetCeilingy(n);
 
                 // if this floor height is less than adjacent: Greate wall in between: goes up
-                if (sector->floory < n_floorY)
+                if (map->GetFloory(si) < n_floorY)
                 {
-                    BufferQuad(start, end, sector->floory, n_floorY, quadCounter);
+                    BufferQuad(start, end, map->GetFloory(si), n_floorY, quadCounter);
                     quadCounter += 1;
                 }
 
                 // Ceiling:
                 // If this ceiling is higher than adjacent: Greate wall in between: goes down
-                if (sector->ceilingy > n_ceilingY)
+                if (map->GetCeilingy(si) > n_ceilingY)
                 {
-                    BufferQuad(start, end, n_ceilingY, sector->ceilingy, quadCounter);
+                    BufferQuad(start, end, n_ceilingY, map->GetCeilingy(si), quadCounter);
                     quadCounter += 1;
                 }
             }
@@ -1103,7 +956,7 @@ void OpenGLRender_BufferWalls(BunnySector_Map* map)
             {
                 // TODO Masked walls
                 // Draw the wall
-                BufferQuad(start, end, sector->floory, sector->ceilingy, quadCounter);
+                BufferQuad(start, end, map->GetFloory(si), map->GetCeilingy(si), quadCounter);
                 quadCounter += 1;
             }
         }
@@ -1116,8 +969,7 @@ void OpenGLRender_WriteToObj(BunnySector_Map* map, const char* filename, RenderS
     OpenGLRender_StartFillingWallBuffer(map);
     OpenGLRender_BufferWalls(map);
 
-    DukeMap* dmap = map->mapPtr.dukeMap;
-    const MapFloorVertexData* floorData = &dmap->floorVertexData;
+    const MapFloorVertexData* floorData = &map->floorVertexData;
 
     // VERTICES
     // This will be buffer 0
@@ -1131,22 +983,20 @@ void OpenGLRender_WriteToObj(BunnySector_Map* map, const char* filename, RenderS
     // Write all floors in one big buffer
     u16 firstFloorBuffer = 1;
     u16 firstCeilingBuffer = 2;
-    for (int si = 0; si < dmap->sectorAmount; si++)
+    for (int si = 0; si < map->GetSectorAmount(); si++)
     {
-        Sector* sector = Map_GetSector(dmap, si);
         Tesselator_BufferIndices indices = floorData->floorStartIndices[si];
 
         ObjExport_WriteVertices(&floorData->floorBuffer[indices.vertexIndex * floorData->FLOOR_BUFFER_VERTEX_SIZE], indices.vertexCount, floorData->FLOOR_BUFFER_VERTEX_SIZE,
-                                sector->floory, firstFloorBuffer,
+                                map->GetFloory(si), firstFloorBuffer,
                                 mgdl_BufferPrintf("%s", "Floor buffer"));
     }
-    for (int si = 0; si < dmap->sectorAmount; si++)
+    for (int si = 0; si < map->GetSectorAmount(); si++)
     {
-        Sector* sector = Map_GetSector(dmap, si);
         Tesselator_BufferIndices indices = floorData->floorStartIndices[si];
 
         ObjExport_WriteVertices(&floorData->floorBuffer[indices.vertexIndex * floorData->FLOOR_BUFFER_VERTEX_SIZE], indices.vertexCount, floorData->FLOOR_BUFFER_VERTEX_SIZE,
-                                sector->ceilingy, firstCeilingBuffer,
+                                map->GetCeilingy(si), firstCeilingBuffer,
                                 mgdl_BufferPrintf("%s", "Ceiling buffer"));
     }
 
@@ -1155,7 +1005,7 @@ void OpenGLRender_WriteToObj(BunnySector_Map* map, const char* filename, RenderS
     // FACES
     u16 wallVertexBuffer = 0;
     ObjExport_WriteFaces(wallIndexBuffer, wallIndexBufferSize, wallVertexBuffer, Wind_CCW, mgdl_BufferPrintf("%s", "Wall faces"));
-    for (int si = 0; si < dmap->sectorAmount; si++)
+    for (int si = 0; si < map->GetSectorAmount(); si++)
     {
         Tesselator_BufferIndices indices = floorData->floorStartIndices[si];
         // These faces refer to earlier written floor and ceiling buffers
@@ -1164,7 +1014,7 @@ void OpenGLRender_WriteToObj(BunnySector_Map* map, const char* filename, RenderS
                              mgdl_BufferPrintf("Sector %d floor : refers to vb %d", si, firstFloorBuffer));
     }
 
-    for (int si = 0; si < dmap->sectorAmount; si++)
+    for (int si = 0; si < map->GetSectorAmount(); si++)
     {
         Tesselator_BufferIndices indices = floorData->floorStartIndices[si];
         ObjExport_WriteFaces(&floorData->floorIndexBuffer[indices.indexIndex], indices.indexCount,

@@ -245,7 +245,7 @@ static s8 readByte()
 	return i;
 }
 
-static textureId readTextureId()
+static MaterialId readTextureId()
 {
 	sscanf(lineBuffer, "%s = \"%s\";", identifierBuffer, textureNameBuffer);
 
@@ -261,7 +261,7 @@ static textureId readTextureId()
 	}
 
 	zstr textureName = zstr_from_len(textureNameBuffer, index);
-	textureId tid = BunnySector_GetTextureId(&textureName);
+	MaterialId tid = BunnySector_GetMaterialId(&textureName);
 	printf("Doom map has texture %s mapped to id %d\n", zstr_cstr(&textureName), tid);
 	zstr_free(&textureName);
 	return tid;
@@ -442,7 +442,7 @@ static void read_linedef() {
 			}
 			else if (line_startswith(V2))
 			{
-				t->v2 = readFloat();
+				t->v2 = readInt();
 			}
 			else if (line_startswith(SPECIAL))
 			{

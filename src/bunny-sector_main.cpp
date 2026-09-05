@@ -11,11 +11,9 @@
 #include "duke/actor.h"
 
 #include "doom/doom-map-reader.h"
+#include "bunny-sector-materials.h"
 
-// TextureId to zstr array
-zstr* TextureFileNames;
-static const int TEXTURE_NAME_AMOUNT = 64;
-int freeTextureId;
+static BunnySector::Materials* materialManager;
 
 static BunnySector_Map** mapsArray = nullptr;
 static BunnySector_Map* activeMap = nullptr;
@@ -60,26 +58,28 @@ bool BunnySector_Init()
 		Texture_SetFilterModeMin(defaultChecker, Linear);
 	}
 
-	TextureFileNames = (zstr*)mgdl_AllocateGeneralMemory(TEXTURE_NAME_AMOUNT * sizeof(zstr));
-	freeTextureId = 0;
-	for (int i = 0; i < TEXTURE_NAME_AMOUNT; i++)
-	{
-		TextureFileNames[i] = zstr_init();
-	}
+
+	// Read XML
+	/* Reading the xml gives the information about materials used in the maps
+	 * Build maps use picnum : s16
+	 * Doom maps use names : 8 letters all caps : this is replaced by TextureIndex and names are stored in zstr array
+	 * Materials have OpenGL material properties and Bunny properties, like Grass or DrawCallback id
+	 * Materials are registered to OpenGL renderer which returns a MaterialId
+	 * When the map is loaded,
+	 * 	BunnySector knows what picnums or names it uses
+	 * 	BunnySector builds a dictionary that matches the picnum or name to MaterialId when
+	 * 	it registers the used materials with OpenGLRenderer
+	 * When the map is drawn the picnum or name used by material is translated to MaterialId
+	 * 	when drawing a wall, ceiling/floor, or sprite
+	 */
 
 	OpenGLRender_Init();
-	OpenGLRender_RegisterTexture(RENDERER_PICNUM_DEFAULT, defaultChecker);
-	// Get rest of the textures from file
+	OpenGLRender_RegisterTexture(defaultChecker); // This becomes the default texture
 
+	// Read material definitions from a file
+	materialManager = new BunnySector::Materials();
+	materialManager->ReadXML("assets/materials.xml");
 
-
-	OpenGLRender_ReadMaterialsXML("assets/materials.xml", &TextureFileNames, &freeTextureId);
-	/* NOTE TODO Figure this out
-	for (int i = 0; i < freeTextureId; i++)
-	{
-		printf("Texture %d : %s\n", i, zstr_cstr(&TextureFileNames[i]));
-	}
-	*/
 	BuildRender_Init();
 	defaultOpenGL = GetDefaultRenderSettingsOpenGL();
 	defaultView = GetDefaultCameraInfo();
@@ -145,17 +145,7 @@ int BunnySector_LoadMap(const zstr& mapfilename)
 	else if (maptype == Map_Doom)
 	{
 		loaded->mapPtr.doomMap = Doom_ReadMapFromFile(mapfilename);
-
 		DoomMap_PrintInfo(loaded->mapPtr.doomMap);
-
-		// Connect textureId's to picnums in OpengGLRenderer
-		DoomMap* dmap = loaded->mapPtr.doomMap;
-		/*
-		for (int i = 0; i < dmap->sideAmount; i++)
-		{
-			dmap->sidedefs[i].texturemiddle = OpenGLRender_GetPicnumForName(TextureFileNames[dmap->sidedefs[i].texturemiddle]);
-		}
-		*/
 	}
 	if (loaded->mapPtr.doomMap!= nullptr || loaded->mapPtr.dukeMap != nullptr)
 	{
@@ -190,7 +180,7 @@ void BunnySector_StartMap(MapId mapId)
 				RenderSettingsOpenGL_SetUnitToMeter(&defaultOpenGL, DOOM_UNITS_TO_METER);
 				BunnySector_SetOpenGLUnitsToMeter(DOOM_UNITS_TO_METER);
 			}
-			Map_SetActorToStart(map, &demoActor);
+			map->SetActorToStart(&demoActor);
 			printf("BunnySector startmap put actor to %.2f, %.2f\n", demoActor.position.x, demoActor.position.y);
 			defaultView = Actor_GetViewpoint(&demoActor);
 			s_AlignCameraToViewpoint(&defaultView, defaultCamera);
@@ -217,7 +207,7 @@ void BunnySector_UpdateMap(MapId mapId, float deltaTime)
 			while (deltaTime >= FIXED_STEP)
 			{
 				// Note: to prevent insane delta times when debugging this is done in fixed time
-				Map_MoveActorInMap(map, FIXED_STEP, &demoActor);
+				map->MoveActorInMap(FIXED_STEP, &demoActor);
 				deltaTime -= FIXED_STEP;
 			}
 			leftOverTime = deltaTime;
@@ -445,8 +435,8 @@ void BunnySector_DrawWall(Wall* start, Wall* end, s32 floory, s32 ceilingy, s16 
 
 void BunnySector_DrawSectorFloorOrCeiling(s16 sectorNumber, bool floor, s16 picnum, s8 shade)
 {
-	OpenGLRender_DrawFloorOrCeiling(activeMap->mapPtr.dukeMap, sectorNumber, floor);
-	OpenGLRender_DrawFloorOrCeiling(activeMap->mapPtr.dukeMap, sectorNumber, false);
+	OpenGLRender_DrawFloorOrCeiling(activeMap, sectorNumber, shade, activeMap->GetFloory(sectorNumber), picnum, floor);
+	OpenGLRender_DrawFloorOrCeiling(activeMap, sectorNumber, shade, activeMap->GetCeilingy(sectorNumber), picnum, false);
 }
 
 #define V2_CROSS(ax, ay, bx, by)(ax * by - ay * bx)
@@ -474,25 +464,9 @@ bool BunnySector_Intersect(double a1x, double a1y, double a2x, double a2y, doubl
 	return true;
 }
 
-s16 BunnySector_GetTextureId(zstr* textureFilename)
+MaterialId BunnySector_GetMaterialId(zstr* doomTextureFilename)
 {
-	if (freeTextureId >= TEXTURE_NAME_AMOUNT -1)
-	{
-		// All indices in use
-		return -1;
-	}
-	// Do we already have a index for this texture
-	for (int i = 0; i < TEXTURE_NAME_AMOUNT && i < freeTextureId; i++)
-	{
-		zstr* ati = &TextureFileNames[i];
-		if (zstr_eq(textureFilename, ati))
-		{
-			return i;
-		}
-	}
-	TextureFileNames[freeTextureId] = zstr_dup(textureFilename);
-	freeTextureId += 1;
-	return freeTextureId - 1;
+	return materialManager->LoadMaterialByName(doomTextureFilename);
 }
 
 DoomMap* BunnySector_GetDoomMap(MapId mapId)

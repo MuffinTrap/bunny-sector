@@ -4,6 +4,7 @@
 #include "duke/dukemap.h"
 #include "doom/doom-map.h"
 #include "bunny-sector-map.h"
+#include "bunny-sector-types.h"
 
 
 #ifdef __cplusplus
@@ -20,7 +21,7 @@ void BunnySector_RenderMap(MapId mapId);
 BunnyMapType BunnySector_GetMapType(MapId mapid);
 
 
-s16 BunnySector_GetTextureId(zstr* textureFilename);
+MaterialId BunnySector_GetMaterialId(zstr* doomTextureFilename);
 
 struct buns_Vec2
 {

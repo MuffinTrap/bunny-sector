@@ -4,23 +4,8 @@
 #include "duke_types.h"
 // Forward def
 struct Actor;
-struct Tesselator_BufferIndices;
 struct Viewpoint;
 
-struct MapFloorVertexData
-{
-    // Store floor vertices of each sector to buffer
-    // This buffer needs to hold all the vertices of every floor
-    GLfloat* floorBuffer = nullptr; // All vertices of all floors: 3 position 2 uv
-    static const u16 FLOOR_BUFFER_VERTEX_SIZE = 5; ///< How many floats per vertex
-    u16 floorBufferSizeVertices = 0;
-
-    GLushort* floorIndexBuffer = nullptr; // All indices of all floors
-    u32 floorIndexBufferSize = 0;
-
-    Tesselator_BufferIndices* floorStartIndices = nullptr; // Buffer end indices of each floor in vertex and index buffers: NOTE First floor starts at indices (0,0)
-};
-typedef struct MapFloorVertexData MapFloorVertexData;
 
 struct MapSprite
 {
@@ -110,7 +95,6 @@ struct DukeMap
     s16 spriteAmount;
     MapSprite* sprites;
 
-    MapFloorVertexData floorVertexData;
     float lowY;
     float highY;
 };

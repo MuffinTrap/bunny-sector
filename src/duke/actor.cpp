@@ -38,7 +38,7 @@ Actor Actor_CreateDefaultActor(int idNumber)
 	a.verticalSpeedUp = 44000.0f;
 	a.verticalSpeedDown = -32000.0f; // DANGER
 	a.verticalAccelerationUp = 8800.0f;
-	a.verticalAccelerationDown = -4800.0f;
+	a.verticalAccelerationDown = 4800.0f;
 
 	// Size
 	a.standingHeight = 512.0f + 256; // NOTE Set

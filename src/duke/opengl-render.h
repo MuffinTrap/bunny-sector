@@ -9,7 +9,7 @@ struct DukeMap;
 struct Sector;
 struct Wall;
 struct Texture;
-struct BunnySector_Map;
+class BunnySector_Map;
 
 #define RENDERER_PICNUM_DEFAULT 0
 
@@ -17,40 +17,7 @@ struct BunnySector_Map;
 extern "C" {
 #endif
 
-enum MapMaterialType
-{
-	Material_Texture = 0, // Normal texture material
-	Material_Grass = 1,  // Draw multiple shells of grass
-	Material_Function = 2, // Use a custom function to draw on the area
-	Material_SpriteModel = 3, // Draw a mesh instead of a texture for a sprite
-	Material_SpriteAnimated = 4 // Animate a sprite sheet on sprite
-};
-typedef enum MapMaterialType MapMaterialType;
-
-// Extension of normal material
-struct MapMaterial
-{
-	Material* mgdlMaterial;
-	MapMaterialType type;
-
-	union MaterialData
-	{
-		s32 functionName; // If type is function, frame index if type is Animated sprite
-		s32 spriteFrame;
-		Mesh* meshPtr;		// If type is SpriteModel
-	};
-
-	union MaterialParameter
-	{
-		float grassLength; // If type is grass
-		float frameDuration; // If type is Animated sprite
-		float meshScale; // If type is Sprite Mesh
-	};
-
-	MaterialData data;
-	MaterialParameter parameter;
-};
-typedef struct MapMaterial MapMaterial;
+#include "../bunny-sector-types.h"
 
 /**
  * @brief Init the renderer
@@ -66,10 +33,11 @@ void OpenGLRender_Deinit();
  * @param texture The texture to use
  * @returns True if registering succeeded: there was space in array
  */
-bool OpenGLRender_RegisterTexture(s16 picnum, Texture* texture);
-void OpenGLRender_ReadMaterialsXML(const char* materialsfile, zstr** TextureFileNames, int* lastTextureIndex);
-bool OpenGLRender_RegisterMaterial(s16 picnum, Material* material, MapMaterialType materialType);
-bool OpenGLRender_RegisterMapMaterial(s16 picnum, MapMaterial* material);
+bool OpenGLRender_RegisterDefaultTexture(Texture* texture);
+MaterialId OpenGLRender_RegisterTexture(Texture* texture);
+MaterialId OpenGLRender_RegisterMaterial(Material* material, MapMaterialType materialType);
+MaterialId OpenGLRender_RegisterMapMaterial(MapMaterial* material);
+MaterialId OpenGLRender_GetMapMaterialId(MapMaterial* material);
 
 void OpenGLRender_SetShellGrass(ShellGrass* grass);
 
@@ -91,11 +59,11 @@ void OpenGLRender_EndDrawingPolygons();
 
 
 // Tesselate and store all floors to buffer
-void OpenGLRender_CreateFloorBuffers(DukeMap* map);
+void OpenGLRender_CreateFloorBuffers(BunnySector_Map* map);
 /**
  * @brief Tesselates a floor of sector.
  */
-void OpenGLRender_TesselateFloor(DukeMap* map, u16 sectorIndex);
+void OpenGLRender_TesselateFloor(BunnySector_Map* map, u16 sectorIndex);
 void OpenGLRender_StopCountingFloorBufferSize();
 
 /**
@@ -112,8 +80,9 @@ void OpenGLRender_BufferWalls(BunnySector_Map* map);
 /**
  * @brief Sets up rendering state to draw floors and ceilings from a buffer
  */
-void OpenGLRender_StartDrawingFloorsFromBuffer(DukeMap* map);
-void OpenGLRender_DrawFloorOrCeiling(DukeMap* map, s16 sectorIndex, bool floor);
+void OpenGLRender_StartDrawingFloorsFromBuffer(BunnySector_Map* map);
+void OpenGLRender_DrawFloorOrCeilingDuke(DukeMap* map, s16 sectorIndex, bool floor);
+void OpenGLRender_DrawFloorOrCeiling(BunnySector_Map* map, int sectorIndex, u8 shade, float ycoord, MaterialId materialId, bool floor);
 
 void OpenGLRender_Line2(int x1, int z1, int x2, int z2);
 void OpenGLRender_Line3(Vector3 start, Vector3 end);
