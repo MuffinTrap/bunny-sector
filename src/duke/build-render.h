@@ -4,6 +4,7 @@
 
 
 struct Camera;
+class BunnySector_Map;
 
 struct RenderSettings2D
 {
@@ -83,10 +84,10 @@ void BuildRender_DrawTopDown(Viewpoint* camera, DukeMap* map, RenderSettingsOpen
  * @param map The map.
  * @param settings Rendering settings
  */
-void BuildRender_Draw3D(Viewpoint* camera, DukeMap* map, RenderSettingsOpenGL* settings);
+void BuildRender_Draw3D(Viewpoint* camera, BunnySector_Map* map, RenderSettingsOpenGL* settings);
 
 void BuildRender_DrawSectorWalls(Viewpoint* camera, DukeMap* map, RenderSettingsOpenGL* settings);
-void BuildRender_DrawSectorFloorsAndCeilings(Viewpoint* camera, DukeMap* map, RenderSettingsOpenGL* settings);
+void BuildRender_DrawSectorFloorsAndCeilings(Viewpoint* camera, BunnySector_Map* map, RenderSettingsOpenGL* settings);
 void BuildRender_DrawSprites(DukeMap* map, Viewpoint* camera, RenderSettingsOpenGL* settings);
 
 /**
@@ -99,7 +100,6 @@ s16 BuildRender_GetDrawnSectorAmount();
 bool BuildRender_WasSectorDrawn(s16 sectornumber);
 
 
-void BuildRender_ExportCurrentMapToObj(DukeMap* map, const char* filename, RenderSettingsOpenGL* settings);
 
 #ifdef __cplusplus
 }

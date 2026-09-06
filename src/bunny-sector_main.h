@@ -74,12 +74,17 @@ void BunnySector_SetOpenGLCameraVerticalFOVDeg(float degrees);
 // Drawing
 void BunnySector_Setup3D(float viewAspect, float cameraAspect);
 void BunnySector_AlignCameraToActor(int actorId);
-void BunnySector_StartWallDrawing();
+
+void BunnySector_StartMapDrawing();
 void BunnySector_DrawWallF(float startx, float startz, float endx, float endz, float normalx, float normalz, s32 floory, s32 ceilingy, s16 picnum, s8 shade);
 void BunnySector_DrawWall(Wall* start , Wall* end, s32 floory, s32 ceilingy, s16 picnum, s8 shade);
 
-void BunnySector_DrawSectorFloorOrCeiling(s16 sectorNumber, bool floor, s16 picnum, s8 shade);
-void BunnySector_EndWallDrawing();
+void BunnySector_StartFloorCeilingDrawing();
+void BunnySector_DrawSectorFloorOrCeiling(s16 sectorNumber, bool floor);
+
+void BunnySector_EndMapDrawing();
+
+void BunnySector_EndFloorCeilingDrawing();
 
 void BunnySector_SetOpenGLUnitsToMeter(float scale);
 

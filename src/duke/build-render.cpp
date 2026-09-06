@@ -5,6 +5,7 @@
 #include <mgdl/mgdl-vectorfunctions.h>
 
 #include "../bunny-sector-types.h"
+#include "../bunny-sector-map.h"
 
 #include "build-render.h"
 #include "dukemap.h"
@@ -132,11 +133,6 @@ void BuildRender_Init()
 
 }
 
-void BuildRender_ExportCurrentMapToObj(DukeMap* map, const char* filename, RenderSettingsOpenGL* settings)
-{
-    // OpenGLRender_WriteToObj(map, filename, settings);
-}
-
 void BuildRender_DrawSprites(DukeMap* map, Viewpoint* player, RenderSettingsOpenGL* settings)
 {
     // Draw all the sprites from renderer sectors
@@ -159,12 +155,13 @@ void BuildRender_DrawSprites(DukeMap* map, Viewpoint* player, RenderSettingsOpen
     }
 }
 
-void BuildRender_Draw3D(Viewpoint* camera, DukeMap* map, RenderSettingsOpenGL* settings)
+void BuildRender_Draw3D(Viewpoint* camera, BunnySector_Map* map, RenderSettingsOpenGL* settings)
 {
+    DukeMap *dmap = (DukeMap*)map;
         OpenGLRender_StartDrawingPolygons(settings->scale);
-            BuildRender_DrawSectorWalls(camera, map, settings);
+            BuildRender_DrawSectorWalls(camera, dmap, settings);
             BuildRender_DrawSectorFloorsAndCeilings(camera, map, settings);
-            BuildRender_DrawSprites(map, camera, settings);
+            BuildRender_DrawSprites(dmap, camera, settings);
         OpenGLRender_EndDrawingPolygons();
 
 
@@ -456,30 +453,30 @@ void BuildRender_DrawSectorWalls(Viewpoint* player, DukeMap* map, RenderSettings
     } while(head != tail); // Render until buffer is empty: if nothing was added, they are the same
 }
 
-void BuildRender_DrawSectorFloorsAndCeilings(Viewpoint* player, DukeMap* map, RenderSettingsOpenGL* settings)
+void BuildRender_DrawSectorFloorsAndCeilings(Viewpoint* camera, BunnySector_Map* map, RenderSettingsOpenGL* settings)
 {
     // Go through all sectors
     // Draw walls and ceilings of those
     // that had any walls drawn
     OpenGLRender_StartDrawingFloorsFromBuffer(map);
-    for(int i = 0; i < map->sectorAmount; i++)
+    for(int i = 0; i < map->GetSectorAmount(); i++)
     {
         if (sectorDrawTimes[i] > 0)
         {
             // Get the sector info from map
-            Sector* sector = Map_GetSector(map, i);
             //Log_InfoF("Draw sector %d\n", request.number);
 
-            float ceilingY = sector->ceilingy;
-            float floorY = sector->floory;
+            float ceilingY = map->GetCeilingy(i);
+            float floorY = map->GetFloory(i);
             // Draw the floor and ceiling with tesselation
             bool floor = true;
             do {
                 // Draw only floors and ceilings the player can see
-                if ((floor && player->position.y >= floorY) ||
-                    (!floor && player->position.y <= ceilingY))
+                if ((floor && camera->position.y >= floorY) ||
+                    (!floor && camera->position.y <= ceilingY))
                 {
-                    OpenGLRender_DrawFloorOrCeiling(map, i, floor);
+                    MaterialId matId = map->GetSectorMaterial(i,floor);
+                    OpenGLRender_DrawFloorOrCeiling(map, i, map->GetSectorShade(i, floor), (floor? floorY: ceilingY), matId, floor);
                 }
                 floor = !floor;
                 // First round: floor is false

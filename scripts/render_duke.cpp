@@ -470,8 +470,8 @@ void RenderMuffin()
 				} // if RENDER_2D_WALLS
 			}// if draw
 		}
-		BunnySector_DrawSectorFloorOrCeiling(now.number, true, 0, 0);
-		BunnySector_DrawSectorFloorOrCeiling(now.number, false, 0, 0);
+		BunnySector_DrawSectorFloorOrCeiling(now.number, true);
+		BunnySector_DrawSectorFloorOrCeiling(now.number, false);
 	}
 
 	if (RENDER_2D_WALLS) {

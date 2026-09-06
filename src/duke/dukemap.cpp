@@ -4,6 +4,101 @@
 #include "dukemath.h"
 #include "build-render.h"
 #include "actor.h"
+
+// Inherited functions
+
+float DukeMap::GetCeilingy(int sectorIndex)
+{
+    return sectors[sectorIndex].ceilingy;
+}
+float DukeMap::GetFloory(int sectorIndex)
+{
+    return sectors[sectorIndex].floory;
+}
+
+int DukeMap::GetNextWallVertexIndexInSector(int sectorIndex, int wallIndex)
+{
+    Wall* w = Map_GetWallInSector(this, sectorIndex, wallIndex);
+    return w->point2;
+}
+Vector2 DukeMap::GetNextWallVertexInSector(int sectorIndex, int wallIndex)
+{
+    Wall* w = Map_GetWallInSector(this, sectorIndex, wallIndex);
+    Wall* nw = Map_GetWallEnd(this, w);
+    return Vector2New(nw->x, nw->z);
+}
+int DukeMap::GetSectorAmount()
+{
+    return sectorAmount;
+}
+
+int DukeMap::GetSectorFirstWallIndex(int sectorIndex)
+{
+    return sectors[sectorIndex].wallptr;
+}
+int DukeMap::GetWallAmountInSector(int sectorIndex)
+{
+    return sectors[sectorIndex].wallnum;
+}
+MaterialId DukeMap::GetSectorMaterial(int sectorIndex, bool floor)
+{
+    if (floor)
+    {
+    return sectors[sectorIndex].floorpicnum;
+    }
+    else
+    {
+    return sectors[sectorIndex].ceilingpicnum;
+    }
+}
+int DukeMap::GetWallVertexAmount()
+{
+    return wallAmount;
+}
+
+Vector2 DukeMap::GetWallVertexInSector(int sectorIndex, int wallIndex)
+{
+    Wall* w = Map_GetWallInSector(this, sectorIndex, wallIndex);
+    return Vector2New(w->x, w->z);
+}
+
+
+int DukeMap::FindSectorV2(int currentSector, Vector2 currentPosition)
+{
+    return Map_FindSectorV2(this, currentSector, currentPosition);
+}
+
+
+int DukeMap::GetNeighbourOfWall(int sectorIndex, int wallIndex)
+{
+    return walls[sectors[sectorIndex].wallptr + wallIndex].nextsector;
+}
+Vector2 DukeMap::GetSectorMaxTexCoord(int sectorIndex)
+{
+    return sectors[sectorIndex].maxTexCoord;
+}
+Vector2 DukeMap::GetSectorMinPoint(int sectorIndex)
+{
+    return sectors[sectorIndex].minXZPoint;
+}
+u8 DukeMap::GetSectorShade(int sectorIndex, bool floor)
+{
+    if (floor){ return sectors[sectorIndex].floorshade;}
+    else {return sectors[sectorIndex].ceilingshade;}
+}
+
+Vector2 DukeMap::GetSectorSize(int sectorIndex)
+{
+    return sectors[sectorIndex].sizeXZ;
+}
+
+
+
+
+
+
+
+
 Sector* Map_GetSector(DukeMap* map, s16 sectorNumber)
 {
     if (sectorNumber>= 0 && sectorNumber < map->sectorAmount)
@@ -39,7 +134,7 @@ void DukeMap_InitActors(DukeMap* map, Actor* players, int playerAmount)
 {
     // When there are multiple players find starting sectors for all of them
     // Put player one in the official starting position
-    DukeMap_SetActorToStart(map, &players[0]);
+    map->SetActorToStart(&players[0]);
     for (int pi = 1; pi < playerAmount; pi++)
     {
         MapSprite* startingPos = Map_FindSprite(map, SpriteLOTAG::LOTAG_Multiplayer_Start, pi);
@@ -59,12 +154,12 @@ void DukeMap_InitActors(DukeMap* map, Actor* players, int playerAmount)
         }
     }
 }
-void DukeMap_SetActorToStart(DukeMap* map, Actor* actor)
+void DukeMap::SetActorToStart(Actor* actor)
 {
-    actor->position= map->startPosition;
-    actor->yawRad = Math_DukeAngleToRad(map->startAngle);
-    actor->sectorNumber = map->startingSector;
-    actor->elevation = Map_GetSectorFloorHeight(map, map->startingSector) + actor->standingHeight;
+    actor->position= startPosition;
+    actor->yawRad = Math_DukeAngleToRad(startAngle);
+    actor->sectorNumber = startingSector;
+    actor->elevation = GetFloory(startingSector) + actor->standingHeight;
 }
 
 void DukeMap_SetCameraToStart(DukeMap* map, Viewpoint* camera)
@@ -114,26 +209,26 @@ void DukeMap_FindIslandSectors(DukeMap* map)
     }
 }
 
-void DukeMap_PrintInfo(DukeMap* map)
+void DukeMap::PrintInfo()
 {
     Log_InfoF("Duke Map Version:%d Start pos:(%.2f,%.2f), Start elevation %.2f Start angle:%d Start Sector:%d\n",
-              map->version,
-              map->startPosition.x,
-              map->startPosition.y,
-              map->startElevation,
-              map->startAngle,
-              map->startingSector);
-    Log_InfoF("Duke Map Sectors:%d Walls:%d, Sprites:%d\n", map->sectorAmount, map->wallAmount, map->spriteAmount);
-    for (int i = 0; i < map->sectorAmount; i++)
+              version,
+              startPosition.x,
+              startPosition.y,
+              startElevation,
+              startAngle,
+              startingSector);
+    Log_InfoF("Duke Map Sectors:%d Walls:%d, Sprites:%d\n", sectorAmount, wallAmount, spriteAmount);
+    for (int i = 0; i < sectorAmount; i++)
     {
-        Sector* S = &map->sectors[i];
+        Sector* S = &sectors[i];
         Log_InfoF("Sector n: %d Walls: %d first wall %d FloorZ %d CeilingZ %d\n", i, S->wallnum, S->wallptr, S->floory, S->ceilingy);
         Log_InfoF("Sector LOTAG: %d HITAG: %d EXTRA: %d\n", S->lotag, S->hitag, S->extra);
         Log_Info("-- Walls ---------------\n");
         for (int wi = 0; wi < S->wallnum; wi++)
         {
-            Wall* w = &map->walls[S->wallptr + wi];
-            Wall* w2 = &map->walls[w->point2];
+            Wall* w = &walls[S->wallptr + wi];
+            Wall* w2 = &walls[w->point2];
 
 
             Log_InfoF("\tWall n: %d:(%d,%d) - %d:(%d,%d)\n",
@@ -151,9 +246,9 @@ void DukeMap_PrintInfo(DukeMap* map)
     }
 
     Log_Info("-- Sprites ---------------\n");
-    for (int i = 0; i < map->spriteAmount; i++)
+    for (int i = 0; i < spriteAmount; i++)
     {
-        MapSprite* s = &map->sprites[i];
+        MapSprite* s = &sprites[i];
         Log_InfoF("Pos (%.0f %.0f %.0f) Angle %d Pic: %d Alignment:", s->position.x, s->position.y, s->position.z, s->ang, s->picnum);
         SpriteAlignment sa = Sprite_GetAlignment(s);
         switch(sa)
@@ -494,7 +589,7 @@ MapSprite* Map_GetSprite(DukeMap* map, s16 spriteIndex)
     return &map->sprites[spriteIndex];
 }
 
-void DukeMap_MoveActorInMap(DukeMap* map, float deltaTime, Actor* inoutActor)
+void DukeMap::MoveActorInMap(float deltaTime, Actor* inoutActor)
 {
     Vector2 current = inoutActor->position;
     Vector2 destination = Actor_ApplyDrive(inoutActor, deltaTime);
@@ -508,12 +603,12 @@ void DukeMap_MoveActorInMap(DukeMap* map, float deltaTime, Actor* inoutActor)
 	Vector2 pointOut;
 	s16 sectorOut;
 	u32 resultFlags = Map_MovePointInMap(
-		map, point,  endpoint, inoutActor->radius, inoutActor->sectorNumber,elevationEnd,inoutActor->climbHeight,inoutActor->standingHeight,
+		this, point,  endpoint, inoutActor->radius, inoutActor->sectorNumber,elevationEnd,inoutActor->climbHeight,inoutActor->standingHeight,
 		&pointOut, &sectorOut);
 
 	// Keep actor above floor and under the ceiling
-    float minY = Map_GetSectorFloorHeight(map, sectorOut);
-    float maxY = Map_GetSectorCeilingHeight(map, sectorOut) - inoutActor->standingHeight;
+    float minY = GetFloory(sectorOut);
+    float maxY = GetCeilingy(sectorOut) - inoutActor->standingHeight;
     if (elevationEnd < minY)
     {
         resultFlags = Flag_SetBit(resultFlags, Move_OnGround);

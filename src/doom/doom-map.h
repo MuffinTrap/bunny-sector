@@ -1,10 +1,12 @@
 #pragma once
 
 #include "doom_types.h"
+#include "../bunny-sector-map.h"
 struct Actor;
 
-struct DoomMap
+class DoomMap : public BunnySector_Map
 {
+public:
 	int thingAmount;
 	int sectorAmount;
 	int sideAmount;
@@ -25,15 +27,36 @@ struct DoomMap
 	DoomSubSector* subsectors;
 	DoomSegment* segments;
 
-};
-typedef struct DoomMap DoomMap;
+	void SetActorToStart(Actor* actor);
+	int GetSectorAmount();
+	int GetWallVertexAmount();
+	int GetWallAmountInSector(int sectorIndex);
+	int GetSectorFirstWallIndex(int sectorIndex);
+	Vector2 GetWallVertexInSector(int sectorIndex, int wallIndex);
+	Vector2 GetNextWallVertexInSector(int sectorIndex, int wallIndex);
+	int GetNextWallVertexIndexInSector(int sectorIndex, int wallIndex);
+	MaterialId GetSectorMaterial(int sectorIndex, bool floor);
+	float GetCeilingy(int sectorIndex);
+	float GetFloory(int sectorIndex);
+	int FindSectorV2(int currentSector, Vector2 currentPosition);
 
-DoomMap* DoomMap_Create(int thingsAmount, int sectorAmount, int sideAmount, int lineAmount, int vertexAmount);
+	Vector2 GetSectorSize(int sectorIndex);
+	Vector2 GetSectorMaxTexCoord(int sectorIndex);
+	Vector2 GetSectorMinPoint(int sectorIndex);
+
+	void MoveActorInMap(float delta,Actor* actor);
+	int GetNeighbourOfWall(int sectorIndex, int wallIndex);
+
+	u8 GetSectorShade(int sectorIndex, bool floor);
+	void PrintInfo();
+
+};
+typedef class DoomMap DoomMap;
+
+void DoomMap_Allocate(DoomMap* map, int thingsAmount, int sectorAmount, int sideAmount, int lineAmount, int vertexAmount);
 void DoomMap_AllocateNodes(DoomMap* map, int nodeAmount);
 void DoomMap_AllocateSegments(DoomMap* map, int segmentAmount);
 void DoomMap_AllocateSubsectors(DoomMap* map, int subSectorAmount);
-
-void DoomMap_PrintInfo(DoomMap* map);
 
 // property accessors for AngelScript
 DoomThing* DoomMap_GetThing(DoomMap* map, unsigned int index);
@@ -51,5 +74,4 @@ DoomSubSector* DoomMap_GetChildSubSector(DoomMap* map, ChildId id);
 
 // Interface BunnySector_Map
 
-void DoomMap_SetActorToStart(DoomMap* map, Actor* actor);
 

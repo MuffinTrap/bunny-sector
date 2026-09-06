@@ -35,8 +35,8 @@ Actor Actor_CreateDefaultActor(int idNumber)
 	a.moveSpeed = 2048.0f; // NOTE Set
 	a.moveAcceleration = 2024.0f;
 
-	a.verticalSpeedUp = 44000.0f;
-	a.verticalSpeedDown = -32000.0f; // DANGER
+	a.verticalSpeedUp = 4400.0f;
+	a.verticalSpeedDown = -3200.0f; // DANGER
 	a.verticalAccelerationUp = 8800.0f;
 	a.verticalAccelerationDown = 4800.0f;
 

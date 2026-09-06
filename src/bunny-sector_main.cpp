@@ -134,21 +134,23 @@ int BunnySector_LoadMap(const zstr& mapfilename)
 		Log_ErrorF("Unknown map format in file %s\n", zstr_cstr(&mapfilename));
 		return -1;
 	}
-	BunnySector_Map* loaded = (BunnySector_Map*)mgdl_AllocateGeneralMemory(sizeof(BunnySector_Map));
-	loaded->m_type = maptype;
-	loaded->mapPtr.doomMap = nullptr;
-	loaded->mapPtr.dukeMap = nullptr;
+	BunnySector_Map* loaded = nullptr;
 	if (maptype == Map_Duke)
 	{
-		loaded->mapPtr.dukeMap = Duke_ReadMapFromFile(mapfilename);
+		loaded = Duke_ReadMapFromFile(mapfilename);
+		loaded->m_type = maptype;
 	}
 	else if (maptype == Map_Doom)
 	{
-		loaded->mapPtr.doomMap = Doom_ReadMapFromFile(mapfilename);
-		DoomMap_PrintInfo(loaded->mapPtr.doomMap);
+		loaded = Doom_ReadMapFromFile(mapfilename);
+		loaded->m_type = maptype;
+		loaded->PrintInfo();
 	}
-	if (loaded->mapPtr.doomMap!= nullptr || loaded->mapPtr.dukeMap != nullptr)
+	if (loaded != nullptr)
 	{
+		// Buffer the floor and ceiling vertices: The uvs need to be calculated first
+		OpenGLRender_CreateFloorBuffers(loaded, maptype == Map_Doom ? DOOM_UNITS_TO_METER : DUKE_UNITS_TO_METER);
+
 		mapsArray[firstFree] = loaded;
 		activeMap = loaded;
 		return firstFree;
@@ -236,7 +238,7 @@ void BunnySector_AlignCameraToActor(int actorId)
 	// NOTE Must set GL_PROJECTION first then GL_MODELVIEW
 
 
-	demoActor.sectorNumber = Map_FindSectorV2(activeMap->mapPtr.dukeMap, demoActor.sectorNumber, demoActor.position);
+	demoActor.sectorNumber = activeMap->FindSectorV2(demoActor.sectorNumber, demoActor.position);
 	defaultView = Actor_GetViewpoint(&demoActor);
 
 	s_AlignCameraToViewpoint(&defaultView, defaultCamera);
@@ -311,7 +313,7 @@ void BunnySector_RenderMap(MapId mapId)
 
 			BunnySector_AlignCameraToActor(0);
 
-			BuildRender_Draw3D(&defaultView, map->mapPtr.dukeMap, &defaultOpenGL);
+			BuildRender_Draw3D(&defaultView, map, &defaultOpenGL);
 
 			glPopMatrix();
 		}
@@ -364,19 +366,19 @@ Sector* BunnySector_GetSector(s16 sectorNumber)
 {
 	//Sector* sp = Map_GetSector(activeMap, sectorNumber);
 	//Log_InfoF("Get sector %d floory %d ceilingy %d\n", sectorNumber, sp->floory, sp->ceilingy);
-	return Map_GetSector(activeMap->mapPtr.dukeMap, sectorNumber);
+	return Map_GetSector((DukeMap*)activeMap, sectorNumber);
 }
 Wall* BunnySector_GetWall(s16 wallIndex)
 {
-	return Map_GetWall(activeMap->mapPtr.dukeMap, wallIndex);
+	return Map_GetWall((DukeMap*)activeMap, wallIndex);
 }
 Wall* BunnySector_GetWallEnd(Wall* wall)
 {
-	return Map_GetWallEnd(activeMap->mapPtr.dukeMap, wall);
+	return Map_GetWallEnd((DukeMap*)activeMap, wall);
 }
 s16 BunnySector_GetSectorAmount()
 {
-	return activeMap->mapPtr.dukeMap->sectorAmount;
+	return activeMap->GetSectorAmount();
 }
 
 float BunnySector_GetActorRadius(int actorId)
@@ -409,11 +411,11 @@ Actor* BunnySector_GetActor(int actorId)
 {
 	return &demoActor;
 }
-void BunnySector_StartWallDrawing()
+void BunnySector_StartMapDrawing()
 {
 	OpenGLRender_StartDrawingPolygons(defaultOpenGL.scale);
 }
-void BunnySector_EndWallDrawing()
+void BunnySector_EndMapDrawing()
 {
 	OpenGLRender_EndDrawingPolygons();
 }
@@ -430,13 +432,17 @@ void BunnySector_DrawWallF(float startx, float startz, float endx, float endz, f
 void BunnySector_DrawWall(Wall* start, Wall* end, s32 floory, s32 ceilingy, s16 picnum, s8 shade)
 {
 	//printf("BunnySector_DrawWall gets %d, %d \n", start->x, start->z);
-	OpenGLRender_DrawWallV(Vector2New(start->x, start->z), Vector2New(end->x, end->z), Map_GetWallNormal(activeMap->mapPtr.dukeMap, start), floory, ceilingy, picnum, shade);
+	OpenGLRender_DrawWallV(Vector2New(start->x, start->z), Vector2New(end->x, end->z), Map_GetWallNormal((DukeMap*)activeMap, start), floory, ceilingy, picnum, shade);
 }
 
-void BunnySector_DrawSectorFloorOrCeiling(s16 sectorNumber, bool floor, s16 picnum, s8 shade)
+
+void BunnySector_StartFloorCeilingDrawing()
 {
-	OpenGLRender_DrawFloorOrCeiling(activeMap, sectorNumber, shade, activeMap->GetFloory(sectorNumber), picnum, floor);
-	OpenGLRender_DrawFloorOrCeiling(activeMap, sectorNumber, shade, activeMap->GetCeilingy(sectorNumber), picnum, false);
+	OpenGLRender_StartDrawingFloorsFromBuffer(activeMap);
+}
+void BunnySector_DrawSectorFloorOrCeiling(s16 sectorNumber, bool floor)
+{
+	OpenGLRender_DrawFloorOrCeiling(activeMap, sectorNumber, activeMap->GetSectorShade(sectorNumber, floor), floor ? activeMap->GetFloory(sectorNumber) : activeMap->GetCeilingy(sectorNumber), activeMap->GetSectorMaterial(sectorNumber, floor), floor);
 }
 
 #define V2_CROSS(ax, ay, bx, by)(ax * by - ay * bx)
@@ -472,5 +478,5 @@ MaterialId BunnySector_GetMaterialId(zstr* doomTextureFilename)
 DoomMap* BunnySector_GetDoomMap(MapId mapId)
 {
 	BunnySector_Map* map = mapsArray[mapId];
-	return map->mapPtr.doomMap;
+	return (DoomMap*)map;
 }

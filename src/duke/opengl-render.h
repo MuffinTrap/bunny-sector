@@ -5,8 +5,6 @@
 #include "dukemap.h"
 #include "shell-grass.h"
 struct RenderSettingsOpenGL;
-struct DukeMap;
-struct Sector;
 struct Wall;
 struct Texture;
 class BunnySector_Map;
@@ -59,11 +57,11 @@ void OpenGLRender_EndDrawingPolygons();
 
 
 // Tesselate and store all floors to buffer
-void OpenGLRender_CreateFloorBuffers(BunnySector_Map* map);
+void OpenGLRender_CreateFloorBuffers(BunnySector_Map* map, float unitsPerMeterForUV);
 /**
  * @brief Tesselates a floor of sector.
  */
-void OpenGLRender_TesselateFloor(BunnySector_Map* map, u16 sectorIndex);
+void OpenGLRender_TesselateFloor(BunnySector_Map* map, u16 sectorIndex, float unitsPerMeterForUV);
 void OpenGLRender_StopCountingFloorBufferSize();
 
 /**

@@ -115,6 +115,8 @@ void movePlayer(float deltatime)
 	else
 	{
 		vertical = 0.0f;
+		Actor@ act = BunnySector_GetActor(0);
+		act.verticalVelocity = 0.0f;
 	}
 
 	Vector2 wasd = mgdl_GetJoystick(0, Joystick_Nunchuk);
@@ -178,6 +180,7 @@ void angelscript_frame_doom(float deltatime)
 	glClearColor(0.3f, 0.2f, 0.3f, 1.0f);
 
 	StartFrame();
+	StartFrame_Doom();
 	if (RENDER_2D_WALLS)
 	{
 		RenderDoomMap(BunnySector_GetDoomMap(doomMapId));
@@ -186,7 +189,7 @@ void angelscript_frame_doom(float deltatime)
 	{
 		BunnySector_Setup3D(aspect, aspect);
 		BunnySector_AlignCameraToActor(0);
-		BunnySector_StartWallDrawing();
+		BunnySector_StartMapDrawing();
 		//glPushMatrix();
 		//glScalef(1.0f/angel_unitstometer, 1.0f/ angel_unitstometer, 1.0f/angel_unitstometer);
 		//glBegin(GL_QUADS);
@@ -194,7 +197,7 @@ void angelscript_frame_doom(float deltatime)
 			RenderDoomMap(BunnySector_GetDoomMap(doomMapId));
 		//glEnd();
 		//glPopMatrix();
-		BunnySector_EndWallDrawing();
+		BunnySector_EndMapDrawing();
 	}
 
 	RenderMiniMapDoom(BunnySector_GetDoomMap(doomMapId));
@@ -232,9 +235,9 @@ void angelscript_frame_duke(float deltatime)
 		//BunnySector_RenderMap(dukeMapId); // This calls the old build render stuff
 		BunnySector_Setup3D(aspect, aspect);
 		BunnySector_AlignCameraToActor(0);
-		BunnySector_StartWallDrawing();
+		BunnySector_StartMapDrawing();
 			RenderMap(deltatime);
-		BunnySector_EndWallDrawing();
+		BunnySector_EndMapDrawing();
 	}
 
 	RenderMiniMap();

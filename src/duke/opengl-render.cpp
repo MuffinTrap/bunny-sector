@@ -283,17 +283,16 @@ void OpenGLRender_EndDrawingPolygons()
 /**
  * @brief Calculate the uv coordinates of a floor or ceiling vertex in a sector
  */
-static Vector2 CalculateFloorOrCeilingUV(Vector2 size, Vector2 minPoint, Vector2 maxTexCoord, Vector2 vertex)
-static Vector2 CalculateFloorOrCeilingUV(const Sector* sector, float x, float z)
+static Vector2 CalculateFloorOrCeilingUV(Vector2 size, Vector2 minPoint, Vector2 maxTexCoord, Vector2 vertex, float unitsPerMeterForUV)
 {
-    float xrange = sector->sizeXZ.x;
-    float zrange = sector->sizeXZ.y;
-    float xdiff = x - sector->minXZPoint.x;
-    float zdiff = z - sector->minXZPoint.y;
+    float xrange = size.x;
+    float zrange = size.y;
+    float xdiff = vertex.x - minPoint.x;
+    float zdiff = vertex.y - minPoint.y;
     // NOTE The texture will repeat like crazy because these are duke units
-    float tx = xdiff/xrange * sector->maxTexCoord.x;
-    float tz = zdiff/zrange * sector->maxTexCoord.y;
-    return Vector2New(tx/unitsPerMeter, tz/unitsPerMeter);
+    float tx = xdiff/xrange * maxTexCoord.x;
+    float tz = zdiff/zrange * maxTexCoord.y;
+    return Vector2New(tx/unitsPerMeterForUV, tz/unitsPerMeterForUV);
 }
 
 void SetWrap(GLuint textureName)
@@ -511,7 +510,7 @@ void OpenGLRender_DrawFloorOrCeiling(BunnySector_Map* map, int sectorIndex, u8 s
     // Set translation offset, normal and color for the whole polygon
     if (floor)
     {
-        glTranslatef(0.0f, floorY, 0.0f);
+        glTranslatef(0.0f, ycoord, 0.0f);
         float color = BrightnessOffsetToColor(shade);
         material = GetMaterialForMaterialId(materialId);
         glNormal3f(floorNormal[0], floorNormal[1], floorNormal[2]);
@@ -667,7 +666,9 @@ static void StartCountingFloorBufferSize(BunnySector_Map* map)
 {
     MapFloorVertexData* floorData = &map->floorVertexData;
     const s16 sectorAmount = map->GetSectorAmount();
-    const s16 wallAmount = map->GetWallVertexAmount();
+
+    s16 wallAmount = map->GetWallVertexAmount();
+    mgdl_assert_test(wallAmount > 0);
     // Reserve all memory
     if (floorData->floorStartIndices == nullptr)
     {
@@ -694,7 +695,7 @@ static void StartCountingFloorBufferSize(BunnySector_Map* map)
     Tesselator_SetBuffers(floorData->floorBuffer, floorData->floorBufferSizeVertices, floorData->floorIndexBuffer, floorData->floorIndexBufferSize);
 }
 
-static void TesselateFloor(BunnySector_Map* map, u16 sectorIndex)
+static void TesselateFloor(BunnySector_Map* map, u16 sectorIndex, float unitsPerMeterForUV)
 {
     int sectorWallNum = map->GetWallAmountInSector(sectorIndex);
     int sectorFirstWallIndex = map->GetSectorFirstWallIndex(sectorIndex);
@@ -706,17 +707,40 @@ static void TesselateFloor(BunnySector_Map* map, u16 sectorIndex)
     Tesselator_BufferIndices indicesBefore;
     indicesBefore = Tesselator_BeginPolygon(floorNormal, uvOffset);
 
-        Tesselator_BeginContour();
-        // This is where the current contour started
-        int contourStartPoint = sectorFirstWallIndex + sectorWallNum -1;
+    GLfloat vertex[3];
+    Vector2 calculatedUV;
+    GLfloat uv[2];
 
+
+        Tesselator_BeginContour();
+
+    if (map->m_type == BunnyMapType::Map_Doom)
+    {
         // NOTE
         // In doom map's subsectors there are no islands
+        // and points are stored in opposite winding order
+        for (s16 wi = 0; wi < sectorWallNum; wi++)
+        {
+            Vector2 w = map->GetWallVertexInSector(sectorIndex, wi);
 
-        // DANGER
-        //Wall* startWall = Map_GetWall(map, contourStartPoint);
-        //int contourEndPoint = startWall->point2;
-        int contourEndPoint = sectorFirstWallIndex;
+            vertex[0] = w.x;
+            vertex[1] = 0.0f;
+            vertex[2] = w.y;
+            // TODO The parameters are always same except for w
+            calculatedUV = CalculateFloorOrCeilingUV(sectorSize, sectorMinPoint, sectorMaxTexCoord, w, unitsPerMeterForUV);
+            uv[0] = calculatedUV.x;
+            uv[1] = calculatedUV.y;
+
+            Tesselator_AddVertexToPoly(vertex, uv);
+        }
+
+        Tesselator_EndContour();
+    }
+    else
+    {
+        // This is where the current contour started
+        int contourStartPoint = sectorFirstWallIndex + sectorWallNum -1;
+        int contourEndPoint = map->GetNextWallVertexIndexInSector(sectorIndex, sectorWallNum-1);
 
         /* Because Mapster saves points in clockwise order, but we render
         in counter-clockwise, we need to save the point2 of this vertex
@@ -745,9 +769,6 @@ static void TesselateFloor(BunnySector_Map* map, u16 sectorIndex)
 
         // Keep track of global wall index
         int pointIndex = contourStartPoint;
-        GLfloat vertex[3];
-        Vector2 calculatedUV;
-        GLfloat uv[2];
         for (s16 wi = sectorWallNum-1; wi >= 0; wi--)
         {
             Vector2 w = map->GetWallVertexInSector(sectorIndex, wi);
@@ -755,7 +776,7 @@ static void TesselateFloor(BunnySector_Map* map, u16 sectorIndex)
             vertex[0] = w.x;
             vertex[1] = 0.0f;
             vertex[2] = w.y;
-            calculatedUV = CalculateFloorOrCeilingUV(sectorSize, sectorMinPoint, sectorMaxTexCoord, w);
+            calculatedUV = CalculateFloorOrCeilingUV(sectorSize, sectorMinPoint, sectorMaxTexCoord, w, unitsPerMeterForUV);
             uv[0] = calculatedUV.x;
             uv[1] = calculatedUV.y;
 
@@ -766,18 +787,16 @@ static void TesselateFloor(BunnySector_Map* map, u16 sectorIndex)
                 Tesselator_EndContour();
                 if (wi > 0 && contourEndPoint > sectorFirstWallIndex)
                 {
-                    mgdl_assert_print(false, "I thought Doom maps dont have islands");
-                    /*
-                        Tesselator_BeginContour();
-                        Wall* nextWall = Map_GetWallInSectorPtr(map, sector, (wi - 1));
-                        contourEndPoint = nextWall->point2;
-                    */
+                    Tesselator_BeginContour();
+                    contourEndPoint = map->GetNextWallVertexIndexInSector(sectorIndex, (wi-1));
                 }
 
             }
             pointIndex--;
         }
-        Tesselator_BufferIndices indicesAfter = Tesselator_EndPolygon();
+    }
+
+    Tesselator_BufferIndices indicesAfter = Tesselator_EndPolygon();
 
     MapFloorVertexData* floorData = &map->floorVertexData;
     floorData->floorStartIndices[sectorIndex].indexIndex = indicesBefore.indexIndex;
@@ -820,13 +839,13 @@ static void StopCountingFloorBufferSize(BunnySector_Map* map)
     */
 }
 
-void OpenGLRender_CreateFloorBuffers(BunnySector_Map* map)
+void OpenGLRender_CreateFloorBuffers(BunnySector_Map* map, float unitsPerMeterForUV)
 {
 
     StartCountingFloorBufferSize(map);
     for (int si = 0; si < map->GetSectorAmount(); si++)
     {
-        TesselateFloor(map, si);
+        TesselateFloor(map, si, unitsPerMeterForUV);
     }
     StopCountingFloorBufferSize(map);
 }
@@ -929,7 +948,7 @@ void OpenGLRender_BufferWalls(BunnySector_Map* map)
         for(int wi = 0; wi < sectorWallAmount; wi++)
         {
             Vector2 start = map->GetWallVertexInSector(si, wi);
-            Vector2 end =  map->GetNextWallVertex(si, wi);
+            Vector2 end =  map->GetNextWallVertexInSector(si, wi);
             int n = map->GetNeighbourOfWall(si,wi);
             if (n >= 0)
             {

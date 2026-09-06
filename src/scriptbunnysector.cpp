@@ -164,11 +164,12 @@ void RegisterBunnySector(mgdl_AngelScript* angel)
 	as_engine->RegisterGlobalFunction("void BunnySector_SetOpenGLUnitsToMeter(float scale)", asFUNCTION(BunnySector_SetOpenGLUnitsToMeter), asCALL_CDECL);
 
 
-	as_engine->RegisterGlobalFunction("void BunnySector_DrawSectorFloorOrCeiling(s16 sectorNumber, bool floor, s16 picnum, s8 shade)", asFUNCTION(BunnySector_DrawSectorFloorOrCeiling), asCALL_CDECL);
+	as_engine->RegisterGlobalFunction("void BunnySector_StartFloorCeilingDrawing()", asFUNCTION(BunnySector_StartFloorCeilingDrawing), asCALL_CDECL);
+	as_engine->RegisterGlobalFunction("void BunnySector_DrawSectorFloorOrCeiling(s16 sectorNumber, bool floor )", asFUNCTION(BunnySector_DrawSectorFloorOrCeiling), asCALL_CDECL);
 
-	as_engine->RegisterGlobalFunction("void BunnySector_StartWallDrawing()", asFUNCTION(BunnySector_StartWallDrawing), asCALL_CDECL);
+	as_engine->RegisterGlobalFunction("void BunnySector_StartMapDrawing()", asFUNCTION(BunnySector_StartMapDrawing), asCALL_CDECL);
 
-	as_engine->RegisterGlobalFunction("void BunnySector_EndWallDrawing()", asFUNCTION(BunnySector_EndWallDrawing), asCALL_CDECL);
+	as_engine->RegisterGlobalFunction("void BunnySector_EndMapDrawing()", asFUNCTION(BunnySector_EndMapDrawing), asCALL_CDECL);
 
 	as_engine->RegisterGlobalFunction("void BunnySector_Setup3D(float aspectView, float aspectCamera)", asFUNCTION(BunnySector_Setup3D), asCALL_CDECL);
 
@@ -193,6 +194,7 @@ as_engine->RegisterGlobalFunction("void BunnySector_SetOpenGLCameraVerticalFOVDe
 	as_engine->RegisterObjectProperty("Actor", "float elevation", asOFFSET(Actor, elevation));
 	as_engine->RegisterObjectProperty("Actor", "bool noclip", asOFFSET(Actor, noclip));
 	as_engine->RegisterObjectProperty("Actor", "float radius", asOFFSET(Actor, radius));
+	as_engine->RegisterObjectProperty("Actor", "float verticalVelocity", asOFFSET(Actor, verticalVelocity));
 	as_engine->RegisterObjectMethod("Actor", "DoomVertex@ GetDoomPosition()", asFUNCTION(Actor_GetDoomPosition), asCALL_CDECL_OBJFIRST);
 
 	// ACTOR FUNCTIONS

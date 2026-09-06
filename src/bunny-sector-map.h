@@ -1,9 +1,9 @@
 #pragma once
-
-#include "duke/dukemap.h"
-#include "doom/doom-map.h"
+#include "bunny-sector-types.h"
+#include <mgdl.h>
 
 // Abstract map file
+struct Actor;
 
 struct Tesselator_BufferIndices;
 struct MapFloorVertexData
@@ -31,37 +31,41 @@ typedef enum BunnyMapType BunnyMapType;
 
 class BunnySector_Map
 {
-
-	union MapPointer
-	{
-		DukeMap* dukeMap;
-		DoomMap* doomMap;
-	};
-
 public:
+	virtual int GetSectorAmount() = 0;
+	virtual int GetWallVertexAmount() = 0;
+	virtual int GetWallAmountInSector(int sectorIndex) = 0;
+	virtual int GetNextWallVertexIndexInSector(int sectorIndex, int wallIndex) = 0;
+	virtual Vector2 GetNextWallVertexInSector(int sectorIndex, int wallIndex) = 0;
+	virtual Vector2 GetWallVertexInSector(int sectorIndex, int wallIndex) = 0;
+
+	virtual Vector2 GetSectorSize(int sectorIndex) = 0;
+	virtual Vector2 GetSectorMaxTexCoord(int sectorIndex) = 0;
+	virtual Vector2 GetSectorMinPoint(int sectorIndex) = 0;
+
+	virtual int GetSectorFirstWallIndex(int sectorIndex) = 0;
+	virtual void SetActorToStart(Actor* actor) = 0;
+	virtual void MoveActorInMap(float delta,Actor* actor) = 0;
+	virtual int GetNeighbourOfWall(int sectorIndex, int wallIndex) = 0;
+	virtual float GetFloory(int sectorIndex) = 0;
+	virtual float GetCeilingy(int sectorIndex) = 0;
+
+	virtual MaterialId GetSectorMaterial(int sectorIndex, bool floor) = 0;
+	virtual u8 GetSectorShade(int sectorIndex, bool floor) = 0;
+
+	virtual int FindSectorV2(int currentSector, Vector2 currentPosition) = 0;
+
+	virtual void PrintInfo() = 0;
+
 	zstr* GetMapFile();
-	int GetSectorAmount();
-	int GetWallVertexAmount();
-	int GetWallAmountInSector(int sectorIndex);
-	int GetNextWallVertexIndex(int sectorIndex, int wallIndex);
-	Vector2 GetNextWallVertex(int sectorIndex, int wallIndex);
-	Vector2 GetWallVertexInSector(int sectorIndex, int wallIndex);
 
-    Vector2 GetSectorSize(int sectorIndex);
-    Vector2 GetSectorMaxTexCoord(int sectorIndex);
-    Vector2 GetSectorMinPoint(int sectorIndex);
-	int GetSectorFirstWallIndex(int sectorIndex);
-	void SetActorToStart(Actor* actor);
-	void MoveActorInMap(float delta,Actor* actor);
-	int GetNeighbourOfWall(int sectorIndex, int wallIndex);
-	float GetFloory(int sectorIndex);
-	float GetCeilingy(int sectorIndex);
-
-	// Accessed by OpenGLRenderer
+	// Accessed by OpenGLRenderer for tesselation and drawing
     MapFloorVertexData floorVertexData;
-	MapPointer mapPtr;
+    float lowY;
+    float highY;
+
+	//
 	BunnyMapType m_type;
     zstr mapfile;
 };
-typedef class BunnySector_Map BunnySector_Map;
 

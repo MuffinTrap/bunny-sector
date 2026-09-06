@@ -7,11 +7,11 @@
 
 static const int HeightToWidth = 16;
 
-DukeMap* Duke_ReadMapFromFile(const zstr& mapfilename)
+BunnySector_Map* Duke_ReadMapFromFile(const zstr& mapfilename)
 {
     return Duke_ReadMapFromFile(zstr_cstr(&mapfilename));
 }
-DukeMap* Duke_ReadMapFromFile(const char* mapfilename)
+BunnySector_Map* Duke_ReadMapFromFile(const char* mapfilename)
 {
     float dukesPerUnit = 1.0f;//DUKE_UNITS_TO_METER;
 	if (dukesPerUnit < 1)
@@ -25,23 +25,23 @@ DukeMap* Duke_ReadMapFromFile(const char* mapfilename)
 
         return nullptr;
     }
-    DukeMap* mapPtr = (DukeMap*)malloc(sizeof(DukeMap));
-    DukeMap m;
-    m.version = ReadInt32();
+    BunnySector_Map* mapBun = (DukeMap*)malloc(sizeof(BunnySector_Map));
+    DukeMap* m = (DukeMap*)mapBun;
+    m->version = ReadInt32();
     s32 start_x = ReadInt32()/dukesPerUnit; // X coordinate
     s32 start_z = ReadInt32()/dukesPerUnit; // Z Coordinate
     s32 start_y = (ReadInt32()/HeightToWidth/dukesPerUnit) * -1; // Y Coordinate, flipped
-    m.startPosition = Vector2New(start_x, start_z);
-    m.startElevation = start_y;
+    m->startPosition = Vector2New(start_x, start_z);
+    m->startElevation = start_y;
 
-    m.startAngle = ReadInt16();
-    m.startingSector = ReadInt16();
+    m->startAngle = ReadInt16();
+    m->startingSector = ReadInt16();
 
-    m.sectorAmount = ReadUInt16();
-    m.sectors = (Sector*)malloc(sizeof(Sector)*m.sectorAmount);
-    for (int i = 0; i < m.sectorAmount; i++)
+    m->sectorAmount = ReadUInt16();
+    m->sectors = (Sector*)malloc(sizeof(Sector)*m->sectorAmount);
+    for (int i = 0; i < m->sectorAmount; i++)
     {
-        Sector* s = &m.sectors[i];
+        Sector* s = &m->sectors[i];
         s->wallptr = ReadInt16();
         s->wallnum = ReadInt16();
 
@@ -69,11 +69,11 @@ DukeMap* Duke_ReadMapFromFile(const char* mapfilename)
         s->hitag = ReadInt16();
         s->extra = ReadInt16();
     }
-    m.wallAmount = ReadUInt16();
-    m.walls = (Wall*)malloc(sizeof(Wall) * m.wallAmount);
-    for (int s = 0; s < m.wallAmount; s++)
+    m->wallAmount = ReadUInt16();
+    m->walls = (Wall*)malloc(sizeof(Wall) * m->wallAmount);
+    for (int s = 0; s < m->wallAmount; s++)
     {
-        Wall* w = &m.walls[s];
+        Wall* w = &m->walls[s];
         w->x = ReadInt32()/dukesPerUnit;
 
         // NOTE In mapster the origo is in the middle of the map
@@ -97,11 +97,11 @@ DukeMap* Duke_ReadMapFromFile(const char* mapfilename)
         w->extra = ReadInt16();
 
     }
-    m.spriteAmount = ReadUInt16();
-    m.sprites = (MapSprite*)malloc(sizeof(MapSprite) * m.spriteAmount);
-    for (int i = 0; i < m.spriteAmount; i++)
+    m->spriteAmount = ReadUInt16();
+    m->sprites = (MapSprite*)malloc(sizeof(MapSprite) * m->spriteAmount);
+    for (int i = 0; i < m->spriteAmount; i++)
     {
-        MapSprite* s = &m.sprites[i];
+        MapSprite* s = &m->sprites[i];
 
         s32 x = ReadInt32()/dukesPerUnit;
         s32 z = ReadInt32()/dukesPerUnit;
@@ -132,21 +132,19 @@ DukeMap* Duke_ReadMapFromFile(const char* mapfilename)
 
     CloseBinary();
 
-    (*mapPtr) = m;
-
-    mapPtr->lowY = 35665;
-    mapPtr->highY = -36665;
+    mapBun->lowY = 35665;
+    mapBun->highY = -36665;
 
     // Build other information needed
     // Build other data needed by game
-    for (int si = 0; si < mapPtr->sectorAmount; si++)
+    for (int si = 0; si < m->sectorAmount; si++)
     {
         Vector2 minp = Vector2New(32000, 32000);
         Vector2 maxp = Vector2New(-32000, -32000);
-        Sector* sector = &mapPtr->sectors[si];
+        Sector* sector = &m->sectors[si];
         for (s16 wi = 0; wi < sector->wallnum; wi++)
         {
-            Wall* w = &mapPtr->walls[sector->wallptr + wi];
+            Wall* w = &m->walls[sector->wallptr + wi];
             minp.x = minF(w->x, minp.x);
             minp.y = minF(w->z, minp.y);
             maxp.x = maxF(w->x, maxp.x);
@@ -160,18 +158,16 @@ DukeMap* Duke_ReadMapFromFile(const char* mapfilename)
         sector->sizeXZ = Vector2Subtract(maxp, minp);
         sector->maxTexCoord.x = aspect * height;
         sector->maxTexCoord.y = 1.0 * height;
-        if (sector->floory < mapPtr->lowY)
+        if (sector->floory < m->lowY)
         {
-            mapPtr->lowY = sector->floory;
+            m->lowY = sector->floory;
         }
-        if (sector->ceilingy > mapPtr->highY)
+        if (sector->ceilingy > m->highY)
         {
-            mapPtr->highY = sector->ceilingy;
+            m->highY = sector->ceilingy;
         }
     }
-    // Buffer the floor and ceiling vertices: The uvs need to be calculated first
-    OpenGLRender_CreateFloorBuffers(mapPtr);
 
-    return mapPtr;
+    return mapBun;
 }
 

@@ -2,6 +2,7 @@
 		#include <mgdl/mgdl-vectorfunctions.h>
 		#include <mgdl/mgdl-types.h>
 #include "duke_types.h"
+#include "../bunny-sector-map.h"
 // Forward def
 struct Actor;
 struct Viewpoint;
@@ -79,8 +80,9 @@ struct Sector
 typedef struct Sector Sector;
 
 
-struct DukeMap
+class DukeMap : public BunnySector_Map
 {
+public:
     s32 version;
     Vector2 startPosition;
     float startElevation;
@@ -95,10 +97,32 @@ struct DukeMap
     s16 spriteAmount;
     MapSprite* sprites;
 
-    float lowY;
-    float highY;
+
+    // Inherited functions
+	void SetActorToStart(Actor* actor);
+	int GetSectorAmount();
+	int GetWallVertexAmount();
+	int GetWallAmountInSector(int sectorIndex);
+	int GetSectorFirstWallIndex(int sectorIndex);
+	Vector2 GetWallVertexInSector(int sectorIndex, int wallIndex);
+	Vector2 GetNextWallVertexInSector(int sectorIndex, int wallIndex);
+	int GetNextWallVertexIndexInSector(int sectorIndex, int wallIndex);
+	MaterialId GetSectorMaterial(int sectorIndex, bool floor);
+	float GetCeilingy(int sectorIndex);
+	float GetFloory(int sectorIndex);
+    int FindSectorV2(int currentSector, Vector2 currentPosition);
+
+    Vector2 GetSectorSize(int sectorIndex);
+    Vector2 GetSectorMaxTexCoord(int sectorIndex);
+    Vector2 GetSectorMinPoint(int sectorIndex);
+    void MoveActorInMap(float delta, Actor* actor);
+    int GetNeighbourOfWall(int sectorIndex, int wallIndex);
+    u8 GetSectorShade(int sectorIndex, bool floor);
+    void PrintInfo();
+
+
 };
-typedef struct DukeMap DukeMap;
+typedef class DukeMap DukeMap;
 
 
 #ifdef __cplusplus
@@ -113,7 +137,6 @@ void DukeMap_ConvertToGameUnits(DukeMap* map);
 void DukeMap_FindIslandSectors(DukeMap* map);
 void DukeMap_PrintInfo(DukeMap* map);
 void DukeMap_SetCameraToStart(DukeMap* map, Viewpoint* view);
-void DukeMap_SetActorToStart(DukeMap* map, Actor* actor);
 void DukeMap_InitActor(DukeMap* map, Actor* player);
 void DukeMap_InitActors(DukeMap* map, Actor* players, int playerAmount);
 

@@ -3,7 +3,6 @@
 #include "duke_types.h"
 #include "../doom/doom_types.h"
 
-struct DukeMap;
 struct RenderSettings2D;
 struct RenderSettingsOpenGL;
 /**
@@ -72,7 +71,6 @@ Actor Actor_CreateDefaultActor(int idNumber);
 
 Vector2 Actor_ApplyDrive(Actor* actor, float deltaTime);
 float Actor_ApplyVerticalMove(Actor* actor, float gravity, float deltaTime);
-void Player_UpdateMove(Actor* player, WiiController* controller, RenderSettings2D* settings2D, RenderSettingsOpenGL* settingsGL, DukeMap* map, int amountPlayers);
 bool IsPointInsideRect(RectF rect, Vector2 point);
 Viewpoint Actor_GetViewpoint(Actor* actor);
 DoomVertex* Actor_GetDoomPosition(Actor* actor);

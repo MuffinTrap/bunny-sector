@@ -126,6 +126,12 @@ struct DoomSubSector
 {
 	u32 firstSegment;
 	u32 segmentAmount;
+
+	// Not in file, but added for convenience
+	int sector;
+	Vector2 minXZPoint;
+	Vector2 sizeXZ;
+	Vector2 maxTexCoord;
 };
 typedef struct DoomSubSector DoomSubSector;
 

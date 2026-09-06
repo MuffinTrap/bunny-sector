@@ -1,6 +1,10 @@
 
 bool RENDER_WALLS_DOOM = true;
 
+// Kep Track which subsectors have been drewn
+int[] DrawnSubSectors(128);
+int drawnIndex = 0;
+
 // Keeping track which ares of the screen have been drawn
 class WallSegment
 {
@@ -461,6 +465,11 @@ void DrawNodeChild(DoomMap@ map, Actor@ player, ChildId id)
 	else
 	{
 		DoomSubSector@ sub =  map.GetChildSubSector(id);
+
+		// TODO better way
+		DrawnSubSectors[drawnIndex] = id & 0x7fffffff;
+		drawnIndex += 1;
+
 		DrawSubSector(map, player, sub);
 	}
 }
@@ -532,6 +541,16 @@ glPushMatrix();
 glPopMatrix();
 }
 
+void StartFrame_Doom()
+{
+	for (int i = 0; i < 128; i++)
+	{
+	 DrawnSubSectors[i] = -1;
+	}
+	drawnIndex = 0;
+
+
+}
 void RenderDoomMap(DoomMap@ map)
 {
 	drawOrder = 0;
@@ -549,6 +568,14 @@ void RenderDoomMap(DoomMap@ map)
 	// Draw Nodes and bounding boxes
 	DoomNode@ root = map.GetRootNode();
 	DrawNode(map, player, root);
+
+	// Draw all floors and ceilings
+	BunnySector_StartFloorCeilingDrawing();
+	for (int i = 0; i < drawnIndex; i++)
+	{
+		BunnySector_DrawSectorFloorOrCeiling(DrawnSubSectors[i], true);
+		BunnySector_DrawSectorFloorOrCeiling(DrawnSubSectors[i], false);
+	}
 
 	if (RENDER_2D_WALLS)
 	{

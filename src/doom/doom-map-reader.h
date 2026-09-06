@@ -1,7 +1,7 @@
 #pragma once
 
 #include <mgdl.h>
-#include "doom-map.h"
+class BunnySector_Map;
 
 enum UMDF_TOKEN
 {
@@ -19,11 +19,11 @@ extern "C" {
 	* @param mapfilename Name of the map file
 	* @returns Loaded map or nullptr if loading failed
 	*/
-    DoomMap* Doom_ReadMapFromFile(const char* mapfilename);
+    BunnySector_Map* Doom_ReadMapFromFile(const char* mapfilename);
 
 #ifdef __cplusplus
 }
 #endif
-    DoomMap* Doom_ReadMapFromFile(const zstr& mapfilename);
+    BunnySector_Map* Doom_ReadMapFromFile(const zstr& mapfilename);
 
 

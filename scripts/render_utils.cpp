@@ -942,7 +942,7 @@ void DrawWall3D(Vector2 left, Vector2 right, s16 picnumMiddle, s16 picnumBottom,
 		if (SECTOR_FLOORY < SECTOR_NEIGHBOR_FLOORY)
 		{
 			//BunnySector_DrawWall(wall, end, floory, neighbor.floory, wall.picnum, wall.shade);
-			BunnySector_DrawWallF(left.x, left.y, right.x, right.y, wallNormal.x, wallNormal.y, SECTOR_FLOORY, SECTOR_NEIGHBOR_FLOORY, picnumBottom, shade);
+			BunnySector_DrawWallF(left.x, left.y, right.x, right.y, wallNormal.x, wallNormal.y, SECTOR_NEIGHBOR_FLOORY,SECTOR_FLOORY,  picnumBottom, shade);
 		}
 
 

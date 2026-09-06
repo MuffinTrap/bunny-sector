@@ -553,13 +553,15 @@ static void read_sector() {
 
 }
 
-    DoomMap* Doom_ReadMapFromFile(const char* mapfilename)
+    BunnySector_Map* Doom_ReadMapFromFile(const char* mapfilename)
 	{
 		mapfile = fopen(mapfilename, "r");
 		if (mapfile == NULL)
 		{
 			return nullptr;
 		}
+
+		BunnySector_Map* BunnyMap = nullptr;
 
 		lineBuffer = (char*)mgdl_AllocateGeneralMemory((LINEWIDTH + 1) * sizeof(char));
 		identifierBuffer = (char*)mgdl_AllocateGeneralMemory((IDWIDTH + 1) * sizeof(char));
@@ -662,7 +664,12 @@ static void read_sector() {
 				u32 OrgVerts = ReadDWORD();
 				u32 NewVertes = ReadDWORD();
 				printf("Adding %d new vertices for nodes\n", NewVertes);
-				map = DoomMap_Create(thingAmount, sectorAmount, sidedefAmount, linedefAmount, vertexAmount + NewVertes);
+
+				BunnyMap = new DoomMap();// (BunnySector_Map*)mgdl_AllocateGeneralMemory(sizeof(BunnySector_Map));
+				map = (DoomMap*)BunnyMap;
+
+				DoomMap_Allocate(map, thingAmount, sectorAmount, sidedefAmount, linedefAmount, vertexAmount + NewVertes);
+
 
 				counting = false;
 			}
@@ -838,10 +845,70 @@ static void read_sector() {
 			//map->vertices[i].y *= -1.0f;
 		}
 
-		return map;
+
+		// Link sectors to subsectors directly
+		for (int ssi = 0; ssi < map->subSectorAmount; ssi++)
+		{
+			DoomSubSector* sub = &map->subsectors[ssi];
+			for (int segi = 0; segi < sub->segmentAmount; segi++)
+			{
+				DoomSegment *seg = &map->segments[sub->firstSegment + segi];
+				if (seg->lineSide == 0)
+				{
+					DoomLinedef *linedef = &map->linedefs[seg->linedef];
+					DoomSidedef *sidedef = &map->sidedefs[linedef->sidefront];
+					sub->sector = sidedef->sector;
+					printf("Subsector %d linked to sector %d\n", ssi, sidedef->sector);
+					break;
+				}
+			}
+		}
+
+		// Calculate extra information needed by tesselation
+    map->lowY = 35665;
+    map->highY = -36665;
+
+    // Build other information needed
+    // Build other data needed by game
+    for (int si = 0; si < BunnyMap->GetSectorAmount(); si++)
+    {
+        Vector2 minp = Vector2New(32000, 32000);
+        Vector2 maxp = Vector2New(-32000, -32000);
+        int sectorwallnum = BunnyMap->GetWallAmountInSector(si);
+        for (s16 wi = 0; wi < sectorwallnum; wi++)
+        {
+            Vector2 w = BunnyMap->GetWallVertexInSector(si, wi);
+            minp.x = minF(w.x, minp.x);
+            minp.y = minF(w.y, minp.y);
+            maxp.x = maxF(w.x, maxp.x);
+            maxp.y = maxF(w.y, maxp.y);
+        }
+        // Found points : calculate tex coords
+        float width = (maxp.x - minp.x);
+        float height = (maxp.y - minp.y);
+        float aspect = width/height;
+
+		DoomSubSector* subs = &map->subsectors[si];
+        subs->minXZPoint = minp;
+        subs->sizeXZ = Vector2Subtract(maxp, minp);
+        subs->maxTexCoord.x = aspect * height;
+        subs->maxTexCoord.y = 1.0 * height;
+		DoomSector* sector = &map->sectors[subs->sector];
+        if (sector->heightfloor < map->lowY)
+        {
+            map->lowY = sector->heightfloor;
+        }
+        if (sector->heightceiling > map->highY)
+        {
+            map->highY = sector->heightceiling;
+        }
+    }
+
+
+		return BunnyMap;
 	}
 
-	DoomMap * Doom_ReadMapFromFile(const zstr& mapfilename)
+	BunnySector_Map * Doom_ReadMapFromFile(const zstr& mapfilename)
 	{
 		return Doom_ReadMapFromFile(zstr_cstr(&mapfilename));
 	}
