@@ -35,8 +35,8 @@ Actor Actor_CreateDefaultActor(int idNumber, float unitsToMeter)
 	a.moveSpeed = 2.0f * unitsToMeter;
 	a.moveAcceleration = 2.0f * unitsToMeter;
 
-	a.verticalSpeedUp = 4.0f * unitsToMeter;
-	a.verticalSpeedDown = -3.2f * unitsToMeter; // DANGER
+	a.verticalSpeedUp = 89.0f * unitsToMeter;
+	a.verticalSpeedDown = -80.2f * unitsToMeter; // DANGER
 	a.verticalAccelerationUp = 4.0f * unitsToMeter;
 	a.verticalAccelerationDown = 4.0f * unitsToMeter;
 
@@ -114,16 +114,12 @@ Vector2 Actor_ApplyDrive(Actor* actor, float deltaTime)
 
 float Actor_ApplyVerticalMove(Actor* actor, float gravity, float deltaTime)
 {
-	float verticalAcceleration = gravity;
+	float verticalAcceleration = -gravity;
 	if (actor->verticalDrive > deadzone)
 	{
-		// Apply falling/jumping
-		if (actor->verticalDrive > 0)
-		{
-			verticalAcceleration += actor->verticalDrive * actor->verticalAccelerationUp;
-		}
+		verticalAcceleration += actor->verticalDrive * actor->verticalAccelerationUp;
 	}
-	if (gravity == 0.0f && actor->verticalDrive < -deadzone)
+	if (actor->verticalDrive < -deadzone)
 	{
 		verticalAcceleration += actor->verticalDrive * actor->verticalAccelerationDown;
 	}
@@ -152,6 +148,7 @@ float Actor_ApplyVerticalMove(Actor* actor, float gravity, float deltaTime)
 	return actor->elevation + actor->verticalVelocity * deltaTime;
 }
 
+/*
 Vector3 Actor_ApplyDrive2(Actor* actor, float deltaTime)
 {
 	// calculate current floor direction
@@ -246,6 +243,7 @@ Vector3 Actor_ApplyDrive2(Actor* actor, float deltaTime)
 	return destination;
 }
 
+*/
 DoomVertex* Actor_GetDoomPosition(Actor* actor)
 {
 	return &actor->position.doomPosition;

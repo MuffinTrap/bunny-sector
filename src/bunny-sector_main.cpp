@@ -184,7 +184,7 @@ void BunnySector_StartMap(MapId mapId)
 				BunnySector_SetOpenGLUnitsToMeter(DOOM_UNITS_TO_METER);
 			}
 			map->SetActorToStart(&demoActor);
-			printf("BunnySector startmap put actor to %.2f, %.2f\n", demoActor.position.vectorPosition.x, demoActor.position.vectorPosition.y);
+			printf("BunnySector startmap put actor to %.2f, %.2f, sector %d\n", demoActor.position.vectorPosition.x, demoActor.position.vectorPosition.y, demoActor.sectorNumber);
 			defaultView = Actor_GetViewpoint(&demoActor);
 			s_AlignCameraToViewpoint(&defaultView, defaultCamera);
 		}

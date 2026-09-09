@@ -24,7 +24,7 @@ void BunnySector_Map::MoveActorInMap(float deltaTime, Actor* inoutActor)
 	Vector2 endpoint = destination;
 
     // TODO Gravity depens on map?
-    float elevationEnd = Actor_ApplyVerticalMove(inoutActor, inoutActor->verticalAccelerationDown, deltaTime);
+    float elevationEnd = Actor_ApplyVerticalMove(inoutActor, 8024.0, deltaTime);
 
 	Vector2 pointOut;
 	s16 sectorOut;
@@ -33,7 +33,7 @@ void BunnySector_Map::MoveActorInMap(float deltaTime, Actor* inoutActor)
 		&pointOut, &sectorOut);
 
 	// Keep actor above floor and under the ceiling
-    float minY = GetFloory(sectorOut);
+    float minY = GetFloory(sectorOut) + inoutActor->climbHeight;
     float maxY = GetCeilingy(sectorOut) - inoutActor->standingHeight;
     if (elevationEnd < minY)
     {

@@ -67,6 +67,7 @@ void DoomMap::SetActorToStart(Actor* actor)
 	actor->position.doomPosition.y = things[0].y;
 	actor->elevation = 0.0f;
 	actor->yawRad = DEG2RAD * things[0].angleDeg;
+	actor->sectorNumber = FindSectorV2(0, actor->position.vectorPosition);
 }
 
 
@@ -184,39 +185,49 @@ int DoomMap::GetWallVertexAmount()
 	return segmentAmount;
 }
 
+int GetChildSide(DoomNode* node, Vector2 v)
+{
+	if (node->dx == 0)
+	{
+		// Vertical cut
+		if (v.x < node->x)
+		{
+			if (node->dy > 0) {return 1;}
+			else {return 0;}
+		}
+		if (node->dy < 0) {return 1;}
+		else {return 0;}
+	}
+	if (node->dy == 0)
+	{
+		// Horizontal cut
+		if (v.y < node->y)
+		{
+			if (node->dx > 0) {return 0;}
+			else {return 1;}
+		}
+		if (node->dx < 0) {return 0;}
+		else {return 1;}
+	}
+	float dx = v.x - node->x;
+	float dy = v.y - node->y;
+	if( dx * node->dy < dy * node->dx)
+	{
+		return 1;
+	}
+	return 0;
+}
+
 int DoomMap::FindSubSector(DoomNode* node, Vector2 point)
 {
-	Vector2 np = Vector2New(node->x, node->y);
-	Vector2 delta = Vector2New(node->dx, node->dy);
-	if(IsPointInsideWall(point, np, Vector2Add(np, delta)))
+	int childSide = GetChildSide(node, point);
+	if (ChildIsNode(node->children[childSide]))
 	{
-		if (ChildIsNode(node->children[0]))
-		{
-			if (DoomNode_PointInsideBox(node, point, 0))
-			{
-				return FindSubSector(&nodes[node->children[0]], point);
-			}
-			return -1;
-		}
-		else
-		{
-			return node->children[0] & 0x7fffffff;
-		}
+		return FindSubSector(&nodes[node->children[childSide]], point);
 	}
 	else
 	{
-		if (ChildIsNode(node->children[1]))
-		{
-			if (DoomNode_PointInsideBox(node, point, 1))
-			{
-				return FindSubSector(&nodes[node->children[1]], point);
-			}
-			return -1;
-		}
-		else
-		{
-			return node->children[1] & 0x7fffffff;
-		}
+		return node->children[childSide] & 0x7fffffff;
 	}
 }
 
@@ -281,16 +292,12 @@ u32 DoomMap::MovePointInMap(
         }
         if (treatAsWall)
         {
-			DoomVertex* wp = &vertices[wall->v1];
-            float wsx = wp->x;
-            float wsz = wp->y;
+			DoomVertex* w2 = &vertices[wall->v1];
 			DoomSegment* wall2 = &segments[sector->firstSegment + ((wi + 1) % sector->segmentAmount)];
-            DoomVertex* w2 = &vertices[wall2->v1];
-            float wex = w2->x;
-            float wez = w2->y;
+            DoomVertex* w1 = &vertices[wall2->v1];
             // Keep player away from walls
-            Vector2 wstart = Vector2New(wsx, wsz);
-            Vector2 wend = Vector2New(wex, wez);
+            Vector2 wstart = Vector2New(w1->x, w1->y);
+            Vector2 wend = Vector2New(w2->x, w2->y);
 
             // Check if player moved so fast that went through the wall
             bool endOtherSide = IsPointInsideWall(end, wstart, wend) == false;
@@ -304,8 +311,6 @@ u32 DoomMap::MovePointInMap(
                     // Push player back from wall
                     Vector2 hitEnd = Vector2Add(cross, normal);
                     // Slide player along the wall
-                    Vector2 wstart = Vector2New(wsx, wsz);
-                    Vector2 wend = Vector2New(wex, wez);
                     Vector2 slideMove = Vector2Project( Vector2Subtract(end, start), Vector2Subtract(wend, wstart));
                     end = Vector2Add(hitEnd, slideMove);
 
@@ -351,7 +356,6 @@ u32 DoomMap::MovePointInMap(
         DoomSegment* wall = &segments[sector->firstSegment + wi];
         if (wall->neighbourSubSector >= 0)
         {
-
 			DoomSegment* wall2 = &segments[sector->firstSegment + ((wi + 1) % sector->segmentAmount)];
 			DoomVertex* wp1 = &vertices[wall->v1];
 			DoomVertex* wp2 = &vertices[wall2->v1];
@@ -375,6 +379,7 @@ u32 DoomMap::MovePointInMap(
                 // we can just allow player to move to next sector
                 s16 newSector = wall->neighbourSubSector;
                 *sectorOut = newSector;
+			*sectorOut = FindSectorV2(0, end); // Always find the sector again
                 moveResultBitfield = Flag_SetBit(moveResultBitfield, Move_HitPortal);
             }
         } // if is portal
@@ -387,6 +392,12 @@ u32 DoomMap::MovePointInMap(
 
 bool DoomMap::IsPointInsideWall(Vector2 point, Vector2 wallStart, Vector2 wallEnd)
 {
+
+    Vector2 wallVector = Vector2Subtract(wallEnd, wallStart);
+    float crossY = Vector2CrossProduct(wallVector, Vector2Subtract(point, wallStart));
+    // DANGER Again, this code works differently TM
+    return crossY > 0.0f;
+	/*
 	Vector2 delta = Vector2Subtract(wallEnd, wallStart);
 
 	if (delta.x == 0)
@@ -418,6 +429,7 @@ bool DoomMap::IsPointInsideWall(Vector2 point, Vector2 wallStart, Vector2 wallEn
 		return 1;
 	}
 	return 0;
+	*/
 }
 
 

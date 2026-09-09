@@ -867,7 +867,6 @@ static void read_sector() {
 		for (int ssi = 0; ssi < map->subSectorAmount; ssi++)
 		{
 			DoomSubSector* sub = &map->subsectors[ssi];
-			int prevNeighbour = -1;
 			for (int segi = 0; segi < sub->segmentAmount; segi++)
 			{
 				DoomSegment *seg = &map->segments[sub->firstSegment + segi];
@@ -887,7 +886,6 @@ static void read_sector() {
 						{
 							seg->neighbourSubSector = -1;
 						}
-						prevNeighbour = seg->neighbourSubSector;
 					}
 					else if (seg->lineSide == DOOM_SIDE_BACK)
 					{
@@ -900,21 +898,12 @@ static void read_sector() {
 						{
 							seg->neighbourSubSector = -1;
 						}
-						prevNeighbour = seg->neighbourSubSector;
 					}
 				}
 				else
 				{
-					// Manually check what is on the other side lol
-					DoomVertex dv1 = map->vertices[seg->v1];
-					DoomSegment *seg2 = &map->segments[sub->firstSegment + (segi+1)%sub->segmentAmount];
-					DoomVertex dv2 = map->vertices[seg2->v1];
-					Vector2 v1 = Vector2New(dv1.x, dv1.y);
-					Vector2 v2 = Vector2New(dv2.x, dv2.y);
-					Vector2 N = map->GetWallNormal(v1, v2);
-					Vector2 wallMiddle = Vector2Add(v1, Vector2Scale(Vector2Subtract(v2, v1), 0.5f));
-					Vector2 otherSide = Vector2Add(wallMiddle, Vector2Scale(N, -1));
-					seg->neighbourSubSector = map->FindSectorV2(0, otherSide);
+					// Must be portal somewhere
+					seg->neighbourSubSector = 666;
 				}
 
 				printf("Subsector %d segment %d neighbor is %d\n", ssi, sub->firstSegment + segi, seg->neighbourSubSector);

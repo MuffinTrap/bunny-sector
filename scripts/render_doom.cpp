@@ -310,7 +310,7 @@ bool PlayerSeesNode(Actor@ player, s16 top, s16 bot, s16 left, s16 right)
 	return see1;
 }
 
-// NOTE Same as Map_IsInsideWall?
+// NOTE THIS IS CORRECT
 int GetChildSide(DoomNode@ node, DoomVertex@ v)
 {
 	if (node.dx == 0)
@@ -329,11 +329,11 @@ int GetChildSide(DoomNode@ node, DoomVertex@ v)
 		// Horizontal cut
 		if (v.y < node.y)
 		{
-			if (node.dx > 0) {return 1;}
-			else {return 0;}
+			if (node.dx > 0) {return 0;}
+			else {return 1;}
 		}
-		if (node.dx < 0) {return 1;}
-		else {return 0;}
+		if (node.dx < 0) {return 0;}
+		else {return 1;}
 	}
 	float dx = v.x - node.x;
 	float dy = v.y - node.y;
@@ -394,11 +394,11 @@ void DrawSubSector(DoomMap@ map, Actor@ player, DoomSubSector@ sub, int sectorIn
 		{
 			DrawCross(Vector2New(trans1.x, trans1.y), Debug_Yellow);
 			ProcessWallTopDown(trans2, trans1, player.radius, seg.neighbourSubSector >= 0);
-			if (sectorIndex == 1)
+			//if (sectorIndex == 1)
 			{
 			mgdl_DrawTextInt("Sub", sectorIndex, trans2.x, trans2.y-8, 8, Debug_Yellow);
 			Vector2 middle = Vector2Add(trans2, Vector2Scale(Vector2Subtract(trans1, trans2), 0.5f));
-			mgdl_DrawTextInt("Seg", i, middle.x, middle.y, 8, Debug_Yellow);
+			// mgdl_DrawTextInt("Seg", i, middle.x, middle.y, 8, Debug_Yellow);
 			}
 		}
 		// Check if wall is facing away
@@ -482,6 +482,20 @@ void DrawNodeChild(DoomMap@ map, Actor@ player, ChildId id)
 	}
 }
 
+int FindSubSectorRec(DoomMap@ map, DoomNode@ node, DoomVertex@ point)
+{
+	int childSide = GetChildSide(node, point);
+	if (ChildIsNode(node.children[childSide]))
+	{
+		return FindSubSectorRec(map, map.nodes[node.children[childSide]], point);
+	}
+	else
+	{
+		return node.children[childSide] & 0x7fffffff;
+	}
+}
+
+
 void DrawNode(DoomMap@ map, Actor@ player, DoomNode@ node)
 {
 	DoomVertex@ playerpos = player.GetDoomPosition();
@@ -544,7 +558,9 @@ glPushMatrix();
 	// Testing the player sees node
 	//PlayerSeesNode (player, 60, 10, 70, 220);
 
-	mgdl_DrawTextFloat("Units to meter ", angel_unitstometer, text_x, NextY(), 16, Debug_Red);
+	DoomVertex@ pp = player.GetDoomPosition();
+	mgdl_DrawTextInt("Player subsec", FindSubSectorRec(map, root, pp), text_x, NextY(), 8, Debug_Red);
+	//mgdl_DrawTextFloat("Units to meter ", angel_unitstometer, text_x, NextY(), 16, Debug_Red);
 	BunnySector_DrawCameraInfo(text_x, NextY());
 glPopMatrix();
 }
