@@ -1,5 +1,6 @@
 #include "doom-map.h"
 #include "../duke/actor.h"
+#include "../duke/dukemath.h"
 
 
 
@@ -62,16 +63,10 @@ void SetActorToStart(DoomMap* map, Actor* actor)
 void DoomMap::SetActorToStart(Actor* actor)
 {
 	// Find thing 0
-	actor->doomPosition.x = things[0].x;
-	actor->doomPosition.y = things[0].y;
-	actor->position.x = actor->doomPosition.x;
-	actor->position.y = actor->doomPosition.y;
+	actor->position.doomPosition.x = things[0].x;
+	actor->position.doomPosition.y = things[0].y;
 	actor->elevation = 0.0f;
 	actor->yawRad = DEG2RAD * things[0].angleDeg;
-}
-void DoomMap::MoveActorInMap(float delta, Actor* actor)
-{
-	// TODO
 }
 
 
@@ -189,10 +184,46 @@ int DoomMap::GetWallVertexAmount()
 	return segmentAmount;
 }
 
+int DoomMap::FindSubSector(DoomNode* node, Vector2 point)
+{
+	Vector2 np = Vector2New(node->x, node->y);
+	Vector2 delta = Vector2New(node->dx, node->dy);
+	if(IsPointInsideWall(point, np, Vector2Add(np, delta)))
+	{
+		if (ChildIsNode(node->children[0]))
+		{
+			if (DoomNode_PointInsideBox(node, point, 0))
+			{
+				return FindSubSector(&nodes[node->children[0]], point);
+			}
+			return -1;
+		}
+		else
+		{
+			return node->children[0] & 0x7fffffff;
+		}
+	}
+	else
+	{
+		if (ChildIsNode(node->children[1]))
+		{
+			if (DoomNode_PointInsideBox(node, point, 1))
+			{
+				return FindSubSector(&nodes[node->children[1]], point);
+			}
+			return -1;
+		}
+		else
+		{
+			return node->children[1] & 0x7fffffff;
+		}
+	}
+}
+
 int DoomMap::FindSectorV2(int currentSector, Vector2 currentPosition)
 {
 	// TODO BSD traversal
-	return 0;
+	return FindSubSector(&nodes[nodeAmount-1], currentPosition);
 }
  Vector2 DoomMap::GetSectorMaxTexCoord(int sectorIndex)
 {
@@ -208,7 +239,186 @@ Vector2 DoomMap::GetSectorSize(int sectorIndex)
 }
 
 
+u32 DoomMap::MovePointInMap(
+	Vector2 start, Vector2 end, float radius, s16 sectorNumber,
+	float elevationEnd, float maxElevationChange, float height,
+	Vector2* positionOut, s16* sectorOut)
+{
+    u32 moveResultBitfield = 0;
+    Vector2 cross;
+    DoomSubSector* sector = &subsectors[sectorNumber];
 
+    // Check each wall of sector
+    // First check normal walls and push player away from them
+    // Then check portals and see if player crosses them
+
+    // TODO Treat portals where elevation change is too much as walls
+
+    for (s16 wi = 0; wi < sector->segmentAmount; wi++)
+    {
+        // Get wall start and end points
+        // TODO make a function that gets the Start and Endpoint Vectors
+        DoomSegment* wall = &segments[sector->firstSegment + wi];
+        bool treatAsWall = (wall->neighbourSubSector < 0);
+
+        // Check if could change elevation
+        if (treatAsWall == false)
+        {
+            s16 newSector = wall->neighbourSubSector;
+            float neighborFloor = GetFloory(newSector);
+            if (neighborFloor > elevationEnd + maxElevationChange)
+            {
+                treatAsWall = true;
+            }
+            else
+            {
+                float neighborCeiling = GetCeilingy(newSector);
+                if (neighborCeiling < elevationEnd + height)
+                {
+                    treatAsWall = true;
+                }
+            }
+        }
+        if (treatAsWall)
+        {
+			DoomVertex* wp = &vertices[wall->v1];
+            float wsx = wp->x;
+            float wsz = wp->y;
+			DoomSegment* wall2 = &segments[sector->firstSegment + ((wi + 1) % sector->segmentAmount)];
+            DoomVertex* w2 = &vertices[wall2->v1];
+            float wex = w2->x;
+            float wez = w2->y;
+            // Keep player away from walls
+            Vector2 wstart = Vector2New(wsx, wsz);
+            Vector2 wend = Vector2New(wex, wez);
+
+            // Check if player moved so fast that went through the wall
+            bool endOtherSide = IsPointInsideWall(end, wstart, wend) == false;
+            if (endOtherSide)
+            {
+                // Find the exact intersection point and slide player along the wall
+                bool intersectFound =  FindIntersectionWithWall(start, end, wstart, wend, &cross);
+                if (intersectFound)
+                {
+                    Vector2 normal = GetWallNormal(wstart, wend);
+                    // Push player back from wall
+                    Vector2 hitEnd = Vector2Add(cross, normal);
+                    // Slide player along the wall
+                    Vector2 wstart = Vector2New(wsx, wsz);
+                    Vector2 wend = Vector2New(wex, wez);
+                    Vector2 slideMove = Vector2Project( Vector2Subtract(end, start), Vector2Subtract(wend, wstart));
+                    end = Vector2Add(hitEnd, slideMove);
+
+                    // TODO Push out already here?
+
+                    moveResultBitfield = Flag_SetBit(moveResultBitfield, Move_HitWall);
+                }
+            }
+
+            // Check if player is too close to wall
+            // NOTE: end was maybe modified above
+            if (CircleCollidesWithWall(end, radius, wstart, wend))
+            {
+                float distance = GetDistanceToWall(end, wstart, wend);
+                if (distance < radius)
+                {
+                    // NOTE : Slides automagically
+                    Vector2 normal = GetWallNormal(wstart, wend);
+                    float intoWall = radius - distance;
+                    end = Vector2Add(end, Vector2Scale(normal, intoWall));
+                    moveResultBitfield = Flag_SetBit(moveResultBitfield, Move_HitWall);
+                }
+            }
+        } // if is wall
+    } // Wall loop
+
+    // If nothing happens with portals, we stay in same sector as started
+    *sectorOut = sectorNumber;
+
+    // Check if player movement against walls made them go through portal
+    // NOTE above for loop has already pushed player away from inaccessible portals
+
+    // Check each wall of sector
+    // First check normal walls and push player away from them
+    // Then check portals and see if player crosses them
+
+    // TODO Treat portals where elevation change is too much as walls
+
+    for (s16 wi = 0; wi < sector->segmentAmount; wi++)
+    {
+        // Get wall start and end points
+        // TODO make a function that gets the Start and Endpoint Vectors
+        DoomSegment* wall = &segments[sector->firstSegment + wi];
+        if (wall->neighbourSubSector >= 0)
+        {
+
+			DoomSegment* wall2 = &segments[sector->firstSegment + ((wi + 1) % sector->segmentAmount)];
+			DoomVertex* wp1 = &vertices[wall->v1];
+			DoomVertex* wp2 = &vertices[wall2->v1];
+            Vector2 wstart = Vector2New(wp1->x, wp1->y);
+            Vector2 wend = Vector2New(wp2->x, wp2->y);
+            // Is player close to this wall?
+            bool isClose = IntersectBoxV(start, end, wstart, wend);
+            bool crosses = false;
+
+            if (isClose)
+            {
+                // Is player on the other side of it
+                bool startThisSide = IsPointInsideWall(start, wstart, wend);
+                bool endOtherSide = IsPointInsideWall(end, wstart, wend) == false;
+                crosses = startThisSide && endOtherSide;
+            }
+
+            if (crosses)
+            {
+                // If is portal and end point is on the other side
+                // we can just allow player to move to next sector
+                s16 newSector = wall->neighbourSubSector;
+                *sectorOut = newSector;
+                moveResultBitfield = Flag_SetBit(moveResultBitfield, Move_HitPortal);
+            }
+        } // if is portal
+    }// Portal loop
+
+    *positionOut = end;
+    return moveResultBitfield;
+}
+
+
+bool DoomMap::IsPointInsideWall(Vector2 point, Vector2 wallStart, Vector2 wallEnd)
+{
+	Vector2 delta = Vector2Subtract(wallEnd, wallStart);
+
+	if (delta.x == 0)
+	{
+		// Vertical cut
+		if (point.x < wallStart.x)
+		{
+			if (delta.y > 0) {return 1;}
+			else {return 0;}
+		}
+		if (delta.y < 0) {return 1;}
+		else {return 0;}
+	}
+	if (delta.y == 0)
+	{
+		// Horizontal cut
+		if (point.y < wallStart.y)
+		{
+			if (delta.x > 0) {return 1;}
+			else {return 0;}
+		}
+		if (delta.x < 0) {return 1;}
+		else {return 0;}
+	}
+	float dx = point.x - wallStart.x;
+	float dy = point.y - wallStart.y;
+	if( dx * delta.y < dy * delta.x)
+	{
+		return 1;
+	}
+	return 0;
+}
 
 
 DoomThing* DoomMap_GetThing(DoomMap* map, unsigned int index) { return &map->things[index];}

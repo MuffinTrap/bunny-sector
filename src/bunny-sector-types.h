@@ -42,3 +42,12 @@ typedef struct MapMaterial MapMaterial;
 
 typedef int MaterialId;
 #define INVALID_MATERIAL_ID -1
+
+
+struct WallInfo
+{
+	Vector2 start;
+	Vector2 end;
+	Vector2 normal;
+};
+typedef struct WallInfo WallInfo;

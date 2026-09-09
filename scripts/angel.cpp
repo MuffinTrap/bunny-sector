@@ -171,10 +171,17 @@ void angelscript_frame(float deltatime)
 void angelscript_frame_doom(float deltatime)
 {
 	BunnySector_SetOpenGLUnitsToMeter(angel_unitstometer);
-	BunnySector_SetActorSpeeds(0, 0.1f, 0.2f);
+	BunnySector_SetActorSpeeds(0, 1.0f, 1.0f);
 	movePlayer(deltatime);
 
-	BunnySector_MoveActorFreely(0, deltatime);
+	if (mgdl_IsButtonDown(0, ButtonZ))
+	{
+		BunnySector_MoveActorFreely(0, deltatime);
+	}
+	else
+	{
+		BunnySector_UpdateMap(doomMapId, deltatime);
+	}
 
 	float aspect = mgdl_GetScreenWidth()/mgdl_GetScreenHeight();
 	glClearColor(0.3f, 0.2f, 0.3f, 1.0f);

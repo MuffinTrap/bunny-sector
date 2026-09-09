@@ -863,6 +863,63 @@ static void read_sector() {
 				}
 			}
 		}
+		// Find neighbourSubSector values
+		for (int ssi = 0; ssi < map->subSectorAmount; ssi++)
+		{
+			DoomSubSector* sub = &map->subsectors[ssi];
+			int prevNeighbour = -1;
+			for (int segi = 0; segi < sub->segmentAmount; segi++)
+			{
+				DoomSegment *seg = &map->segments[sub->firstSegment + segi];
+				if (seg->linedef != DOOM_INVALID_LINEDEF) // Segments that were built for nodes don't have line
+				{
+					DoomLinedef *linedef = &map->linedefs[seg->linedef];
+					// If this segment is from the front side of a line
+					// then back side sector is neighbour
+					if (seg->lineSide == DOOM_SIDE_FRONT)
+					{
+						if (linedef->sideback >= 0)
+						{
+							DoomSidedef *sidedef_back = &map->sidedefs[linedef->sideback];
+							seg->neighbourSubSector = sidedef_back->sector;
+						}
+						else
+						{
+							seg->neighbourSubSector = -1;
+						}
+						prevNeighbour = seg->neighbourSubSector;
+					}
+					else if (seg->lineSide == DOOM_SIDE_BACK)
+					{
+						if (linedef->sidefront >= 0)
+						{
+							DoomSidedef *sidedef_front = &map->sidedefs[linedef->sidefront];
+							seg->neighbourSubSector = sidedef_front->sector;
+						}
+						else
+						{
+							seg->neighbourSubSector = -1;
+						}
+						prevNeighbour = seg->neighbourSubSector;
+					}
+				}
+				else
+				{
+					// Manually check what is on the other side lol
+					DoomVertex dv1 = map->vertices[seg->v1];
+					DoomSegment *seg2 = &map->segments[sub->firstSegment + (segi+1)%sub->segmentAmount];
+					DoomVertex dv2 = map->vertices[seg2->v1];
+					Vector2 v1 = Vector2New(dv1.x, dv1.y);
+					Vector2 v2 = Vector2New(dv2.x, dv2.y);
+					Vector2 N = map->GetWallNormal(v1, v2);
+					Vector2 wallMiddle = Vector2Add(v1, Vector2Scale(Vector2Subtract(v2, v1), 0.5f));
+					Vector2 otherSide = Vector2Add(wallMiddle, Vector2Scale(N, -1));
+					seg->neighbourSubSector = map->FindSectorV2(0, otherSide);
+				}
+
+				printf("Subsector %d segment %d neighbor is %d\n", ssi, sub->firstSegment + segi, seg->neighbourSubSector);
+			}
+		}
 
 		// Calculate extra information needed by tesselation
     map->lowY = 35665;

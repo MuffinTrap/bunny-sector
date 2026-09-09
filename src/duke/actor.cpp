@@ -5,7 +5,7 @@
 #include "dukemath.h"
 #include "math.h"
 
-Actor Actor_CreateDefaultActor(int idNumber)
+Actor Actor_CreateDefaultActor(int idNumber, float unitsToMeter)
 {
 	Actor a;
 	a.idNumber = idNumber;
@@ -16,7 +16,7 @@ Actor Actor_CreateDefaultActor(int idNumber)
 	a.turnDrive = 0.0f;
 	a.verticalDrive = 0.0f;
 
-	a.position = Vector2Zero();
+	a.position.vectorPosition = Vector2Zero();
 	a.elevation = 0;
 	a.prevPosition = Vector2Zero();
 
@@ -32,19 +32,19 @@ Actor Actor_CreateDefaultActor(int idNumber)
 	a.turnAccelerationDegrees = 480.0f;
 	a.turnSpeedDegrees = 340.0f; // NOTE set
 
-	a.moveSpeed = 2048.0f; // NOTE Set
-	a.moveAcceleration = 2024.0f;
+	a.moveSpeed = 2.0f * unitsToMeter;
+	a.moveAcceleration = 2.0f * unitsToMeter;
 
-	a.verticalSpeedUp = 4400.0f;
-	a.verticalSpeedDown = -3200.0f; // DANGER
-	a.verticalAccelerationUp = 8800.0f;
-	a.verticalAccelerationDown = 4800.0f;
+	a.verticalSpeedUp = 4.0f * unitsToMeter;
+	a.verticalSpeedDown = -3.2f * unitsToMeter; // DANGER
+	a.verticalAccelerationUp = 4.0f * unitsToMeter;
+	a.verticalAccelerationDown = 4.0f * unitsToMeter;
 
 	// Size
-	a.standingHeight = 512.0f + 256; // NOTE Set
+	a.standingHeight = 1.5f * unitsToMeter;
 	a.climbHeight = a.standingHeight/2.0f;
 	a.eyeHeightNormalized = 0.85f;
-	a.radius = 60.0f;
+	a.radius = 0.5f * unitsToMeter;
 	a.noclip = false;
 
 	a.turnSpeedMultiplier = 1.0f;
@@ -58,7 +58,7 @@ Actor Actor_CreateDefaultActor(int idNumber)
 Viewpoint Actor_GetViewpoint(Actor* actor)
 {
 	Viewpoint p;
-	p.position = Vector3New(actor->position.x, actor->elevation, actor->position.y);
+	p.position = Vector3New(actor->position.vectorPosition.x, actor->elevation, actor->position.vectorPosition.y);
 	p.sector = actor->sectorNumber;
 	p.yawRad = actor->yawRad;
 	p.pitchRad = actor->pitchRad;
@@ -102,7 +102,7 @@ Vector2 Actor_ApplyDrive(Actor* actor, float deltaTime)
 	actor->floorDirection = Vector2Rotate(forward, actor->yawRad);
 
 	Vector2 floorDestination = Vector2Add(
-		actor->position, Vector2Scale(
+		actor->position.vectorPosition, Vector2Scale(
 				actor->floorDirection,
 				actor->forwardDrive * actor->walkSpeedMultiplier * actor->moveSpeed * deltaTime
 				)
@@ -183,8 +183,8 @@ Vector3 Actor_ApplyDrive2(Actor* actor, float deltaTime)
 
 	// Calculate new position
 	Vector2 floorDestination = Vector2New(
-		actor->position.x + actor->floorVelocity.x * deltaTime,
-		actor->position.y + actor->floorVelocity.y * deltaTime
+		actor->position.vectorPosition.x + actor->floorVelocity.x * deltaTime,
+		actor->position.vectorPosition.y + actor->floorVelocity.y * deltaTime
 	);
 
 	// Apply turn drive
@@ -240,7 +240,7 @@ Vector3 Actor_ApplyDrive2(Actor* actor, float deltaTime)
 	}
 
 	// Move vertically
-	float heightDestination = actor->position.y + actor->verticalVelocity * deltaTime;
+	float heightDestination = actor->elevation + actor->verticalVelocity * deltaTime;
 
 	Vector3 destination = Vector3New(floorDestination.x, heightDestination, floorDestination.y);
 	return destination;
@@ -248,6 +248,6 @@ Vector3 Actor_ApplyDrive2(Actor* actor, float deltaTime)
 
 DoomVertex* Actor_GetDoomPosition(Actor* actor)
 {
-	return &actor->doomPosition;
+	return &actor->position.doomPosition;
 }
 

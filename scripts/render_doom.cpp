@@ -346,7 +346,7 @@ int GetChildSide(DoomNode@ node, DoomVertex@ v)
 
 int drawOrder = 0;
 
-void DrawSubSector(DoomMap@ map, Actor@ player, DoomSubSector@ sub)
+void DrawSubSector(DoomMap@ map, Actor@ player, DoomSubSector@ sub, int sectorIndex)
 {
 	DoomVertex@ pp = player.GetDoomPosition();
 	Vector2 playerPos = Vector2New(pp.x, pp.y);
@@ -393,7 +393,13 @@ void DrawSubSector(DoomMap@ map, Actor@ player, DoomSubSector@ sub)
 		if (RENDER_WALLS_DOOM == false)
 		{
 			DrawCross(Vector2New(trans1.x, trans1.y), Debug_Yellow);
-			ProcessWallTopDown(trans2, trans1, player.radius, false);
+			ProcessWallTopDown(trans2, trans1, player.radius, seg.neighbourSubSector >= 0);
+			if (sectorIndex == 1)
+			{
+			mgdl_DrawTextInt("Sub", sectorIndex, trans2.x, trans2.y-8, 8, Debug_Yellow);
+			Vector2 middle = Vector2Add(trans2, Vector2Scale(Vector2Subtract(trans1, trans2), 0.5f));
+			mgdl_DrawTextInt("Seg", i, middle.x, middle.y, 8, Debug_Yellow);
+			}
 		}
 		// Check if wall is facing away
 		else if ( SeesSide(trans2, trans1))
@@ -467,10 +473,12 @@ void DrawNodeChild(DoomMap@ map, Actor@ player, ChildId id)
 		DoomSubSector@ sub =  map.GetChildSubSector(id);
 
 		// TODO better way
-		DrawnSubSectors[drawnIndex] = id & 0x7fffffff;
+		int sectorId = id & 0x7fffffff;
+		DrawnSubSectors[drawnIndex] = sectorId;
 		drawnIndex += 1;
 
-		DrawSubSector(map, player, sub);
+		DrawSubSector(map, player, sub, sectorId);
+
 	}
 }
 

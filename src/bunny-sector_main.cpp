@@ -84,7 +84,6 @@ bool BunnySector_Init()
 	defaultOpenGL = GetDefaultRenderSettingsOpenGL();
 	defaultView = GetDefaultCameraInfo();
 	defaultCamera = GetDefaultCamera();
-	demoActor = Actor_CreateDefaultActor(0);
 
 	return true;
 }
@@ -149,10 +148,12 @@ int BunnySector_LoadMap(const zstr& mapfilename)
 	if (loaded != nullptr)
 	{
 		// Buffer the floor and ceiling vertices: The uvs need to be calculated first
-		OpenGLRender_CreateFloorBuffers(loaded, maptype == Map_Doom ? DOOM_UNITS_TO_METER : DUKE_UNITS_TO_METER);
+		float unitsToMeter = maptype == Map_Doom ? DOOM_UNITS_TO_METER : DUKE_UNITS_TO_METER;
+		OpenGLRender_CreateFloorBuffers(loaded, unitsToMeter);
 
 		mapsArray[firstFree] = loaded;
 		activeMap = loaded;
+		demoActor = Actor_CreateDefaultActor(0, unitsToMeter);
 		return firstFree;
 	}
 	else
@@ -183,7 +184,7 @@ void BunnySector_StartMap(MapId mapId)
 				BunnySector_SetOpenGLUnitsToMeter(DOOM_UNITS_TO_METER);
 			}
 			map->SetActorToStart(&demoActor);
-			printf("BunnySector startmap put actor to %.2f, %.2f\n", demoActor.position.x, demoActor.position.y);
+			printf("BunnySector startmap put actor to %.2f, %.2f\n", demoActor.position.vectorPosition.x, demoActor.position.vectorPosition.y);
 			defaultView = Actor_GetViewpoint(&demoActor);
 			s_AlignCameraToViewpoint(&defaultView, defaultCamera);
 		}
@@ -238,7 +239,7 @@ void BunnySector_AlignCameraToActor(int actorId)
 	// NOTE Must set GL_PROJECTION first then GL_MODELVIEW
 
 
-	demoActor.sectorNumber = activeMap->FindSectorV2(demoActor.sectorNumber, demoActor.position);
+	demoActor.sectorNumber = activeMap->FindSectorV2(demoActor.sectorNumber, demoActor.position.vectorPosition);
 	defaultView = Actor_GetViewpoint(&demoActor);
 
 	s_AlignCameraToViewpoint(&defaultView, defaultCamera);
@@ -351,9 +352,7 @@ void BunnySector_MoveActorFreely(int actorId, float deltatime)
 		demoActor.elevation = 299.0f;
 		demoActor.verticalVelocity = 0;
 	}
-	demoActor.position = Actor_ApplyDrive(&demoActor, deltatime);
-	demoActor.doomPosition.x = demoActor.position.x;
-	demoActor.doomPosition.y = demoActor.position.y;
+	demoActor.position.vectorPosition = Actor_ApplyDrive(&demoActor, deltatime);
 }
 
 void BunnySector_SetActorSpeeds(int actorId, float walkSpeedMultiplier, float turnSpeedMultiplier)
@@ -387,13 +386,13 @@ float BunnySector_GetActorRadius(int actorId)
 }
 void BunnySector_GetActorPositionV2(int actorId, buns_Vec2& out_pos)
 {
-	out_pos.x = demoActor.position.x;
-	out_pos.y = demoActor.position.y;
+	out_pos.x = demoActor.position.vectorPosition.x;
+	out_pos.y = demoActor.position.vectorPosition.y;
 }
 void BunnySector_SetActorPosition(int actorId, float x, float z)
 {
-	demoActor.position.x = x;
-	demoActor.position.y = z;
+	demoActor.position.vectorPosition.x = x;
+	demoActor.position.vectorPosition.y = z;
 }
 void BunnySector_GetActorFloorDir(int actorId, buns_Vec2& out_dir)
 {
@@ -402,9 +401,9 @@ void BunnySector_GetActorFloorDir(int actorId, buns_Vec2& out_dir)
 }
 void BunnySector_GetActorPositionV3(int actorId, buns_Vec3& out_pos)
 {
-	out_pos.x = demoActor.position.x;
+	out_pos.x = demoActor.position.vectorPosition.x;
 	out_pos.y = demoActor.elevation;
-	out_pos.z = demoActor.position.y;
+	out_pos.z = demoActor.position.vectorPosition.y;
 }
 
 Actor* BunnySector_GetActor(int actorId)

@@ -483,7 +483,7 @@ void ProcessWallTopDown(Vector2 trans1, Vector2 trans2, float playerRadius, bool
 
 	Vector2 moveEnd = Vector2Scale(FORWARD_2D, 100);
 
-	color32 wallColor = Debug_Green;
+	color32 wallColor = Debug_White;
 	if (behind ) {
 		wallColor = Debug_DarkGray;
 	}

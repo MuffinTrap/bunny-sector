@@ -27,28 +27,36 @@ public:
 	DoomSubSector* subsectors;
 	DoomSegment* segments;
 
-	void SetActorToStart(Actor* actor);
-	int GetSectorAmount();
-	int GetWallVertexAmount();
-	int GetWallAmountInSector(int sectorIndex);
-	int GetSectorFirstWallIndex(int sectorIndex);
-	Vector2 GetWallVertexInSector(int sectorIndex, int wallIndex);
-	Vector2 GetNextWallVertexInSector(int sectorIndex, int wallIndex);
-	int GetNextWallVertexIndexInSector(int sectorIndex, int wallIndex);
-	MaterialId GetSectorMaterial(int sectorIndex, bool floor);
-	float GetCeilingy(int sectorIndex);
-	float GetFloory(int sectorIndex);
-	int FindSectorV2(int currentSector, Vector2 currentPosition);
+	void SetActorToStart(Actor* actor) override;
+	int GetSectorAmount() override;
+	int GetWallVertexAmount() override;
+	int GetWallAmountInSector(int sectorIndex) override;
+	int GetSectorFirstWallIndex(int sectorIndex) override;
+	Vector2 GetWallVertexInSector(int sectorIndex, int wallIndex) override;
+	Vector2 GetNextWallVertexInSector(int sectorIndex, int wallIndex) override;
+	int GetNextWallVertexIndexInSector(int sectorIndex, int wallIndex) override;
+	MaterialId GetSectorMaterial(int sectorIndex, bool floor) override;
+	float GetCeilingy(int sectorIndex) override;
+	float GetFloory(int sectorIndex) override;
+	int FindSectorV2(int currentSector, Vector2 currentPosition) override;
 
-	Vector2 GetSectorSize(int sectorIndex);
-	Vector2 GetSectorMaxTexCoord(int sectorIndex);
-	Vector2 GetSectorMinPoint(int sectorIndex);
+	Vector2 GetSectorSize(int sectorIndex) override;
+	Vector2 GetSectorMaxTexCoord(int sectorIndex) override;
+	Vector2 GetSectorMinPoint(int sectorIndex) override;
 
-	void MoveActorInMap(float delta,Actor* actor);
-	int GetNeighbourOfWall(int sectorIndex, int wallIndex);
+	int GetNeighbourOfWall(int sectorIndex, int wallIndex) override;
 
-	u8 GetSectorShade(int sectorIndex, bool floor);
-	void PrintInfo();
+	u8 GetSectorShade(int sectorIndex, bool floor) override;
+	void PrintInfo() override;
+
+	u32 MovePointInMap(
+	Vector2 start, Vector2 end, float radius, s16 sectorNumber,
+	float elevationEnd, float maxElevationChange, float height,
+	Vector2* positionOut, s16* sectorOut) override;
+
+	bool IsPointInsideWall(Vector2 point, Vector2 wallStart, Vector2 wallEnd) override;
+
+	int FindSubSector(DoomNode* node, Vector2 point);
 
 };
 typedef class DoomMap DoomMap;

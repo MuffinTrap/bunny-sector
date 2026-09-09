@@ -23,8 +23,13 @@ struct Actor
     float verticalDrive; /**< Is going up or down */
 
     // Position in duke units
-    DoomVertex doomPosition;
-    Vector2 position; /**< Where actor is */
+    union ActorPosition
+    {
+        DoomVertex doomPosition;
+        Vector2 vectorPosition; /**< Where actor is */
+    };
+    ActorPosition position;
+
     float elevation;
     Vector2 prevPosition; /**< Place to store position before moving */
 
@@ -67,7 +72,7 @@ typedef struct Actor Actor;
 
 Actor Actor_CreateFromViewPoint(Viewpoint point);
 Actor Actor_Create(int idNumber, s16 sector, Vector3 position, float yawRad, float moveSpeed, float moveAcceleration, float turnSpeed, float turnAccelerationDeg, float standingHeight);
-Actor Actor_CreateDefaultActor(int idNumber);
+Actor Actor_CreateDefaultActor(int idNumber, float unitsToMeter);
 
 Vector2 Actor_ApplyDrive(Actor* actor, float deltaTime);
 float Actor_ApplyVerticalMove(Actor* actor, float gravity, float deltaTime);

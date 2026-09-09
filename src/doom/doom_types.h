@@ -4,6 +4,10 @@
 
 typedef unsigned int ChildId;
 
+#define DOOM_SIDE_FRONT 0
+#define DOOM_SIDE_BACK 1
+#define DOOM_INVALID_LINEDEF 65535
+
 enum LINEDEF_FLAG
 {
 	linedef_blocking = 1,  // Blocks things
@@ -117,6 +121,9 @@ struct DoomSegment
 	u32 partnerSegment;
 	u16 linedef;
 	u8 lineSide;
+
+	// Not in file but added for convenience
+	int neighbourSubSector;
 };
 typedef struct DoomSegment DoomSegment;
 
@@ -165,4 +172,4 @@ ChildId DoomNode_GetChild(DoomNode* node, unsigned int index);
 s16 DoomNode_GetBBox0(DoomNode* node, unsigned int index);
 s16 DoomNode_GetBBox1(DoomNode* node, unsigned int index);
 s16 DoomNode_GetBBox(DoomNode* node, unsigned int index); // Combined 0-7 index
-
+bool DoomNode_PointInsideBox(DoomNode* node, Vector2 point, int childIndex);

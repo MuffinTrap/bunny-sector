@@ -19,7 +19,7 @@ extern "C" {
  */
 Vector2 Vec2XZCrossWithY(Vector2 a);
 
-Vector2 Vec2Project(Vector2 move, Vector2 wall);
+Vector2 Vector2Project(Vector2 move, Vector2 wall);
 
 Vector2 Vec2XZRotateY(Vector2 p, float angle);
 Vector3 Vec3XYZRotateY(Vector3 p, float angle);

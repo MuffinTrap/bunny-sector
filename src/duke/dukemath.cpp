@@ -30,7 +30,7 @@ Vector2 Vec2XZCrossWithY(Vector2 a)
 }
 
 
-Vector2 Vec2Project(Vector2 move, Vector2 wall)
+Vector2 Vector2Project(Vector2 move, Vector2 wall)
 {
 	return Vector2Scale(wall, Vector2DotProduct(move, wall)/Vector2DotProduct(wall, wall));
 }

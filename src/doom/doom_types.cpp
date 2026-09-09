@@ -11,6 +11,11 @@ bool ChildIsNode(ChildId id)
 	return  (id & 0x80000000) == 0;
 }
 
+int ChildToSubSectorIndex(ChildId id)
+{
+	return  (id & 0x7fffffff);
+}
+
 void DoomLinedef_Init(DoomLinedef* def)
 {
 	def->id = -1;
@@ -87,4 +92,28 @@ s16 DoomNode_GetBBox(DoomNode* node, unsigned int index) // Combined 0-7 index
 	{
 		return node->bbox1[index-4];
 	}
+}
+
+bool DoomNode_PointInsideBox(DoomNode* node, Vector2 point, int childIndex)
+{
+	s16 left =node->bbox0[BB_LFT];
+	s16 right =node->bbox0[BB_RGT];
+	s16 top =node->bbox0[BB_TOP];
+	s16 bot =node->bbox0[BB_BOT];
+	if (childIndex == 1)
+	{
+	 left =node->bbox1[BB_LFT];
+	 right =node->bbox1[BB_RGT];
+	 top =node->bbox1[BB_TOP];
+	 bot =node->bbox1[BB_BOT];
+	}
+	if (point.x < left || point.x > right)
+	{
+		return false;
+	}
+	if (point.y < bot || point.y > top)
+	{
+		return false;
+	}
+	return true;
 }

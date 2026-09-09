@@ -636,7 +636,7 @@ void BuildRender_DrawTopDown(Viewpoint* players, DukeMap* map, RenderSettingsOpe
                         {
                             settings2D->collisionInsideSector = si;
                         }
-                        if (Map_FindIntersectionWithWall(map,  settings2D->collisionPoint, collisionEnd, w, &collisionOut))
+                        if (map->FindIntersectionWithWall(settings2D->collisionPoint, collisionEnd, start, end, &collisionOut))
                         {
                             OpenGLRender_DrawDot(collisionOut, 48, Debug_White);
                         }

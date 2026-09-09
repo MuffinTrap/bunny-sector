@@ -141,10 +141,10 @@ void DukeMap_InitActors(DukeMap* map, Actor* players, int playerAmount)
         if (startingPos)
         {
             Log_InfoF("Found starting position for player %d\n", pi);
-            players[pi].position= Vector2New(startingPos->position.x, startingPos->position.z);
+            players[pi].position.vectorPosition= Vector2New(startingPos->position.x, startingPos->position.z);
             players[pi].yawRad = Math_DukeAngleToRad(startingPos->ang);
             players[pi].sectorNumber = startingPos->sectnum;
-            players[pi].position.y = Map_GetSectorFloorHeight(map, players[pi].sectorNumber) + players[pi].standingHeight;
+            players[pi].elevation = Map_GetSectorFloorHeight(map, players[pi].sectorNumber) + players[pi].standingHeight;
         }
         else
         {
@@ -156,7 +156,7 @@ void DukeMap_InitActors(DukeMap* map, Actor* players, int playerAmount)
 }
 void DukeMap::SetActorToStart(Actor* actor)
 {
-    actor->position= startPosition;
+    actor->position.vectorPosition= startPosition;
     actor->yawRad = Math_DukeAngleToRad(startAngle);
     actor->sectorNumber = startingSector;
     actor->elevation = GetFloory(startingSector) + actor->standingHeight;
@@ -171,7 +171,7 @@ void DukeMap_SetCameraToStart(DukeMap* map, Viewpoint* camera)
 
 void DukeMap_InitActor(DukeMap* map, Actor* player)
 {
-    player->position= map->startPosition;
+    player->position.vectorPosition= map->startPosition;
     player->yawRad = Math_DukeAngleToRad(map->startAngle);
     player->sectorNumber = map->startingSector;
     player->elevation = Map_GetSectorFloorHeight(map, map->startingSector) + player->standingHeight;
@@ -368,115 +368,6 @@ bool Map_IsPointInsideSectorOG_1(DukeMap* map, Vector2 point, int sectorNumber)
 
 // This is from Wikipedia and works
 
-bool Map_FindIntersectionWithWallUT(
-    float x1,
-    float y1,
-    float x2,
-    float y2,
-    float x3,
-    float y3,
-    float x4,
-    float y4,
-    Vector2* pointOUT
-     )
-{
-    float divider = ((x1-x2)*(y3-y4) - (y1-y2)*(x3-x4));
-    if (divider != 0.0f)
-    {
-        float t = ((x1-x3)*(y3-y4) - (y1-y3)*(x3-x4)) / divider;
-        float u = ((x1-x2)*(y1-y3) - (y1-y2)*(x1-x3)) / divider;
-        if (( 0 <= t && t <= 1.0f ) && (-1.0f <= u && u <= 0.0f))
-        {
-
-            printf("Intersection: %f, %f\n", t, u);
-            *pointOUT = Vector2New(x1 + t*(x2-x1), y1 + t*(y2-y1));
-            return true;
-        }
-        else
-        {
-            *pointOUT = Vector2New(t, u);
-        }
-    }
-    return false;
-}
-
-bool Map_FindIntersectionWithWall(DukeMap* map, Vector2 moveStart, Vector2 moveEnd, Wall* wall, Vector2* pointOUT)
-{
-    float x1 = moveStart.x;
-    float z1 = moveStart.y;
-    float x2 = moveEnd.x;
-    float z2 = moveEnd.y;
-
-    float x3 = wall->x;
-    float z3 = wall->z;
-    Wall* wend = Map_GetWallEnd(map, wall);
-    float x4 = wend->x;
-    float z4 = wend->z;
-    return Map_FindIntersectionWithWallUT(x1, z1, x2, z2, x3, z3, x4, z4, pointOUT);
-}
-
-// Copied from raylib
-// raylib.com
-/**********************************************************************************************
-*   LICENSE: zlib/libpng
-*
-*   Copyright (c) 2013-2026 Ramon Santamaria (@raysan5)
-*
-*   This software is provided "as-is", without any express or implied warranty. In no event
-*   will the authors be held liable for any damages arising from the use of this software.
-*
-*   Permission is granted to anyone to use this software for any purpose, including commercial
-*   applications, and to alter it and redistribute it freely, subject to the following restrictions:
-*
-*     1. The origin of this software must not be misrepresented; you must not claim that you
-*     wrote the original software. If you use this software in a product, an acknowledgment
-*     in the product documentation would be appreciated but is not required.
-*
-*     2. Altered source versions must be plainly marked as such, and must not be misrepresented
-*     as being the original software.
-*
-*     3. This notice may not be removed or altered from any source distribution.
-*
-**********************************************************************************************/
-bool Map_CircleCollidesWithWall(Vector2 center, float radius, Vector2 p1, Vector2 p2)
-{
-    bool collision = false;
-
-    float dx = p1.x - p2.x;
-    float dy = p1.y - p2.y;
-
-    if ((fabsf(dx) + fabsf(dy)) <= EPSILON)
-    {
-        float dx = center.x - p1.x;      // X distance between centers
-        float dy = center.y - p1.y;      // Y distance between centers
-
-        float distanceSquared = dx*dx + dy*dy; // Distance between centers squared
-        float radiusSum = radius;
-
-        collision = (distanceSquared <= (radiusSum*radiusSum));
-
-        return collision;
-    }
-    else
-    {
-        float lengthSQ = ((dx*dx) + (dy*dy));
-        float dotProduct = (((center.x - p1.x)*(p2.x - p1.x)) + ((center.y - p1.y)*(p2.y - p1.y)))/(lengthSQ);
-
-        if (dotProduct > 1.0f) dotProduct = 1.0f;
-        else if (dotProduct < 0.0f) dotProduct = 0.0f;
-
-        float dx2 = (p1.x - (dotProduct*(dx))) - center.x;
-        float dy2 = (p1.y - (dotProduct*(dy))) - center.y;
-        float distanceSQ = ((dx2*dx2) + (dy2*dy2));
-
-        if (distanceSQ <= radius*radius) collision = true;
-    }
-
-    return collision;
-}
-
-// Copied from raylib ends
-
 Vector2 Map_GetWallMiddle(DukeMap* map, Wall* w)
 {
     Wall* wend = Map_GetWallEnd(map, w);
@@ -497,6 +388,15 @@ Wall* Map_GetWallEnd(DukeMap* map, const Wall* w)
     return &map->walls[w->point2];
 }
 
+
+bool DukeMap::IsPointInsideWall(Vector2 point, Vector2 wallStart, Vector2 wallEnd)
+{
+    Vector2 wallVector = Vector2Subtract(wallEnd, wallStart);
+    float crossY = Vector2CrossProduct(wallVector, Vector2Subtract(point, wallStart));
+    // DANGER Again, this code works differently TM
+    return crossY > 0.0f;
+
+}
 bool Map_IsPointInsideWall(DukeMap* map, Vector2 point, Wall* wall)
 {
     // negative if on the right side of wall.
@@ -504,23 +404,7 @@ bool Map_IsPointInsideWall(DukeMap* map, Vector2 point, Wall* wall)
     Wall* wend = Map_GetWallEnd(map, wall);
     Vector2 start = Vector2New(wall->x, wall->z);
     Vector2 end = Vector2New(wend->x, wend->z);
-
-    Vector2 wallVector = Vector2Subtract(end, start);
-    float crossY = Vector2CrossProduct(wallVector, Vector2Subtract(point, start));
-    // DANGER Again, this code works differently TM
-    return crossY > 0.0f;
-}
-
-float GetDistanceToWall(Vector2 point, Vector2 ws, Vector2 we)
-{
-    const float xdiff = we.x-ws.x;
-    const float ydiff = we.y-ws.y;
-    if (xdiff == 0.0f && ydiff == 0.0f) {
-        return Vector2Distance(point, ws);
-    }
-	const float top = fabsf( (ydiff)*point.x - (xdiff)*point.y + we.x*ws.y - we.y*ws.x);
-	const float bot = sqrt( (ydiff)*(ydiff) + (xdiff)*(xdiff));
-    return top/bot;
+    return map->IsPointInsideWall(point, start, end);
 }
 
 float Map_GetDistanceToWall(DukeMap* map, Wall* wall, Vector2 point)
@@ -528,7 +412,7 @@ float Map_GetDistanceToWall(DukeMap* map, Wall* wall, Vector2 point)
     Wall* wend = Map_GetWallEnd(map, wall);
     Vector2 ws = Vector2New(wall->x, wall->z);
     Vector2 we = Vector2New(wend->x, wend->z);
-    return GetDistanceToWall(point, ws, we);
+    return map->GetDistanceToWall(point, ws, we);
 }
 
 s32 Map_GetSectorFloorHeight(DukeMap* map, s16 sectorNumber)
@@ -589,57 +473,17 @@ MapSprite* Map_GetSprite(DukeMap* map, s16 spriteIndex)
     return &map->sprites[spriteIndex];
 }
 
-void DukeMap::MoveActorInMap(float deltaTime, Actor* inoutActor)
-{
-    Vector2 current = inoutActor->position;
-    Vector2 destination = Actor_ApplyDrive(inoutActor, deltaTime);
-
-	Vector2 point = current;
-	Vector2 endpoint = destination;
-
-    // TODO Gravity depens on map?
-    float elevationEnd = Actor_ApplyVerticalMove(inoutActor, inoutActor->verticalAccelerationDown, deltaTime);
-
-	Vector2 pointOut;
-	s16 sectorOut;
-	u32 resultFlags = Map_MovePointInMap(
-		this, point,  endpoint, inoutActor->radius, inoutActor->sectorNumber,elevationEnd,inoutActor->climbHeight,inoutActor->standingHeight,
-		&pointOut, &sectorOut);
-
-	// Keep actor above floor and under the ceiling
-    float minY = GetFloory(sectorOut);
-    float maxY = GetCeilingy(sectorOut) - inoutActor->standingHeight;
-    if (elevationEnd < minY)
-    {
-        resultFlags = Flag_SetBit(resultFlags, Move_OnGround);
-    }
-    float verticalPosition = Clamp(elevationEnd, minY, maxY);
-
-	inoutActor->position = pointOut;
-    inoutActor->elevation = verticalPosition;
-	inoutActor->sectorNumber = sectorOut;
-    inoutActor->lastMoveResultFlags= resultFlags;
-}
-
-// Macros from bisqwit
-#define map_min(a,b)             (((a) < (b)) ? (a) : (b)) // min: Choose smaller of two scalars.
-#define map_max(a,b)             (((a) > (b)) ? (a) : (b)) // max: Choose greater of two scalars.
-#define map_clamp(a, mi,ma)      map_min(map_max(a,mi),ma)         // clamp: Clamp value into set range.
-#define vxs(x0,y0, x1,y1)    ((x0)*(y1) - (x1)*(y0))   // vxs: Vector cross product
-// Overlap:  Determine whether the two number ranges overlap.
-#define Overlap(a0,a1,b0,b1) (map_min(a0,a1) <= map_max(b0,b1) && map_min(b0,b1) <= map_max(a0,a1))
-// IntersectBox: Determine whether two 2D-boxes intersect.
-#define IntersectBox(x0,y0, x1,y1, x2,y2, x3,y3) (Overlap(x0,x1,x2,x3) && Overlap(y0,y1,y2,y3))
 
 
-u32 Map_MovePointInMap(DukeMap* map,
+
+u32 DukeMap::MovePointInMap(
 	Vector2 start, Vector2 end, float radius, s16 sectorNumber,
 	float elevationEnd, float maxElevationChange, float height,
 	Vector2* positionOut, s16* sectorOut)
 {
     u32 moveResultBitfield = 0;
     Vector2 cross;
-    Sector* sector = Map_GetSector(map, sectorNumber);
+    Sector* sector = Map_GetSector(this, sectorNumber);
 
     // Check each wall of sector
     // First check normal walls and push player away from them
@@ -651,21 +495,21 @@ u32 Map_MovePointInMap(DukeMap* map,
     {
         // Get wall start and end points
         // TODO make a function that gets the Start and Endpoint Vectors
-        Wall* wall = Map_GetWallInSector(map, sectorNumber, wi);
+        Wall* wall = Map_GetWallInSector(this, sectorNumber, wi);
         bool treatAsWall = (wall->nextsector < 0);
 
         // Check if could change elevation
         if (treatAsWall == false)
         {
             s16 newSector = wall->nextsector;
-            float neighborFloor = Map_GetSectorFloorHeight(map, newSector);
+            float neighborFloor = GetFloory(newSector);
             if (neighborFloor > elevationEnd + maxElevationChange)
             {
                 treatAsWall = true;
             }
             else
             {
-                float neighborCeiling = Map_GetSectorCeilingHeight(map, newSector);
+                float neighborCeiling = GetCeilingy(newSector);
                 if (neighborCeiling < elevationEnd + height)
                 {
                     treatAsWall = true;
@@ -676,7 +520,7 @@ u32 Map_MovePointInMap(DukeMap* map,
         {
             float wsx = wall->x;
             float wsz = wall->z;
-            Wall* w2 = Map_GetWallEnd(map, wall);
+            Wall* w2 = Map_GetWallEnd(this, wall);
             float wex = w2->x;
             float wez = w2->z;
             // Keep player away from walls
@@ -684,20 +528,20 @@ u32 Map_MovePointInMap(DukeMap* map,
             Vector2 wend = Vector2New(wex, wez);
 
             // Check if player moved so fast that went through the wall
-            bool endOtherSide = Map_IsPointInsideWall(map, end, wall) == false;
+            bool endOtherSide = IsPointInsideWall(end, wstart, wend) == false;
             if (endOtherSide)
             {
                 // Find the exact intersection point and slide player along the wall
-                bool intersectFound =  Map_FindIntersectionWithWall(map, start, end, wall, &cross);
+                bool intersectFound =  FindIntersectionWithWall(start, end, wstart, wend, &cross);
                 if (intersectFound)
                 {
-                    Vector2 normal = Map_GetWallNormal(map, wall);
+                    Vector2 normal = GetWallNormal(wstart, wend);
                     // Push player back from wall
                     Vector2 hitEnd = Vector2Add(cross, normal);
                     // Slide player along the wall
                     Vector2 wstart = Vector2New(wsx, wsz);
                     Vector2 wend = Vector2New(wex, wez);
-                    Vector2 slideMove = Vec2Project( Vector2Subtract(end, start), Vector2Subtract(wend, wstart));
+                    Vector2 slideMove = Vector2Project( Vector2Subtract(end, start), Vector2Subtract(wend, wstart));
                     end = Vector2Add(hitEnd, slideMove);
 
                     // TODO Push out already here?
@@ -708,13 +552,13 @@ u32 Map_MovePointInMap(DukeMap* map,
 
             // Check if player is too close to wall
             // NOTE: end was maybe modified above
-            if (Map_CircleCollidesWithWall(end, radius, wstart, wend))
+            if (CircleCollidesWithWall(end, radius, wstart, wend))
             {
                 float distance = GetDistanceToWall(end, wstart, wend);
                 if (distance < radius)
                 {
                     // NOTE : Slides automagically
-                    Vector2 normal = Map_GetWallNormal(map, wall);
+                    Vector2 normal = GetWallNormal(wstart, wend);
                     float intoWall = radius - distance;
                     end = Vector2Add(end, Vector2Scale(normal, intoWall));
                     moveResultBitfield = Flag_SetBit(moveResultBitfield, Move_HitWall);
@@ -730,23 +574,21 @@ u32 Map_MovePointInMap(DukeMap* map,
     // NOTE above for loop has already pushed player away from inaccessible portals
     for (s16 wi = 0; wi < sector->wallnum; wi++)
     {
-        Wall* wall = Map_GetWallInSector(map, sectorNumber, wi);
+        Wall* wall = Map_GetWallInSector(this, sectorNumber, wi);
         if (wall->nextsector >= 0)
         {
-            float wsx = wall->x;
-            float wsz = wall->z;
-            Wall* endWall = Map_GetWallEnd(map, wall);
-            float wex = endWall->x;
-            float wez = endWall->z;
+            Wall* endWall = Map_GetWallEnd(this, wall);
+            Vector2 wstart = Vector2New(wall->x, wall->z);
+            Vector2 wend = Vector2New(endWall->x, endWall->z);
             // Is player close to this wall?
-            bool isClose = IntersectBox(start.x, start.y, end.x, end.y, wsx, wsz, wex, wez);
+            bool isClose = IntersectBoxV(start, end, wstart, wend);
             bool crosses = false;
 
             if (isClose)
             {
                 // Is player on the other side of it
-                bool startThisSide = Map_IsPointInsideWall(map, start, wall);
-                bool endOtherSide = Map_IsPointInsideWall(map, end, wall) == false;
+                bool startThisSide = IsPointInsideWall(start, wstart, wend);
+                bool endOtherSide = IsPointInsideWall(end, wstart, wend) == false;
                 crosses = startThisSide && endOtherSide;
             }
 
