@@ -1,5 +1,4 @@
 #pragma once
-#include "dukemap.h"
 #include <mgdl/mgdl-types.h>
 #include "../doom/doom_types.h"
 

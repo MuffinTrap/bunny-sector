@@ -10,6 +10,8 @@ class WallSegment
 {
 	int start;
 	int end;
+	WallSegment@ next;
+	WallSegment@ prev;
 	WallSegment()
 	{
 		start = 0;
@@ -21,68 +23,223 @@ class WallSegment
 		start = left;
 		end = right;
 	}
+
+	bool OverlapsWith(WallSegment@ other)
+	{
+// Overlap:  Determine whether the two number ranges overlap.
+// #define Overlap(a0,a1,b0,b1) (map_min(a0,a1) <= map_max(b0,b1) && map_min(b0,b1) <= map_max(a0,a1))
+
+		if (MinI(start, end) <= MaxI(other.start, other.end) && MinI(other.start, other.end) <= MaxI(start, end))
+		{
+			return true;
+		}
+		return false;
+
+	}
+
+	bool MergeInto(WallSegment@ other)
+	{
+		if (DEBUG_LOG)
+		{
+			mgdl_LogText("  try merge into");
+			mgdl_LogTextInt("  other.start", other.start);
+			mgdl_LogTextInt("  other.end", other.end);
+		}
+		if (start >= other.start && end <= other.end)
+		{
+			// This is inside the other!
+		}
+		if (start < other.start)
+		{
+			other.start = start;
+		}
+		if (end > other.end)
+		{
+			other.end = end;
+		}
+		return true;
+
+
+	}
+	void InsertBetween(WallSegment@ before, WallSegment@ after)
+	{
+		prev = before;
+		before.next = this;
+
+		next = after;
+		after.prev = this;
+	}
 }
 
 int WALL_SEGMENT_AMOUNT = 64;
 WallSegment[] wallSegments(WALL_SEGMENT_AMOUNT);
 int lastWallSegment = 0;
+// Linked list
+
 
 int MAX_16 = 0x7FFF;
 
+void InitWallSegments()
+{
+
+}
+
 void ResetWallSegments()
 {
-	wallSegments[0] = WallSegment(-MAX_16, -1);
-	wallSegments[1] = WallSegment(SCREEN_WIDTH, MAX_16);
+	wallSegments[0] = WallSegment(-MAX_16, -SCREEN_WIDTH/2);
+	wallSegments[1] = WallSegment(SCREEN_WIDTH/2, MAX_16);
+	@wallSegments[0].next =  @wallSegments[1];
+	@wallSegments[1].prev =  @wallSegments[0];
 	lastWallSegment = 2;
 }
 
 // This is complicated, do later
 void PushWallSegment(int startx, int endx)
 {
-	int index = 0;
-	for(int i = 0; i < WALL_SEGMENT_AMOUNT; i++)
+	if (DEBUG_LOG)
 	{
-		WallSegment seg = wallSegments[i];
-		// Find the first segment on the left side of pushed
-		// If pushing 0-? then the first segment is found
-		// because -1 < 0-1 is false
-		if (seg.end < startx-1)
-		{
-			continue;
-		}
-		else
-		{
-			index = i;
-			break;
-		}
+		mgdl_LogTextInt("Push segment start ", startx);
+		mgdl_LogTextInt("Push segment end ", endx);
 	}
-	WallSegment seg = wallSegments[index];
-	if (startx < seg.start)
-	{
-		if (endx < seg.start -1)
-		{
-			// New segment is not adjacent to seg
-			// Move all one step to right
-			for (int i = index; i < lastWallSegment; i++)
-			{
-				wallSegments[i+1].start = wallSegments[i].start;
-				wallSegments[i+1].end = wallSegments[i].end;
-			}
-			lastWallSegment += 1;
+	WallSegment@ drawn = @wallSegments[lastWallSegment];
+	drawn.start = startx;
+	drawn.end = endx;
+	InsertNewSegment(drawn, 0);
+}
 
-			wallSegments[index].start = startx;
-			wallSegments[index].end = endx;
-			return;
-		}
-		else
-		{
-			// pushed segment is adjacent to seg
-			seg.start = startx;
-			return;
-		}
+void InsertRecursive(WallSegment@ drawn, int recursion)
+{
+	if (DEBUG_LOG)
+	{
+		mgdl_LogTextInt("  Inserrt recursion ", recursion);
+		InsertNewSegment(@drawn, recursion);
 	}
 
 }
+
+void InsertNewSegment(WallSegment@ drawn, int recursion)
+{
+	bool merged = false;
+	WallSegment@ target = @wallSegments[0];
+
+	while(true)
+	{
+		// Assume drawn to be on left of target
+		if (drawn.OverlapsWith(target))
+		{
+			if (DEBUG_LOG)
+			{
+				mgdl_LogText("   overlaps!");
+			}
+			merged = drawn.MergeInto(target);
+			if (merged)
+			{
+				if (DEBUG_LOG)
+				{
+					mgdl_LogText("   merged!");
+				}
+				break;
+			}
+		}
+
+		// Go to next one
+		if (target.next == null)
+		{
+			break;
+		}
+		else
+		{
+			// Drawn was on the right of target
+			if (drawn.start > target.end)
+			{
+				@drawn.prev = @target;
+			}
+			if (drawn.end < target.start)
+			{
+				@drawn.prev = @target;
+			}
+			if (DEBUG_LOG)
+			{
+				mgdl_LogText("  try next segment");
+			}
+			@target = @target.next;
+		}
+	}
+	if (merged)
+	{
+		// See if touches the next one
+		while (target.next !is null)
+		{
+			if (target.OverlapsWith(target.next))
+			{
+				if (DEBUG_LOG)
+				{
+					mgdl_LogText("    touches next");
+					// merge next one into this
+					target.next.MergeInto(target);
+				}
+				break;
+			}
+			else
+			{
+				if (DEBUG_LOG)
+				{
+					mgdl_LogText("    not touches next");
+				}
+			}
+			@target = @target.next;
+		}
+	}
+	else
+	{
+		// TODO Does not work yet
+		// Did not find overlapping one
+		// Put between
+		if (drawn.prev !is null)
+		{
+			@drawn.prev.next = @drawn;
+		}
+		if (drawn.next !is null)
+		{
+			@drawn.next.prev = @drawn;
+		}
+		lastWallSegment += 1;
+	}
+
+	// DEBUG
+	if (DEBUG_LOG && recursion == 0)
+	{
+		for (int i = 0; i < lastWallSegment; i++)
+		{
+			WallSegment@ seg = @wallSegments[i];
+			mgdl_LogTextInt("Wall seg ", i);
+			mgdl_LogTextInt("   start", seg.start);
+			mgdl_LogTextInt("   end", seg.end);
+			if (seg.prev == null)
+			{
+				mgdl_LogText("   no prev");
+			}
+			if (seg.next == null)
+			{
+				mgdl_LogText("   no next");
+			}
+		}
+		if (IsWallSegmentFilled())
+		{
+			mgdl_LogText("   WALL SEGMENTS FILLED");
+		}
+	}
+}
+
+bool IsWallSegmentFilled()
+{
+	if (wallSegments[0].start <= -MAX_16 + 1 && wallSegments[0].end >= MAX_16-1)
+	{
+		return true;
+	}
+	return false;
+}
+
 
 bool ChildIsNode(ChildId childId)
 {
@@ -179,7 +336,7 @@ bool PlayerSeesNode(Actor@ player, s16 top, s16 bot, s16 left, s16 right)
 
 	// Used for rotating the points and checking
 	// world space relation to the box
-	DoomVertex@ dp = player.GetDoomPosition();
+	BunnyV2@ dp = player.GetPosition();
 	Vector2 pp = Vector2New(dp.x, dp.y);
 
 	// Vertices of the corners relative to player
@@ -311,7 +468,7 @@ bool PlayerSeesNode(Actor@ player, s16 top, s16 bot, s16 left, s16 right)
 }
 
 // NOTE THIS IS CORRECT
-int GetChildSide(DoomNode@ node, DoomVertex@ v)
+int GetChildSide(DoomNode@ node, Vector2 v)
 {
 	if (node.dx == 0)
 	{
@@ -348,7 +505,7 @@ int drawOrder = 0;
 
 void DrawSubSector(DoomMap@ map, Actor@ player, DoomSubSector@ sub, int sectorIndex)
 {
-	DoomVertex@ pp = player.GetDoomPosition();
+	BunnyV2@ pp = player.GetPosition();
 	Vector2 playerPos = Vector2New(pp.x, pp.y);
 	float playerAngle = player.yawRad;
 	PLAYER_Y = player.elevation + 40;
@@ -429,6 +586,10 @@ void DrawSubSector(DoomMap@ map, Actor@ player, DoomSubSector@ sub, int sectorIn
 				if (RENDER_2D_WALLS)
 				{
 					DrawWall2D(false);
+					if (DRAW_START_X < DRAW_END_X && DRAW_END_X > DRAW_LIMIT_LEFT_CANVAS && DRAW_START_X < DRAW_LIMIT_RIGHT_CANVAS)
+					{
+						PushWallSegment(DRAW_START_X, DRAW_END_X);
+					}
 				}
 				else
 				{
@@ -482,7 +643,7 @@ void DrawNodeChild(DoomMap@ map, Actor@ player, ChildId id)
 	}
 }
 
-int FindSubSectorRec(DoomMap@ map, DoomNode@ node, DoomVertex@ point)
+int FindSubSectorRec(DoomMap@ map, DoomNode@ node, Vector2 point)
 {
 	int childSide = GetChildSide(node, point);
 	if (ChildIsNode(node.children[childSide]))
@@ -498,13 +659,14 @@ int FindSubSectorRec(DoomMap@ map, DoomNode@ node, DoomVertex@ point)
 
 void DrawNode(DoomMap@ map, Actor@ player, DoomNode@ node)
 {
-	DoomVertex@ playerpos = player.GetDoomPosition();
+	BunnyV2@ bunnypos = player.GetPosition();
 	// This determines which branch is done first so that
 	// eventually the players subsector is drawn first
 
 	// Check if player even sees the other side.
 	// If not, then then no need to traverse the tree in that direction
 
+	Vector2  playerpos = Vector2New(bunnypos.x, bunnypos.y);
 	int childSide = GetChildSide(node, playerpos);
 
 	DrawNodeChild(map, player, node.children[childSide]);
@@ -558,7 +720,9 @@ glPushMatrix();
 	// Testing the player sees node
 	//PlayerSeesNode (player, 60, 10, 70, 220);
 
-	DoomVertex@ pp = player.GetDoomPosition();
+	BunnyV2@ bp = player.GetPosition();
+	Vector2 pp = Vector2New(bp.x, bp.y);
+
 	mgdl_DrawTextInt("Player subsec", FindSubSectorRec(map, root, pp), text_x, NextY(), 8, Debug_Red);
 	//mgdl_DrawTextFloat("Units to meter ", angel_unitstometer, text_x, NextY(), 16, Debug_Red);
 	BunnySector_DrawCameraInfo(text_x, NextY());
@@ -572,11 +736,16 @@ void StartFrame_Doom()
 	 DrawnSubSectors[i] = -1;
 	}
 	drawnIndex = 0;
+	ResetWallSegments();
 
 
 }
 void RenderDoomMap(DoomMap@ map)
 {
+	if (DEBUG_LOG)
+	{
+		mgdl_LogText("----------- DOOM FRAME START --------------");
+	}
 	drawOrder = 0;
 
 	Actor@ player = BunnySector_GetActor(0);
@@ -604,6 +773,11 @@ void RenderDoomMap(DoomMap@ map)
 	if (RENDER_2D_WALLS)
 	{
 		glPopMatrix();
+	}
+
+	if (DEBUG_LOG)
+	{
+		mgdl_LogText("----------- DOOM FRAME END --------------");
 	}
 }
 

@@ -9,14 +9,9 @@
 
 #include "build-render.h"
 #include "dukemap.h"
-#include "dukemath.h"
+#include "../bunny-sector-math.h"
 #include "duke_types.h"
-#include "opengl-render.h"
-
-// Overlap:  Determine whether the two number ranges overlap.
-#define Overlap(a0,a1,b0,b1) (min(a0,a1) <= max(b0,b1) && min(b0,b1) <= max(a0,a1))
-// IntersectBox: Determine whether two 2D-boxes intersect.
-#define IntersectBox(x0,y0, x1,y1, x2,y2, x3,y3) (Overlap(x0,x1,x2,x3) && Overlap(y0,y1,y2,y3))
+#include "../render/opengl-render.h"
 
 // How many portals can be waiting for drawing
 #define MAX_PORTAL_QUEUE 32
@@ -79,7 +74,6 @@ RenderSettings2D GetDefaultRenderSettings2D()
 RenderSettingsOpenGL GetDefaultRenderSettingsOpenGL()
 {
     float unitsPerMetre = 1.0f;
-    float texCoordPerMetre = 1.0f; // NOTE CHECKED
 
     RenderSettingsOpenGL renderGL;
 
@@ -307,7 +301,7 @@ void BuildRender_DrawSectorWalls(Viewpoint* player, DukeMap* map, RenderSettings
         }
 
         // Get the sector info from map
-        Sector* sector = Map_GetSector(map, request.number);
+        Sector* sector = DukeMap_GetSector(map, request.number);
         //Log_InfoF("Draw sector %d\n", request.number);
 
         const s32 ceilingY = sector->ceilingy;
@@ -317,9 +311,9 @@ void BuildRender_DrawSectorWalls(Viewpoint* player, DukeMap* map, RenderSettings
         // Discard those that do not face player
         for (s16 wi = 0; wi < sector->wallnum; wi++)
         {
-            Wall* w = Map_GetWallInSectorPtr(map, sector, wi);
+            Wall* w = DukeMap_GetWallInSectorPtr(map, sector, wi);
             Vector2 start = Vector2New(w->x, w->z);
-            Wall* wend = Map_GetWallEnd(map, w);
+            Wall* wend = DukeMap_GetWallEnd(map, w);
             Vector2 end =  Vector2New(wend->x, wend->z);
 
             Vector2 startZ = Vector2Subtract(start, playerPos2);
@@ -619,15 +613,15 @@ void BuildRender_DrawTopDown(Viewpoint* players, DukeMap* map, RenderSettingsOpe
                 { continue; }
 
                 // Get the sector info from map
-                Sector* sector = Map_GetSector(map, si);
+                Sector* sector = DukeMap_GetSector(map, si);
                 for (s16 wi = 0; wi < sector->wallnum; wi++)
                 {
                     if (settings2D->drawOneWall >=0 && settings2D->drawOneWall != wi)
                     { continue; }
 
-                    Wall* w = Map_GetWallInSector(map, si, wi);
+                    Wall* w = DukeMap_GetWallInSector(map, si, wi);
                     Vector2 start = Vector2New(w->x, w->z);
-                    Wall* wend = Map_GetWallEnd(map, w);
+                    Wall* wend = DukeMap_GetWallEnd(map, w);
                     Vector2 end =  Vector2New(wend->x, wend->z);
 
                     if (settings2D->movePlayer == false)
@@ -668,8 +662,8 @@ void BuildRender_DrawTopDown(Viewpoint* players, DukeMap* map, RenderSettingsOpe
                     OpenGLRender_Line2(start.x, start.y, end.x, end.y);
                     if (settings2D->drawNormals)
                     {
-                        Vector2 m = Map_GetWallMiddle(map, w);
-                        Vector2 N = Vector2Scale( Map_GetWallNormal(map, w), 32 );
+                        Vector2 m = DukeMap_GetWallMiddle(map, w);
+                        Vector2 N = Vector2Scale( DukeMap_GetWallNormal(map, w), 32 );
                         OpenGLRender_Line2(m.x, m.y, m.x + N.x, m.y + N.y);
                     }
                 }
@@ -726,7 +720,7 @@ void BuildRender_DrawTopDown(Viewpoint* players, DukeMap* map, RenderSettingsOpe
                 if (settings2D->drawOneSector >=0 && settings2D->drawOneSector != si) { continue; }
 
                 // Get the sector info from map
-                Sector* sector = Map_GetSector(map, si);
+                Sector* sector = DukeMap_GetSector(map, si);
 
                 if (settings2D->drawSectorNumbers)
                 {
@@ -764,9 +758,9 @@ void BuildRender_DrawTopDown(Viewpoint* players, DukeMap* map, RenderSettingsOpe
                     {
                         if (settings2D->drawOneWall >=0 && settings2D->drawOneWall != wi) { continue; }
 
-                        Wall* w = Map_GetWallInSector(map, si, wi);
+                        Wall* w = DukeMap_GetWallInSector(map, si, wi);
                         Vector2 start = Vector2New(w->x, w->z);
-                        Vector2 middle = Map_GetWallMiddle(map, w);
+                        Vector2 middle = DukeMap_GetWallMiddle(map, w);
 
                         int mapWi =sector->wallptr+wi;
 

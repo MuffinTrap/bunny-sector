@@ -213,15 +213,13 @@ glPushMatrix();
 	
 
 	Actor@ player = BunnySector_GetActor(0);
-	buns_Vec2 outPlayerPos;
-	buns_Vec2 outPlayerDir;
-	BunnySector_GetActorPositionV2(0, outPlayerPos);
-	BunnySector_GetActorFloorDir(0, outPlayerDir);
+	BunnyV2@ outPlayerPos = player.GetPosition();
+	BunnyV2@ outPlayerDir = player.GetFloorDirection();
 
 	float playerAngle = player.yawRad;
 	Vector2 playerPos = Vector2New(outPlayerPos.x * scale, outPlayerPos.y * scale);
 	Vector2 playerDir = Vector2New(outPlayerDir.x, outPlayerDir.y);
-	float playerRadius = BunnySector_GetActorRadius(0);
+	float playerRadius = player.radius;
 
 	for (int wi = 0; wi < pointAmount; wi++)
 	{
@@ -249,7 +247,7 @@ glPopMatrix();
 }
 
 
-void RenderTopDown(float scale)
+void RenderTopDown(DukeMap@ map, float scale)
 {
 	float screen_half_width = SCREEN_WIDTH / 2.0f;
 	float screen_half_height = SCREEN_HEIGHT / 2.0f;
@@ -260,13 +258,11 @@ glPushMatrix();
 	Actor@ player = BunnySector_GetActor(0);
 	float playerAngle = player.yawRad;
 
-	buns_Vec2 outPlayerPos;
-	buns_Vec2 outPlayerDir;
-	BunnySector_GetActorPositionV2(0, outPlayerPos);
-	BunnySector_GetActorFloorDir(0, outPlayerDir);
+	BunnyV2@ outPlayerPos = player.GetPosition();
+	BunnyV2@ outPlayerDir = player.GetFloorDirection();
 	Vector2 playerPos = Vector2New(outPlayerPos.x * scale, outPlayerPos.y * scale);
 	Vector2 playerDir = Vector2New(outPlayerDir.x, outPlayerDir.y);
-	float playerRadius = BunnySector_GetActorRadius(0);
+	float playerRadius = player.radius;
 
 	glTranslatef(screen_half_width, screen_half_height, 0);
 
@@ -279,7 +275,7 @@ glPushMatrix();
 
 	glScalef(scale, scale, 1.0f);
 	
-	s16 sectorAmount = BunnySector_GetSectorAmount();
+	s16 sectorAmount = map.sectorAmount;
 
 	for (s16 sectorIndex = 0; sectorIndex < sectorAmount; sectorIndex++)
 	{
@@ -287,11 +283,11 @@ glPushMatrix();
 			if (DEBUG_DRAW) {
 				mgdl_DrawTextInt("Sector", sectorIndex, text_x, NextY(), 8, Debug_White);
 			}
-		Sector@ sector = BunnySector_GetSector(sectorIndex);
+		Sector@ sector = map.sectors[sectorIndex];
 		for (s16 wallIndex = 0; wallIndex < sector.wallnum; wallIndex++)
 		{
-			Wall@ start = BunnySector_GetWall(sector.wallptr + wallIndex);
-			Wall@ end = BunnySector_GetWallEnd(start);
+			Wall@ start = map.walls[sector.wallptr + wallIndex];
+			Wall@ end = map.GetWallEnd(start);
 
 			Vector2 wall1 = Vector2(start.x * scale, start.z * scale);
 			Vector2 wall2 = Vector2(end.x * scale, end.z * scale);
@@ -320,7 +316,7 @@ glPopMatrix();
 }
 
 
-void RenderMuffin()
+void RenderMuffin(DukeMap@ map)
 {
 	float screen_half_width = SCREEN_WIDTH / 2.0f;
 	float screen_half_height = SCREEN_HEIGHT / 2.0f;
@@ -345,13 +341,11 @@ void RenderMuffin()
 
 	Actor@ player = BunnySector_GetActor(0);
 
-	buns_Vec2 outPlayerPos;
-	BunnySector_GetActorPositionV2(0, outPlayerPos);
+	BunnyV2@ bunnypos = player.GetPosition();
 	PLAYER_Y = player.elevation;
-	Vector2 playerPos = Vector2(outPlayerPos.x, outPlayerPos.y);
+	Vector2 playerPos = Vector2(bunnypos.x, bunnypos.y);
 
-	buns_Vec2 outPlayerDir;
-	BunnySector_GetActorFloorDir(0, outPlayerDir);
+	BunnyV2@ outPlayerDir = player.GetFloorDirection();
 	Vector2 playerDir = Vector2(outPlayerDir.x, outPlayerDir.y);
 	float playerAngle = player.yawRad;
 
@@ -362,7 +356,7 @@ void RenderMuffin()
 
 	// NOTE Failsafe request amount
 	int requestCount = 0;
-	s16 sectorAmount = BunnySector_GetSectorAmount();
+	s16 sectorAmount = map.sectorAmount;
 
 	// Start processing requests
 	if (DEBUG_LOG) { mgdl_LogTextInt("Push: ", player.sectorNumber);}
@@ -387,7 +381,7 @@ void RenderMuffin()
 		if (now.number < 0) { // Invalid request check
 			continue;
 		}
-		Sector@ sector = BunnySector_GetSector(now.number);
+		Sector@ sector = map.sectors[now.number];
 		SECTOR_FLOORY = sector.floory;
 		SECTOR_CEILINGY = sector.ceilingy;
 
@@ -413,8 +407,8 @@ void RenderMuffin()
 				mgdl_DrawTextInt("Wall: ", wallIndex, text_x, NextY(),8, Debug_White);
 			}
 
-			Wall@ start = BunnySector_GetWall(sector.wallptr + wallIndex);
-			Wall@ end = BunnySector_GetWallEnd(start);
+			Wall@ start = map.walls[sector.wallptr + wallIndex];
+			Wall@ end = map.GetWallEnd(start);
 
 			Vector2 trans1 = WorldToCamera(Vector2New(start.x, start.z), playerPos, playerAngle);
 			Vector2 trans2 = WorldToCamera(Vector2New(end.x, end.z), playerPos, playerAngle);
@@ -430,7 +424,7 @@ void RenderMuffin()
 					if (DEBUG_LOG) {
 						mgdl_LogTextInt("Found portal to ", start.nextsector);
 					}
-					Sector@ N = BunnySector_GetSector(start.nextsector);
+					Sector@ N = map.sectors[start.nextsector];
 					SECTOR_NEIGHBOR_ID = start.nextsector;
 					SECTOR_NEIGHBOR_CEILINGY = N.ceilingy;
 					SECTOR_NEIGHBOR_FLOORY = N.floory;
@@ -457,7 +451,7 @@ void RenderMuffin()
 					}
 				}
 				if (!RENDER_2D_WALLS) {
-					DrawWall(start, end, sector.floory, sector.ceilingy);
+					DrawWall(map, start, end, sector.floory, sector.ceilingy);
 				}
 				else
 				{
@@ -485,6 +479,7 @@ void RenderMuffin()
 
 }
 
+/*
 void RenderTICMap(Vector2[] wallpoints, int pointAmount)
 {
 	float screen_half_width = SCREEN_WIDTH / 2.0f;
@@ -525,16 +520,17 @@ glPushMatrix();
 glPopMatrix();
 
 }
+*/
 
 // Draw wall with non transformed coordinates
 // TODO Put in a request instead and draw everything at once
-void DrawWall(Wall@  wall, Wall@ end, s32 floory, s32 ceilingy)
+void DrawWall(DukeMap@ map, Wall@  wall, Wall@ end, s32 floory, s32 ceilingy)
 {
 	if (wall.nextsector >= 0){
 		// Calculate top and bottom parts
 
 		// Create wall that goes down or up to adjacent sector: Note! both sectors dont need to do this. Only lower one
-		Sector@ neighbor = BunnySector_GetSector(wall.nextsector);
+		Sector@ neighbor = map.sectors[wall.nextsector];
 
 		// if this floor height is less than adjacent: Greate wall in between: goes up
 		if (floory < neighbor.floory)
@@ -547,7 +543,7 @@ void DrawWall(Wall@  wall, Wall@ end, s32 floory, s32 ceilingy)
 		// If this ceiling is higher than adjacent: Greate wall in between: goes down
 		if (ceilingy > neighbor.ceilingy)
 		{
-			Wall@ otherWall = BunnySector_GetWall(wall.nextwall);
+			Wall@ otherWall = map.walls[wall.nextwall];
 			BunnySector_DrawWall(wall, end, neighbor.ceilingy, ceilingy, wall.picnum, otherWall.shade);
 			//DrawQuad(startPoint, endPoint, wallNormal, neighbor.ceilingy, ceilingy, otherWall.picnum, otherWall.shade, 1.0f);
 		}
@@ -615,27 +611,19 @@ void StartFrame_Duke()
 
 // ----- PUBLIC FUNCTIONS ------
 
-void RenderMiniMap()
+void RenderMiniMap(DukeMap@ map)
 {
 	Init2D_YDown();
 	DrawGizmo();
-	RenderTopDown(0.250f);
+	RenderTopDown(map, 0.250f);
 }
 
-void RenderMapSoftware(float deltatime)
+void RenderMapSoftware(DukeMap@ map, float deltatime)
 {
-
-	if (TIC_TEST) {
-		BunnySector_MoveActorFreely(0, deltatime);
-		Actor@ player = BunnySector_GetActor(0);
-		player.noclip = true;
-		RenderTICMap(wallpoints, 12);
-		RenderTopDownList(wallpoints, 12, 1.0f);
-	}
-	RenderMuffin();
+	RenderMuffin(map);
 }
 
-void RenderMap(float deltatime)
+void RenderMap(DukeMap@ map, float deltatime)
 {
-	RenderMuffin();
+	RenderMuffin(map);
 }

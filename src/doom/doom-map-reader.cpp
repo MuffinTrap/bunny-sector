@@ -1,6 +1,6 @@
 #include "doom-map-reader.h"
 #include "../bunny-sector_main.h"
-#include "../duke/binaryreader.h"
+#include "../map/binaryreader.h"
 #include <stdio.h>
 
 static FILE* mapfile = nullptr;

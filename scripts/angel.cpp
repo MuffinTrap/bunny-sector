@@ -6,6 +6,7 @@
 
 float angel_unitstometer = 32.0f;
 
+// NOTE Uncomment for KDevelop intellisense to work
 //#include "../src/bunny-sector_main.h"
 //#include <mgdl.h>
 
@@ -115,8 +116,8 @@ void movePlayer(float deltatime)
 	else
 	{
 		vertical = 0.0f;
-		Actor@ act = BunnySector_GetActor(0);
-		act.verticalVelocity = 0.0f;
+		Actor@ actor = BunnySector_GetActor(0);
+		actor.verticalVelocity = 0.0f;
 	}
 
 	Vector2 wasd = mgdl_GetJoystick(0, Joystick_Nunchuk);
@@ -152,22 +153,6 @@ void adjustFov(float deltatime)
 		BunnySector_SetOpenGLCameraVerticalFOVDeg(BunnySector_GetOpenGLCameraVerticalFOVDeg() + fovchange * deltatime);
 	}
 }
-void angelscript_frame(float deltatime)
-{
-	if (mgdl_IsButtonDown(0, Button2))
-	{
-		RENDER_2D_WALLS = true;
-	}
-	if (mgdl_IsButtonDown(0, Button1))
-	{
-		DEBUG_DRAW = true;
-	}
-		angelscript_frame_doom(deltatime);
-		//angelscript_frame_duke(deltatime);
-
-	RENDER_2D_WALLS = false;
-	DEBUG_DRAW = false;
-}
 void angelscript_frame_doom(float deltatime)
 {
 	BunnySector_SetOpenGLUnitsToMeter(angel_unitstometer);
@@ -197,13 +182,7 @@ void angelscript_frame_doom(float deltatime)
 		BunnySector_Setup3D(aspect, aspect);
 		BunnySector_AlignCameraToActor(0);
 		BunnySector_StartMapDrawing();
-		//glPushMatrix();
-		//glScalef(1.0f/angel_unitstometer, 1.0f/ angel_unitstometer, 1.0f/angel_unitstometer);
-		//glBegin(GL_QUADS);
-		//glColor3f(1.0f, 0.0f, 1.0f);
 			RenderDoomMap(BunnySector_GetDoomMap(doomMapId));
-		//glEnd();
-		//glPopMatrix();
 		BunnySector_EndMapDrawing();
 	}
 
@@ -231,11 +210,13 @@ void angelscript_frame_duke(float deltatime)
 	glClearColor(0.3f, 0.2f, 0.3f, 1.0f);
 
 	StartFrame_Duke();
+
+	DukeMap@ map = BunnySector_GetDukeMap(dukeMapId);
 	// Hold down 2 to see software render result
 	float aspect = mgdl_GetScreenWidth()/mgdl_GetScreenHeight();
 	if (RENDER_2D_WALLS)
 	{
-		RenderMapSoftware(deltatime);
+		RenderMapSoftware(map, deltatime);
 	}
 	else
 	{
@@ -243,13 +224,35 @@ void angelscript_frame_duke(float deltatime)
 		BunnySector_Setup3D(aspect, aspect);
 		BunnySector_AlignCameraToActor(0);
 		BunnySector_StartMapDrawing();
-			RenderMap(deltatime);
+			RenderMap(map, deltatime);
 		BunnySector_EndMapDrawing();
 	}
 
-	RenderMiniMap();
+	RenderMiniMap(map);
 
 	DrawDebugs();
+}
+
+void angelscript_frame(float deltatime)
+{
+	if (mgdl_IsButtonDown(0, Button2))
+	{
+		RENDER_2D_WALLS = true;
+	}
+	if (mgdl_IsButtonDown(0, Button1))
+	{
+		DEBUG_DRAW = true;
+	}
+	if (mgdl_IsButtonDown(0, ButtonC))
+	{
+		DEBUG_LOG = true;
+	}
+		angelscript_frame_doom(deltatime);
+		//angelscript_frame_duke(deltatime);
+
+	RENDER_2D_WALLS = false;
+	DEBUG_DRAW = false;
+		DEBUG_LOG = false;
 }
 
 #if USE_ANGEL_AS_CPP

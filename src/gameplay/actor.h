@@ -1,6 +1,6 @@
 #pragma once
 #include <mgdl.h>
-#include "duke_types.h"
+#include "../duke/duke_types.h"
 #include "../doom/doom_types.h"
 
 struct RenderSettings2D;
@@ -25,7 +25,7 @@ struct Actor
     // Position in duke units
     union ActorPosition
     {
-        DoomVertex doomPosition;
+        BunnyV2 bunnyPosition;
         Vector2 vectorPosition; /**< Where actor is */
     };
     ActorPosition position;
@@ -37,7 +37,12 @@ struct Actor
     Vector2 floorVelocity; /**< Where actor is trying to go */
     float verticalVelocity;
     // Directions as a normal vectors
-    Vector2 floorDirection; /**< Where player is headed */
+    union ActorFloorDirection
+    {
+        Vector2 vectorDirection; /**< Where player is headed */
+        BunnyV2 bunnyDirection; /**< Where player is headed */
+    };
+    ActorFloorDirection direction;
 
     // Rotations
     float yawRad; // Turning
@@ -78,4 +83,6 @@ Vector2 Actor_ApplyDrive(Actor* actor, float deltaTime);
 float Actor_ApplyVerticalMove(Actor* actor, float gravity, float deltaTime);
 bool IsPointInsideRect(RectF rect, Vector2 point);
 Viewpoint Actor_GetViewpoint(Actor* actor);
-DoomVertex* Actor_GetDoomPosition(Actor* actor);
+BunnyV2* Actor_GetPosition(Actor* actor);
+BunnyV2* Actor_GetFloorDirection(Actor* actor);
+void Actor_SetPosition(Actor* actor, float x, float y);

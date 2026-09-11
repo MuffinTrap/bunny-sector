@@ -2,14 +2,14 @@
 #include "opengl-render.h"
 #include <mgdl.h>
 #include <mgdl/mgdl-memory.h>
-#include "dukemap.h"
-#include "build-render.h"
-#include "dukemath.h"
-#include "tesselator.h"
-#include "obj-export.h"
+#include "../duke/dukemap.h"
+#include "../duke/build-render.h"
+#include "../bunny-sector-math.h"
+#include "../map/tesselator.h"
+#include "../map/obj-export.h"
 #include "../tinyxml2/tinyxml2.h"
-#include "bunny-sector_main.h"
-#include "bunny-sector-map.h"
+#include "../bunny-sector_main.h"
+#include "../bunny-sector-map.h"
 
 
 // Used when drawing grass materials
@@ -468,13 +468,13 @@ void OpenGLRender_DrawWallV(Vector2 start, Vector2 end, Vector2 normalXZ, s32 fl
 void OpenGLRender_DrawWall(DukeMap* map, Wall* w, float floorY, float ceilingY, RenderSettingsOpenGL* settings)
 {
     Vector2 start = Vector2New(w->x, w->z);
-    Wall* wend = Map_GetWallEnd(map, w);
+    Wall* wend = DukeMap_GetWallEnd(map, w);
     Vector2 end =  Vector2New(wend->x, wend->z);
-    Vector2 normalXZ = Map_GetWallNormal(map, w);
+    Vector2 normalXZ = DukeMap_GetWallNormal(map, w);
     if (w->nextsector >= 0)
     {
         // Create wall that goes down or up to adjacent sector: Note! both sectors dont need to do this. Only lower one
-        Sector* neighbor = Map_GetSector(map, w->nextsector);
+        Sector* neighbor = DukeMap_GetSector(map, w->nextsector);
         int n_floorY = neighbor->floory;
         int n_ceilingY = neighbor->ceilingy;
 
@@ -488,7 +488,7 @@ void OpenGLRender_DrawWall(DukeMap* map, Wall* w, float floorY, float ceilingY, 
         // If this ceiling is higher than adjacent: Greate wall in between: goes down
         if (ceilingY > n_ceilingY)
         {
-            Wall* otherWall = Map_GetWall(map, w->nextwall);
+            Wall* otherWall = DukeMap_GetWall(map, w->nextwall);
             DrawQuad(start, end, normalXZ, n_ceilingY, ceilingY, otherWall->picnum, w->shade, settings->scale);
         }
     }

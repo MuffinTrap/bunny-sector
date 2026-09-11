@@ -1,9 +1,9 @@
 #include "dukemapreader.h"
-#include "binaryreader.h"
 #include <mgdl.h>
 #include <stdio.h>
-#include "opengl-render.h"
 #include "../bunny-sector-types.h"
+#include "../map/binaryreader.h"
+#include "dukemap.h"
 
 static const int HeightToWidth = 16;
 

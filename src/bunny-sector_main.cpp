@@ -4,14 +4,13 @@
 #include <mgdl.h>
 #include <mgdl/mgdl-script-api.h>
 
+#include "bunny-sector-math.h"
+#include "bunny-sector-materials.h"
+#include "render/opengl-render.h"
+#include "gameplay/actor.h"
+#include "doom/doom-map-reader.h"
 #include "duke/dukemapreader.h"
 #include "duke/build-render.h"
-#include "duke/opengl-render.h"
-#include "duke/dukemath.h"
-#include "duke/actor.h"
-
-#include "doom/doom-map-reader.h"
-#include "bunny-sector-materials.h"
 
 static BunnySector::Materials* materialManager;
 
@@ -29,7 +28,7 @@ static float bunny_UnitsToMeter = 1.0f;
 
 static void s_AlignCameraToViewpoint(Viewpoint* info, Camera* camera)
 {
-	Vector3 cameraPosition = Vec3DukePosToOpenGL(info->position, &defaultOpenGL);
+	Vector3 cameraPosition = ScaleVector3ToOpenGL(info->position, &defaultOpenGL);
 	float adjustedYaw = (-1.0f * info->yawRad)- DEG2RAD*90; // This is correct when angle is 0.0f
 	Vector3 rotations = Vector3New(info->pitchRad, adjustedYaw, 0.0f);
 	Matrix rotation = MatrixRotateXYZ(rotations);
@@ -361,49 +360,9 @@ void BunnySector_SetActorSpeeds(int actorId, float walkSpeedMultiplier, float tu
 	demoActor.turnSpeedMultiplier = turnSpeedMultiplier;
 }
 
-Sector* BunnySector_GetSector(s16 sectorNumber)
-{
-	//Sector* sp = Map_GetSector(activeMap, sectorNumber);
-	//Log_InfoF("Get sector %d floory %d ceilingy %d\n", sectorNumber, sp->floory, sp->ceilingy);
-	return Map_GetSector((DukeMap*)activeMap, sectorNumber);
-}
-Wall* BunnySector_GetWall(s16 wallIndex)
-{
-	return Map_GetWall((DukeMap*)activeMap, wallIndex);
-}
 Wall* BunnySector_GetWallEnd(Wall* wall)
 {
-	return Map_GetWallEnd((DukeMap*)activeMap, wall);
-}
-s16 BunnySector_GetSectorAmount()
-{
-	return activeMap->GetSectorAmount();
-}
-
-float BunnySector_GetActorRadius(int actorId)
-{
-	return demoActor.radius;
-}
-void BunnySector_GetActorPositionV2(int actorId, buns_Vec2& out_pos)
-{
-	out_pos.x = demoActor.position.vectorPosition.x;
-	out_pos.y = demoActor.position.vectorPosition.y;
-}
-void BunnySector_SetActorPosition(int actorId, float x, float z)
-{
-	demoActor.position.vectorPosition.x = x;
-	demoActor.position.vectorPosition.y = z;
-}
-void BunnySector_GetActorFloorDir(int actorId, buns_Vec2& out_dir)
-{
-	out_dir.x = demoActor.floorDirection.x;
-	out_dir.y = demoActor.floorDirection.y;
-}
-void BunnySector_GetActorPositionV3(int actorId, buns_Vec3& out_pos)
-{
-	out_pos.x = demoActor.position.vectorPosition.x;
-	out_pos.y = demoActor.elevation;
-	out_pos.z = demoActor.position.vectorPosition.y;
+	return DukeMap_GetWallEnd((DukeMap*)activeMap, wall);
 }
 
 Actor* BunnySector_GetActor(int actorId)
@@ -431,9 +390,8 @@ void BunnySector_DrawWallF(float startx, float startz, float endx, float endz, f
 void BunnySector_DrawWall(Wall* start, Wall* end, s32 floory, s32 ceilingy, s16 picnum, s8 shade)
 {
 	//printf("BunnySector_DrawWall gets %d, %d \n", start->x, start->z);
-	OpenGLRender_DrawWallV(Vector2New(start->x, start->z), Vector2New(end->x, end->z), Map_GetWallNormal((DukeMap*)activeMap, start), floory, ceilingy, picnum, shade);
+	OpenGLRender_DrawWallV(Vector2New(start->x, start->z), Vector2New(end->x, end->z), DukeMap_GetWallNormal((DukeMap*)activeMap, start), floory, ceilingy, picnum, shade);
 }
-
 
 void BunnySector_StartFloorCeilingDrawing()
 {
@@ -446,25 +404,22 @@ void BunnySector_DrawSectorFloorOrCeiling(s16 sectorNumber, bool floor)
 
 #define V2_CROSS(ax, ay, bx, by)(ax * by - ay * bx)
 
-bool BunnySector_Intersect(double a1x, double a1y, double a2x, double a2y, double b1x, double b1y, double b2x, double b2y, buns_Vec2& out_point)
+bool BunnySector_Intersect(float a1x, float a1y, float a2x, float a2y, float b1x, float b1y, float b2x, float b2y, float& out_x, float& out_y)
 {
 
-	double AxA = V2_CROSS(a1x, a1y, a2x, a2y);
-	double BxB = V2_CROSS(b1x, b1y, b2x, b2y);
-	double alinex = a1x-a2x;
-	double aliney = a1y-a2y;
-	double blinex = b1x-b2x;
-	double bliney = b1y-b2y;
-	double det = V2_CROSS(alinex, aliney, blinex, bliney);
+	float AxA = V2_CROSS(a1x, a1y, a2x, a2y);
+	float BxB = V2_CROSS(b1x, b1y, b2x, b2y);
+	float alinex = a1x-a2x;
+	float aliney = a1y-a2y;
+	float blinex = b1x-b2x;
+	float bliney = b1y-b2y;
+	float det = V2_CROSS(alinex, aliney, blinex, bliney);
 	if (det == 0.0)
 	{
 		 return false;
 	}
-	double x = V2_CROSS(AxA, alinex, BxB, blinex)/ det;
-	double y = V2_CROSS(AxA, aliney, BxB, bliney)/ det;
-
-	out_point.x = x;
-	out_point.y = y;
+	out_x = V2_CROSS(AxA, alinex, BxB, blinex)/ det;
+	out_y = V2_CROSS(AxA, aliney, BxB, bliney)/ det;
 
 	return true;
 }
@@ -478,4 +433,9 @@ DoomMap* BunnySector_GetDoomMap(MapId mapId)
 {
 	BunnySector_Map* map = mapsArray[mapId];
 	return (DoomMap*)map;
+}
+DukeMap* BunnySector_GetDukeMap(MapId mapId)
+{
+	BunnySector_Map* map = mapsArray[mapId];
+	return (DukeMap*)map;
 }

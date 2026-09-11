@@ -142,20 +142,20 @@ void DukeMap_SetCameraToStart(DukeMap* map, Viewpoint* view);
 void DukeMap_InitActor(DukeMap* map, Actor* player);
 void DukeMap_InitActors(DukeMap* map, Actor* players, int playerAmount);
 
-Sector* Map_GetSector(DukeMap* map, s16 sectorNumber);
-s32 Map_GetSectorFloorHeight(DukeMap* map, s16 sectorNumber);
-s32 Map_GetSectorCeilingHeight(DukeMap* map, s16 sectorNumber);
+Sector* DukeMap_GetSector(DukeMap* map, s16 sectorNumber);
+s32 DukeMap_GetSectorFloorHeight(DukeMap* map, s16 sectorNumber);
+s32 DukeMap_GetSectorCeilingHeight(DukeMap* map, s16 sectorNumber);
 
-Wall* Map_GetWallInSector(DukeMap* map, s16 sector, s16 wi);
-Wall* Map_GetWallInSectorPtr(DukeMap* map, Sector* sector, s16 wi);
-Wall* Map_GetWallEnd(DukeMap* map, const Wall* w);
-Wall* Map_GetWall(DukeMap* map, s16 wallIndex);
-Vector2 Map_GetWallMiddle(DukeMap* map, Wall* w);
-Vector2 Map_GetWallNormal(DukeMap* map, const Wall* w);
+Wall* DukeMap_GetWallInSector(DukeMap* map, s16 sector, s16 wi);
+Wall* DukeMap_GetWallInSectorPtr(DukeMap* map, Sector* sector, s16 wi);
+Wall* DukeMap_GetWallEnd(DukeMap* map, Wall* w);
+Wall* DukeMap_GetWall(DukeMap* map, s16 wallIndex);
+Vector2 DukeMap_GetWallMiddle(DukeMap* map, Wall* w);
+Vector2 DukeMap_GetWallNormal(DukeMap* map, Wall* w);
 
 SpriteAlignment Sprite_GetAlignment(MapSprite* sprite);
 SpritePivot Sprite_GetPivot(MapSprite* sprite);
-MapSprite* Map_GetSprite(DukeMap* map, s16 spriteIndex);
+MapSprite* DukeMap_GetSprite(DukeMap* map, s16 spriteIndex);
 
 /**
  * @brief Searches for and returns the first sprite with matching tags
@@ -163,7 +163,7 @@ MapSprite* Map_GetSprite(DukeMap* map, s16 spriteIndex);
  * @param hitag Hitag of the sprite
  * @return First matching sprite or nullptr if none found
  */
-MapSprite* Map_FindSprite(DukeMap* map, s16 lotag, s16 hitag);
+MapSprite* DukeMap_FindSprite(DukeMap* map, s16 lotag, s16 hitag);
 
 bool Map_IsPointInsideSectorOG(DukeMap* map, Vector2 point, int sectorNumber);
 bool Map_IsPointInsideSectorRay(DukeMap* map, Vector2 point, int sectorNumber);
@@ -190,7 +190,7 @@ u32 Map_MovePointInMap(DukeMap* map,
 s16 Map_FindSector(DukeMap* map, s16 startingSector, Vector3 position);
 s16 Map_FindSectorV2(DukeMap* map, s16 startingSector, Vector2 position);
 
-s16 Map_GetSectorNeighbor(DukeMap* map, s16 sectorNumber, s16 wallIndex);
+s16 DukeMap_GetSectorNeighbor(DukeMap* map, s16 sectorNumber, s16 wallIndex);
 
 #ifdef __cplusplus
 }

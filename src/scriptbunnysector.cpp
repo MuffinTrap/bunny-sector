@@ -3,7 +3,7 @@
 #include "bunny-sector-map.h"
 #include <mgdl/mgdl-angelscript.h>
 #include "duke/dukemap.h"
-#include "duke/actor.h"
+#include "gameplay/actor.h"
 #include "doom/doom_types.h"
 #include <mgdl.h>
 
@@ -29,11 +29,17 @@ void RegisterDukeMap(mgdl_AngelScript* angel)
 	as_engine->RegisterObjectProperty("Sector", "s32 ceilingy", asOFFSET(Sector, ceilingy));
 	as_engine->RegisterObjectProperty("Sector", "s32 floory", asOFFSET(Sector, floory));
 
-	as_engine->RegisterGlobalFunction("s16 BunnySector_GetSectorAmount()", asFUNCTION(BunnySector_GetSectorAmount), asCALL_CDECL);
-	as_engine->RegisterGlobalFunction("Sector@ BunnySector_GetSector(s16 sectorNumber)", asFUNCTION(BunnySector_GetSector), asCALL_CDECL);
-	as_engine->RegisterGlobalFunction("Wall@ BunnySector_GetWall(s16 wallIndex)", asFUNCTION(BunnySector_GetWall), asCALL_CDECL);
 	as_engine->RegisterGlobalFunction("Wall@ BunnySector_GetWallEnd(Wall@ wall)", asFUNCTION(BunnySector_GetWallEnd), asCALL_CDECL);
+
+	as_engine->RegisterObjectType("DukeMap", 0, asOBJ_REF|asOBJ_NOCOUNT);
+	as_engine->RegisterObjectMethod("DukeMap", "Wall@ get_walls(uint index) property", asFUNCTION(DukeMap_GetWall), asCALL_CDECL_OBJFIRST);
+	as_engine->RegisterObjectMethod("DukeMap", "Sector@ get_sectors(uint index) property", asFUNCTION(DukeMap_GetSector), asCALL_CDECL_OBJFIRST);
+	as_engine->RegisterObjectMethod("DukeMap", "Wall@ GetWallEnd(Wall@ start)", asFUNCTION(DukeMap_GetWallEnd), asCALL_CDECL_OBJFIRST);
+	as_engine->RegisterObjectProperty("DukeMap", "s16 sectorAmount", asOFFSET(DukeMap, sectorAmount));
+
+	as_engine->RegisterGlobalFunction("DukeMap@ BunnySector_GetDukeMap(MapId mapId)", asFUNCTION(BunnySector_GetDukeMap), asCALL_CDECL);
 }
+
 
 void RegisterDoomMap(mgdl_AngelScript* angel)
 {
@@ -145,14 +151,6 @@ void RegisterBunnySector(mgdl_AngelScript* angel)
 
 
 	// Register other types
-	as_engine->RegisterObjectType("buns_Vec2", sizeof(buns_Vec2), asOBJ_VALUE|asOBJ_POD);
-	as_engine->RegisterObjectProperty("buns_Vec2", "float x", asOFFSET(buns_Vec2, x));
-	as_engine->RegisterObjectProperty("buns_Vec2", "float y", asOFFSET(buns_Vec2, y));
-
-	as_engine->RegisterObjectType("buns_Vec3", sizeof(buns_Vec3), asOBJ_VALUE|asOBJ_POD);
-	as_engine->RegisterObjectProperty("buns_Vec3", "float x", asOFFSET(buns_Vec3, x));
-	as_engine->RegisterObjectProperty("buns_Vec3", "float y", asOFFSET(buns_Vec3, y));
-	as_engine->RegisterObjectProperty("buns_Vec3", "float z", asOFFSET(buns_Vec3, z));
 
 
 	RegisterDoomMap(angel);
@@ -186,6 +184,10 @@ as_engine->RegisterGlobalFunction("void BunnySector_DrawCameraInfo(float x, floa
 as_engine->RegisterGlobalFunction("float BunnySector_GetOpenGLCameraVerticalFOVDeg()", asFUNCTION(BunnySector_GetOpenGLCameraVerticalFOVDeg), asCALL_CDECL);
 as_engine->RegisterGlobalFunction("void BunnySector_SetOpenGLCameraVerticalFOVDeg(float degrees)",asFUNCTION(BunnySector_SetOpenGLCameraVerticalFOVDeg), asCALL_CDECL);
 
+	as_engine->RegisterObjectType("BunnyV2", 0, asOBJ_REF|asOBJ_NOCOUNT);
+	as_engine->RegisterObjectProperty("BunnyV2", "float x", asOFFSET(BunnyV2, x));
+	as_engine->RegisterObjectProperty("BunnyV2", "float y", asOFFSET(BunnyV2, y));
+
 
 	// Register Actor related types and functions
 	// ACTOR
@@ -193,18 +195,15 @@ as_engine->RegisterGlobalFunction("void BunnySector_SetOpenGLCameraVerticalFOVDe
 	as_engine->RegisterObjectProperty("Actor", "float yawRad", asOFFSET(Actor, yawRad));
 	as_engine->RegisterObjectProperty("Actor", "s16 sectorNumber", asOFFSET(Actor, sectorNumber));
 	as_engine->RegisterObjectProperty("Actor", "float elevation", asOFFSET(Actor, elevation));
-	as_engine->RegisterObjectProperty("Actor", "bool noclip", asOFFSET(Actor, noclip));
+	as_engine->RegisterObjectProperty("Actor", "bool noclip", asOFFSET(Actor, noclip)); // TODO Is this the same as BunnySector_MoveActorFreely?
 	as_engine->RegisterObjectProperty("Actor", "float radius", asOFFSET(Actor, radius));
 	as_engine->RegisterObjectProperty("Actor", "float verticalVelocity", asOFFSET(Actor, verticalVelocity));
-	as_engine->RegisterObjectMethod("Actor", "DoomVertex@ GetDoomPosition()", asFUNCTION(Actor_GetDoomPosition), asCALL_CDECL_OBJFIRST);
+	as_engine->RegisterObjectMethod("Actor", "BunnyV2@ GetPosition()", asFUNCTION(Actor_GetPosition), asCALL_CDECL_OBJFIRST);
+	as_engine->RegisterObjectMethod("Actor", "BunnyV2@ GetFloorDirection()", asFUNCTION(Actor_GetFloorDirection), asCALL_CDECL_OBJFIRST);
+	as_engine->RegisterObjectMethod("Actor", "void SetPosition(float x, float y)", asFUNCTION(Actor_SetPosition), asCALL_CDECL_OBJFIRST);
 
 	// ACTOR FUNCTIONS
 	as_engine->RegisterGlobalFunction("Actor@ BunnySector_GetActor(int actorId)", asFUNCTION(BunnySector_GetActor), asCALL_CDECL);
-	as_engine->RegisterGlobalFunction("float BunnySector_GetActorRadius(int actorId)", asFUNCTION(BunnySector_GetActorRadius), asCALL_CDECL);
-	as_engine->RegisterGlobalFunction("void BunnySector_GetActorPositionV2(int actorId, buns_Vec2 &out pos)", asFUNCTION(BunnySector_GetActorPositionV2), asCALL_CDECL);
-	as_engine->RegisterGlobalFunction("void BunnySector_GetActorPositionV3(int actorId, buns_Vec3 &out pos)", asFUNCTION(BunnySector_GetActorPositionV2), asCALL_CDECL);
-	as_engine->RegisterGlobalFunction("void BunnySector_GetActorFloorDir(int actorId, buns_Vec2 &out dir)", asFUNCTION(BunnySector_GetActorFloorDir), asCALL_CDECL);
-	as_engine->RegisterGlobalFunction("void BunnySector_SetActorPosition(int actorId, float x, float z)", asFUNCTION(BunnySector_SetActorPosition), asCALL_CDECL);
 	as_engine->RegisterGlobalFunction("void BunnySector_SetActorSpeeds(int actorId, float walkSpeedMultiplier, float turnSPeedMultiplier)", asFUNCTION(BunnySector_SetActorSpeeds), asCALL_CDECL);
 	as_engine->RegisterGlobalFunction("void BunnySector_SetActorDriveInput(int actorId, float forward, float strafe, float vertical, float turnYaw, float turnPitch)", asFUNCTION(BunnySector_SetActorDriveInput), asCALL_CDECL);
 	as_engine->RegisterGlobalFunction("void BunnySector_MoveActorFreely(int actorId, float deltaTime)", asFUNCTION(BunnySector_MoveActorFreely), asCALL_CDECL);

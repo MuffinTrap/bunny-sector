@@ -2,7 +2,7 @@
 #include "build-render.h"
 
 #include "dukemap.h"
-#include "dukemath.h"
+#include "../bunny-sector-math.h"
 #include "math.h"
 
 Actor Actor_CreateDefaultActor(int idNumber, float unitsToMeter)
@@ -24,7 +24,7 @@ Actor Actor_CreateDefaultActor(int idNumber, float unitsToMeter)
 	a.floorVelocity = Vector2Zero();
 	a.verticalVelocity = 0.0f;
 	//a.lookDirection = mgdl_GetGLWorldForward();
-	a.floorDirection = Vector2New(1, 0);
+	a.direction.vectorDirection = Vector2New(1, 0);
 
 	a.yawRad = 0.0f;
 	a.pitchRad = 0.0f;
@@ -99,11 +99,11 @@ Vector2 Actor_ApplyDrive(Actor* actor, float deltaTime)
 	actor->yawRad += actor->turnVelocity * deltaTime;
 	// calculate current floor direction
 	Vector2 forward = FLOOR_FORWARD;
-	actor->floorDirection = Vector2Rotate(forward, actor->yawRad);
+	actor->direction.vectorDirection = Vector2Rotate(forward, actor->yawRad);
 
 	Vector2 floorDestination = Vector2Add(
 		actor->position.vectorPosition, Vector2Scale(
-				actor->floorDirection,
+				actor->direction.vectorDirection,
 				actor->forwardDrive * actor->walkSpeedMultiplier * actor->moveSpeed * deltaTime
 				)
 		);
@@ -244,8 +244,19 @@ Vector3 Actor_ApplyDrive2(Actor* actor, float deltaTime)
 }
 
 */
-DoomVertex* Actor_GetDoomPosition(Actor* actor)
+BunnyV2* Actor_GetPosition(Actor* actor)
 {
-	return &actor->position.doomPosition;
+	return &actor->position.bunnyPosition;
 }
+BunnyV2 * Actor_GetFloorDirection(Actor* actor)
+{
+	return &actor->direction.bunnyDirection;
+}
+void Actor_SetPosition(Actor* actor, float x, float y)
+{
+	actor->position.vectorPosition.x = x;
+	actor->position.vectorPosition.y = y;
+}
+
+
 

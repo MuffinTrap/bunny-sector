@@ -48,8 +48,8 @@ int SECTOR_NEIGHBOR_FLOORY;
 int SECTOR_NEIGHBOR_CEILINGY;
 
 // Always needed but can be same for all
-int DRAW_LIMIT_LEFT_CANVAS;
-int DRAW_LIMIT_RIGHT_CANVAS;
+int DRAW_LIMIT_LEFT_CANVAS = -SCREEN_WIDTH/2;
+int DRAW_LIMIT_RIGHT_CANVAS = SCREEN_WIDTH/2;
 
 // Arrays for storing top and bottom limits
 int[] DRAW_LIMIT_TOPS(SCREEN_WIDTH);
@@ -689,8 +689,7 @@ void DrawPlayerFOV()
 
 void DrawPlayerPositionAndAngle(Actor@ actor)
 {
-	buns_Vec2 outp;
-	BunnySector_GetActorPositionV2(0, outp);
+	BunnyV2@ outp = actor.GetPosition();
 	mgdl_DrawTextFloat("Player x: ", outp.x, text_x, NextY(), 8, Debug_Yellow);
 	mgdl_DrawTextFloat("Player y: ", outp.y, text_x, NextY(), 8, Debug_Yellow);
 	mgdl_DrawTextFloat("Player elevation: ", actor.elevation, text_x, NextY(), 8, Debug_Yellow);
@@ -750,6 +749,8 @@ void DrawWall2D(bool fill)
 	int limitLeft = DRAW_LIMIT_LEFT_CANVAS;
 	int limitRight = DRAW_LIMIT_RIGHT_CANVAS;
 
+	// TODO Dont draw if whole wall outside limits
+
 	Vector2 Atop= CameraToViewport(Vector2New(ax,sectorceilingy-playerY),az);
 	Vector2 Abot= CameraToViewport(Vector2New(bx,sectorfloory-playerY),az);
 
@@ -773,6 +774,8 @@ void DrawWall2D(bool fill)
 	{
 		mgdl_LogTextFloat("Acanvas x", Atop.x);
 		mgdl_LogTextFloat("Acanvas y", Atop.y);
+		mgdl_LogTextFloat("Bcanvas x", Btop.x);
+		mgdl_LogTextFloat("Bcanvas y", Btop.y);
 	}
 
 	if (isportal) {

@@ -1,5 +1,7 @@
 #include "tesselator.h"
 
+// TODO Use some other tesselation library with more memory management options
+
 GLUtesselator* tesselator = nullptr;
 #define VERTEX_BUFFER_VERTEX_SIZE 5
 

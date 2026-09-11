@@ -51,3 +51,15 @@ struct WallInfo
 	Vector2 normal;
 };
 typedef struct WallInfo WallInfo;
+
+struct BunnyV2
+{
+	float x;
+	float y;
+};
+typedef struct BunnyV2 BunnyV2;
+
+#if defined(USE_ANGEL_AS_CPP)
+// NOTE Should we do typedef BunnyV2 Vector2 ?
+
+#endif

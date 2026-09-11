@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <mgdl.h>
 #include "../tinyxml2/tinyxml2.h"
-#include "duke/opengl-render.h"
+#include "render/opengl-render.h"
 
 #define NAME int_int_map
 #define KEY_TY int

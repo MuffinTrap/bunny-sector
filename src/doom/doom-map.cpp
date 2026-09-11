@@ -1,8 +1,6 @@
 #include "doom-map.h"
-#include "../duke/actor.h"
-#include "../duke/dukemath.h"
-
-
+#include "../gameplay/actor.h"
+#include "../bunny-sector-math.h"
 
  void DoomMap_Allocate(DoomMap* map, int thingsAmount, int sectorAmount, int sideAmount, int lineAmount, int vertexAmount)
 {
@@ -63,8 +61,8 @@ void SetActorToStart(DoomMap* map, Actor* actor)
 void DoomMap::SetActorToStart(Actor* actor)
 {
 	// Find thing 0
-	actor->position.doomPosition.x = things[0].x;
-	actor->position.doomPosition.y = things[0].y;
+	actor->position.vectorPosition.x = things[0].x;
+	actor->position.vectorPosition.y = things[0].y;
 	actor->elevation = 0.0f;
 	actor->yawRad = DEG2RAD * things[0].angleDeg;
 	actor->sectorNumber = FindSectorV2(0, actor->position.vectorPosition);

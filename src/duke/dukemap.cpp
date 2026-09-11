@@ -1,9 +1,9 @@
 #include "dukemap.h"
 #include <mgdl.h>
 #include <mgdl/mgdl-vectorfunctions.h>
-#include "dukemath.h"
+#include "../bunny-sector-math.h"
 #include "build-render.h"
-#include "actor.h"
+#include "../gameplay/actor.h"
 
 // Inherited functions
 
@@ -18,13 +18,13 @@ float DukeMap::GetFloory(int sectorIndex)
 
 int DukeMap::GetNextWallVertexIndexInSector(int sectorIndex, int wallIndex)
 {
-    Wall* w = Map_GetWallInSector(this, sectorIndex, wallIndex);
+    Wall* w = DukeMap_GetWallInSector(this, sectorIndex, wallIndex);
     return w->point2;
 }
 Vector2 DukeMap::GetNextWallVertexInSector(int sectorIndex, int wallIndex)
 {
-    Wall* w = Map_GetWallInSector(this, sectorIndex, wallIndex);
-    Wall* nw = Map_GetWallEnd(this, w);
+    Wall* w = DukeMap_GetWallInSector(this, sectorIndex, wallIndex);
+    Wall* nw = DukeMap_GetWallEnd(this, w);
     return Vector2New(nw->x, nw->z);
 }
 int DukeMap::GetSectorAmount()
@@ -58,7 +58,7 @@ int DukeMap::GetWallVertexAmount()
 
 Vector2 DukeMap::GetWallVertexInSector(int sectorIndex, int wallIndex)
 {
-    Wall* w = Map_GetWallInSector(this, sectorIndex, wallIndex);
+    Wall* w = DukeMap_GetWallInSector(this, sectorIndex, wallIndex);
     return Vector2New(w->x, w->z);
 }
 
@@ -99,7 +99,7 @@ Vector2 DukeMap::GetSectorSize(int sectorIndex)
 
 
 
-Sector* Map_GetSector(DukeMap* map, s16 sectorNumber)
+Sector* DukeMap_GetSector(DukeMap* map, s16 sectorNumber)
 {
     if (sectorNumber>= 0 && sectorNumber < map->sectorAmount)
     {
@@ -108,7 +108,7 @@ Sector* Map_GetSector(DukeMap* map, s16 sectorNumber)
     return &map->sectors[0];
 }
 
-Wall* Map_GetWallInSector(DukeMap* map, s16 sector, s16 wi)
+Wall* DukeMap_GetWallInSector(DukeMap* map, s16 sector, s16 wi)
 {
     Sector* s = &map->sectors[sector];
     wi += s->wallptr;
@@ -116,13 +116,13 @@ Wall* Map_GetWallInSector(DukeMap* map, s16 sector, s16 wi)
     return &map->walls[wi];
 }
 
-Wall* Map_GetWall(DukeMap* map, s16 wallIndex)
+Wall* DukeMap_GetWall(DukeMap* map, s16 wallIndex)
 {
     mgdl_assert_print((wallIndex>= 0 && wallIndex < map->wallAmount),"Invalid wall index for Sector_GetWall");
     return &map->walls[wallIndex];
 }
 
-Wall* Map_GetWallInSectorPtr(DukeMap* map, Sector* sector, s16 wi)
+Wall* DukeMap_GetWallInSectorPtr(DukeMap* map, Sector* sector, s16 wi)
 {
     wi += sector->wallptr;
     mgdl_assert_print((wi>= 0 && wi < map->wallAmount),"Invalid wall index for Sector_GetWall");
@@ -137,14 +137,14 @@ void DukeMap_InitActors(DukeMap* map, Actor* players, int playerAmount)
     map->SetActorToStart(&players[0]);
     for (int pi = 1; pi < playerAmount; pi++)
     {
-        MapSprite* startingPos = Map_FindSprite(map, SpriteLOTAG::LOTAG_Multiplayer_Start, pi);
+        MapSprite* startingPos = DukeMap_FindSprite(map, SpriteLOTAG::LOTAG_Multiplayer_Start, pi);
         if (startingPos)
         {
             Log_InfoF("Found starting position for player %d\n", pi);
             players[pi].position.vectorPosition= Vector2New(startingPos->position.x, startingPos->position.z);
             players[pi].yawRad = Math_DukeAngleToRad(startingPos->ang);
             players[pi].sectorNumber = startingPos->sectnum;
-            players[pi].elevation = Map_GetSectorFloorHeight(map, players[pi].sectorNumber) + players[pi].standingHeight;
+            players[pi].elevation = map->GetFloory(players[pi].sectorNumber) + players[pi].standingHeight;
         }
         else
         {
@@ -174,7 +174,7 @@ void DukeMap_InitActor(DukeMap* map, Actor* player)
     player->position.vectorPosition= map->startPosition;
     player->yawRad = Math_DukeAngleToRad(map->startAngle);
     player->sectorNumber = map->startingSector;
-    player->elevation = Map_GetSectorFloorHeight(map, map->startingSector) + player->standingHeight;
+    player->elevation = DukeMap_GetSectorFloorHeight(map, map->startingSector) + player->standingHeight;
 }
 
 void DukeMap_FindIslandSectors(DukeMap* map)
@@ -271,7 +271,7 @@ bool Map_IsPointInsideSectorOG(DukeMap* map, Vector2 P, int sectorNumber)
     {
         return false;
     }
-    Sector* sector = Map_GetSector(map, sectorNumber);
+    Sector* sector = DukeMap_GetSector(map, sectorNumber);
     if (sector == nullptr)
     {
         return false;
@@ -280,8 +280,8 @@ bool Map_IsPointInsideSectorOG(DukeMap* map, Vector2 P, int sectorNumber)
 
     for (s16 wi = 0; wi < sector->wallnum; wi++)
     {
-        Wall* wstart = Map_GetWallInSector(map, sectorNumber, wi);
-        Wall* wend = Map_GetWallEnd(map, wstart);
+        Wall* wstart = DukeMap_GetWallInSector(map, sectorNumber, wi);
+        Wall* wend = DukeMap_GetWallEnd(map, wstart);
 
         Vector2 A = Vector2New(wstart->x, wstart->z);
         Vector2 B = Vector2New(wend->x, wend->z);
@@ -311,7 +311,7 @@ bool Map_IsPointInsideSectorOG_1(DukeMap* map, Vector2 point, int sectorNumber)
     {
         return false;
     }
-    Sector* sector = Map_GetSector(map, sectorNumber);
+    Sector* sector = DukeMap_GetSector(map, sectorNumber);
     if (sector == nullptr)
     {
         return false;
@@ -320,8 +320,8 @@ bool Map_IsPointInsideSectorOG_1(DukeMap* map, Vector2 point, int sectorNumber)
 
         for (s16 wi = 0; wi < sector->wallnum; wi++)
         {
-            Wall* wstart = Map_GetWallInSector(map, sectorNumber, wi);
-            Wall* wend = Map_GetWallEnd(map, wstart);
+            Wall* wstart = DukeMap_GetWallInSector(map, sectorNumber, wi);
+            Wall* wend = DukeMap_GetWallEnd(map, wstart);
 
             // Check if these are different signs
             s32 pointx = (s32)floor(point.x);
@@ -368,22 +368,22 @@ bool Map_IsPointInsideSectorOG_1(DukeMap* map, Vector2 point, int sectorNumber)
 
 // This is from Wikipedia and works
 
-Vector2 Map_GetWallMiddle(DukeMap* map, Wall* w)
+Vector2 DukeMap_GetWallMiddle(DukeMap* map, Wall* w)
 {
-    Wall* wend = Map_GetWallEnd(map, w);
+    Wall* wend = DukeMap_GetWallEnd(map, w);
     Vector2 start = Vector2New(w->x, w->z);
     Vector2 end = Vector2New(wend->x, wend->z);
     return Vector2Add(start, Vector2Scale( Vector2Subtract(end, start), 0.5f));
 }
-Vector2 Map_GetWallNormal(DukeMap* map, const Wall* w)
+Vector2 DukeMap_GetWallNormal(DukeMap* map, Wall* w)
 {
-    Wall* wend = Map_GetWallEnd(map, w);
+    Wall* wend = DukeMap_GetWallEnd(map, w);
     Vector2 start = Vector2New(w->x, w->z);
     Vector2 end = Vector2New(wend->x, wend->z);
     Vector2 wallVector = Vector2Subtract(end, start);
     return Vector2Normalize(Vector2Rotate(wallVector, DEG2RAD*90));
 }
-Wall* Map_GetWallEnd(DukeMap* map, const Wall* w)
+Wall* DukeMap_GetWallEnd(DukeMap* map, Wall* w)
 {
     return &map->walls[w->point2];
 }
@@ -401,7 +401,7 @@ bool Map_IsPointInsideWall(DukeMap* map, Vector2 point, Wall* wall)
 {
     // negative if on the right side of wall.
     // walls go clockwise
-    Wall* wend = Map_GetWallEnd(map, wall);
+    Wall* wend = DukeMap_GetWallEnd(map, wall);
     Vector2 start = Vector2New(wall->x, wall->z);
     Vector2 end = Vector2New(wend->x, wend->z);
     return map->IsPointInsideWall(point, start, end);
@@ -409,21 +409,21 @@ bool Map_IsPointInsideWall(DukeMap* map, Vector2 point, Wall* wall)
 
 float Map_GetDistanceToWall(DukeMap* map, Wall* wall, Vector2 point)
 {
-    Wall* wend = Map_GetWallEnd(map, wall);
+    Wall* wend = DukeMap_GetWallEnd(map, wall);
     Vector2 ws = Vector2New(wall->x, wall->z);
     Vector2 we = Vector2New(wend->x, wend->z);
     return map->GetDistanceToWall(point, ws, we);
 }
 
-s32 Map_GetSectorFloorHeight(DukeMap* map, s16 sectorNumber)
+s32 DukeMap_GetSectorFloorHeight(DukeMap* map, s16 sectorNumber)
 {
-    Sector* s = Map_GetSector(map, sectorNumber);
+    Sector* s = DukeMap_GetSector(map, sectorNumber);
     return s->floory;
 }
 
-s32 Map_GetSectorCeilingHeight(DukeMap* map, s16 sectorNumber)
+s32 DukeMap_GetSectorCeilingHeight(DukeMap* map, s16 sectorNumber)
 {
-    Sector* s = Map_GetSector(map, sectorNumber);
+    Sector* s = DukeMap_GetSector(map, sectorNumber);
     return s->ceilingy;
 }
 
@@ -454,7 +454,7 @@ SpritePivot Sprite_GetPivot(MapSprite* sprite)
     }
 }
 
-MapSprite* Map_FindSprite(DukeMap* map, s16 lotag, s16 hitag)
+MapSprite* DukeMap_FindSprite(DukeMap* map, s16 lotag, s16 hitag)
 {
     for (int si = 0; si < map->spriteAmount; si++)
     {
@@ -467,7 +467,7 @@ MapSprite* Map_FindSprite(DukeMap* map, s16 lotag, s16 hitag)
     return nullptr;
 }
 
-MapSprite* Map_GetSprite(DukeMap* map, s16 spriteIndex)
+MapSprite* DukeMap_GetSprite(DukeMap* map, s16 spriteIndex)
 {
     mgdl_assert_print(spriteIndex >= 0 && spriteIndex < map->spriteAmount, "Invalid sprite index");
     return &map->sprites[spriteIndex];
@@ -483,7 +483,7 @@ u32 DukeMap::MovePointInMap(
 {
     u32 moveResultBitfield = 0;
     Vector2 cross;
-    Sector* sector = Map_GetSector(this, sectorNumber);
+    Sector* sector = DukeMap_GetSector(this, sectorNumber);
 
     // Check each wall of sector
     // First check normal walls and push player away from them
@@ -495,7 +495,7 @@ u32 DukeMap::MovePointInMap(
     {
         // Get wall start and end points
         // TODO make a function that gets the Start and Endpoint Vectors
-        Wall* wall = Map_GetWallInSector(this, sectorNumber, wi);
+        Wall* wall = DukeMap_GetWallInSector(this, sectorNumber, wi);
         bool treatAsWall = (wall->nextsector < 0);
 
         // Check if could change elevation
@@ -520,7 +520,7 @@ u32 DukeMap::MovePointInMap(
         {
             float wsx = wall->x;
             float wsz = wall->z;
-            Wall* w2 = Map_GetWallEnd(this, wall);
+            Wall* w2 = DukeMap_GetWallEnd(this, wall);
             float wex = w2->x;
             float wez = w2->z;
             // Keep player away from walls
@@ -574,10 +574,10 @@ u32 DukeMap::MovePointInMap(
     // NOTE above for loop has already pushed player away from inaccessible portals
     for (s16 wi = 0; wi < sector->wallnum; wi++)
     {
-        Wall* wall = Map_GetWallInSector(this, sectorNumber, wi);
+        Wall* wall = DukeMap_GetWallInSector(this, sectorNumber, wi);
         if (wall->nextsector >= 0)
         {
-            Wall* endWall = Map_GetWallEnd(this, wall);
+            Wall* endWall = DukeMap_GetWallEnd(this, wall);
             Vector2 wstart = Vector2New(wall->x, wall->z);
             Vector2 wend = Vector2New(endWall->x, endWall->z);
             // Is player close to this wall?
@@ -620,12 +620,12 @@ u32 DukeMap::MovePointInMap(
     */
 }
 
-s16 Map_GetSectorNeighbor(DukeMap* map, s16 sectorNumber, s16 wallIndex)
+s16 DukeMap_GetSectorNeighbor(DukeMap* map, s16 sectorNumber, s16 wallIndex)
 {
-    Sector* sector = Map_GetSector(map, sectorNumber);
+    Sector* sector = DukeMap_GetSector(map, sectorNumber);
     if (wallIndex < sector->wallnum)
     {
-        Wall* w = Map_GetWallInSector(map, sectorNumber, wallIndex);
+        Wall* w = DukeMap_GetWallInSector(map, sectorNumber, wallIndex);
         return w->nextsector;
     }
     return -1;

@@ -1,5 +1,5 @@
 #include "bunny-sector-map.h"
-#include "duke/actor.h"
+#include "gameplay/actor.h"
 
 zstr * BunnySector_Map::GetMapFile()
 {

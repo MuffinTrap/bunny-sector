@@ -23,45 +23,26 @@ BunnyMapType BunnySector_GetMapType(MapId mapid);
 
 MaterialId BunnySector_GetMaterialId(zstr* doomTextureFilename);
 
-struct buns_Vec2
-{
-	float x;
-	float y;
-};
-typedef struct buns_Vec2 buns_Vec2;
-struct buns_Vec3
-{
-	float x;
-	float y;
-	float z;
-};
-typedef struct buns_Vec3 buns_Vec3;
-
-// Accurate intersection with doubles
-bool buns_Intersect(double a1x, double a1y, 
-	double a2x, double a2y, 
-	double b1x, double b1y, 
-	double b2x, double b2y, 
-	buns_Vec2& out_point);
+// Accurate intersection
+bool buns_Intersect(float a1x, float a1y,
+	float a2x, float a2y,
+	float b1x, float b1y,
+	float b2x, float b2y,
+	float& out_x,
+	float& out_y);
 
 
 // Get data from active map
 
 // DUKE
-Sector* BunnySector_GetSector(s16 sectorNumber);
-Wall* BunnySector_GetWall(s16 wallIndex);
 Wall* BunnySector_GetWallEnd(Wall* wall);
-s16 BunnySector_GetSectorAmount();
 
 // DOOM
 DoomMap* BunnySector_GetDoomMap(MapId mapId);
+DukeMap* BunnySector_GetDukeMap(MapId mapId);
 
 // Actor functions
 Actor* BunnySector_GetActor(int actorId);
-void BunnySector_GetActorPositionV2(int actorId, buns_Vec2& out_pos);
-void BunnySector_GetActorPositionV3(int actorId, buns_Vec3& out_pos);
-void BunnySector_GetActorFloorDir(int actorId, buns_Vec2& out_dir);
-float BunnySector_GetActorRadius(int actorId);
 void BunnySector_SetActorPosition(int actorId, float x, float z);
 void BunnySector_SetActorSpeeds(int actorId, float walkSpeedMultiplier, float turnSpeedMultiplier);
 void BunnySector_SetActorDriveInput(int actorId, float forward, float strafe, float vertical, float turnYaw, float turnPitch);

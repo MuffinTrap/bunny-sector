@@ -1,4 +1,4 @@
-#include "dukemath.h"
+#include "bunny-sector-math.h"
 #include <mgdl/mgdl-types.h>
 
 #include "build-render.h"
@@ -61,11 +61,11 @@ float Math_DukeAngleToRad(s16 angleInt)
     return radians;
 }
 
-Vector3 Vec3DukePosToOpenGL(Vector3 dukepos, RenderSettingsOpenGL* settings3D)
+Vector3 ScaleVector3ToOpenGL(Vector3 position, RenderSettingsOpenGL* settings3D)
 {
-	return Vector3Scale(dukepos, settings3D->scale);
+	return Vector3Scale(position, settings3D->scale);
 }
-Vector2 Vec2DukePosToOpenGL(Vector2 dukepos, RenderSettingsOpenGL* settings3D)
+Vector2 ScaleVector2ToOpenGL(Vector2 position, RenderSettingsOpenGL* settings3D)
 {
-	return Vector2Scale(dukepos, settings3D->scale);
+	return Vector2Scale(position, settings3D->scale);
 }
