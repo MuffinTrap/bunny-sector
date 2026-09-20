@@ -820,30 +820,16 @@ static void read_sector() {
 		// FLIP THE Y!
 		/*
 		float rotation = 180.0f;
-		float cosres = cosf(DEG2RAD * rotation);
-		float sinres = sinf(DEG2RAD * rotation);
-		*/
 		for (int i = 0; i < map->thingAmount; i++)
 		{
-			/*
-			float x = map->things[i].x;
-			float y = map->things[i].y;
-			map->things[i].x = x*cosres - y*sinres;
-			map->things[i].y = x*sinres + y*cosres;
 			map->things[i].angleDeg += rotation;
-			*/
-			//map->things[i].y *= -1.0f;
+			map->things[i].y *= -1.0f;
 		}
 		for (int i = 0; i < map->vertexAmount; i++)
 		{
-			/*
-			float x = map->vertices[i].x;
-			float y = map->vertices[i].y;
-			map->vertices[i].x = x*cosres - y*sinres;
-			map->vertices[i].y = x*sinres + y*cosres;
-			*/
-			//map->vertices[i].y *= -1.0f;
+			map->vertices[i].y *= -1.0f;
 		}
+		*/
 
 
 		// Link sectors to subsectors directly
@@ -902,8 +888,8 @@ static void read_sector() {
 				}
 				else
 				{
-					// Must be portal somewhere
-					seg->neighbourSubSector = 666;
+					// Must be portal somewhere?
+					seg->neighbourSubSector = -1;//DOOM_NO_LINE_NEIGHBOR;// TODO Figure this out
 				}
 
 				printf("Subsector %d segment %d neighbor is %d\n", ssi, sub->firstSegment + segi, seg->neighbourSubSector);

@@ -175,7 +175,7 @@ void angelscript_frame_doom(float deltatime)
 	StartFrame_Doom();
 	if (RENDER_2D_WALLS)
 	{
-		RenderDoomMap(BunnySector_GetDoomMap(doomMapId));
+		RenderDoomMapLines(BunnySector_GetDoomMap(doomMapId));
 	}
 	else
 	{

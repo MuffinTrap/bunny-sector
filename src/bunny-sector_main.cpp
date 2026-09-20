@@ -371,7 +371,7 @@ Actor* BunnySector_GetActor(int actorId)
 }
 void BunnySector_StartMapDrawing()
 {
-	OpenGLRender_StartDrawingPolygons(defaultOpenGL.scale);
+	OpenGLRender_StartDrawingPolygons();
 }
 void BunnySector_EndMapDrawing()
 {

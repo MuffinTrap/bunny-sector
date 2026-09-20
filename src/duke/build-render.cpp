@@ -152,7 +152,7 @@ void BuildRender_DrawSprites(DukeMap* map, Viewpoint* player, RenderSettingsOpen
 void BuildRender_Draw3D(Viewpoint* camera, BunnySector_Map* map, RenderSettingsOpenGL* settings)
 {
     DukeMap *dmap = (DukeMap*)map;
-        OpenGLRender_StartDrawingPolygons(settings->scale);
+        OpenGLRender_StartDrawingPolygons();
             BuildRender_DrawSectorWalls(camera, dmap, settings);
             BuildRender_DrawSectorFloorsAndCeilings(camera, map, settings);
             BuildRender_DrawSprites(dmap, camera, settings);

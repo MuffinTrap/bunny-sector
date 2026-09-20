@@ -231,7 +231,10 @@ int DoomMap::FindSubSector(DoomNode* node, Vector2 point)
 
 int DoomMap::FindSectorV2(int currentSector, Vector2 currentPosition)
 {
-	// TODO BSD traversal
+	if (nodeAmount == 0)
+	{
+		return 0;
+	}
 	return FindSubSector(&nodes[nodeAmount-1], currentPosition);
 }
  Vector2 DoomMap::GetSectorMaxTexCoord(int sectorIndex)

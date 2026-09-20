@@ -1,5 +1,5 @@
 
-bool DEBUG_DRAW = false;
+bool DEBUG_DRAW = true;
 bool DEBUG_LOG = false;
 bool RENDER_2D_WALLS = false;
 
@@ -30,10 +30,6 @@ float NEARZ = 1.0f;
 float FARZ = 1000 * 1024.0f;
 
 
-// Output of ProcessWall when doing 2D DRAWING
-// These are in screen space units
-Vector2 A_XZ;
-Vector2 B_XZ;
 
 // Parameters needed by DrawWall2D
 
@@ -62,6 +58,13 @@ int OUTLINE_END_X;
 // Written by DrawWall2D
 int DRAW_START_X;
 int DRAW_END_X;
+
+// Written by ProcessWall
+int CANVAS_AX; // in canvas units
+int CANVAS_BX;
+// These are in screen space units
+Vector2 A_XZ;
+Vector2 B_XZ;
 
 void RenderInit(int VerticalFovDegrees)
 {
@@ -636,12 +639,12 @@ bool ProcessWall( Vector2 trans1, Vector2 trans2,
 				if (DEBUG_LOG){mgdl_LogText("X backface");}
 			}
 
-			if (draw) {
-				A_XZ.x = ax;
-				A_XZ.y = az;
-				B_XZ.x = bx;
-				B_XZ.y = bz;
-			} // Draw or not?
+			CANVAS_AX = Atop.x;
+			CANVAS_BX = Btop.x;
+			A_XZ.x = ax;
+			A_XZ.y = az;
+			B_XZ.x = bx;
+			B_XZ.y = bz;
 		} // if one point in front
 	} // is behind ?
 
@@ -942,7 +945,7 @@ void DrawWall3D(Vector2 left, Vector2 right, s16 picnumMiddle, s16 picnumBottom,
 		// Create wall that goes down or up to adjacent sector: Note! both sectors dont need to do this. Only lower one
 
 		// if this floor height is less than adjacent: Greate wall in between: goes up
-		if (SECTOR_FLOORY < SECTOR_NEIGHBOR_FLOORY)
+		if (SECTOR_FLOORY < SECTOR_NEIGHBOR_FLOORY && picnumBottom >= 0)
 		{
 			//BunnySector_DrawWall(wall, end, floory, neighbor.floory, wall.picnum, wall.shade);
 			BunnySector_DrawWallF(left.x, left.y, right.x, right.y, wallNormal.x, wallNormal.y, SECTOR_NEIGHBOR_FLOORY,SECTOR_FLOORY,  picnumBottom, shade);
@@ -951,7 +954,7 @@ void DrawWall3D(Vector2 left, Vector2 right, s16 picnumMiddle, s16 picnumBottom,
 
 		// Ceiling:
 		// If this ceiling is higher than adjacent: Greate wall in between: goes down
-		if (SECTOR_CEILINGY > SECTOR_NEIGHBOR_CEILINGY)
+		if (SECTOR_CEILINGY > SECTOR_NEIGHBOR_CEILINGY && picnumTop >= 0)
 		{
 			//Wall@ otherWall = BunnySector_GetWall(wall.nextwall);
 			//DrawQuad(startPoint, endPoint, wallNormal, neighbor.ceilingy, ceilingy, otherWall.picnum, otherWall.shade, 1.0f);
@@ -966,7 +969,7 @@ void DrawWall3D(Vector2 left, Vector2 right, s16 picnumMiddle, s16 picnumBottom,
 			picnumMiddle, shade);
 		}
 	}
-	else
+	else if (picnumMiddle >= 0)
 	{
 		//BunnySector_DrawWall(wall, end, floory, ceilingy, wall.picnum, wall.shade);
         //DrawQuad(startPoint, endPoint, wallNormal, floory, ceilingy, wall.picnum, wall.shade, 1.0f);

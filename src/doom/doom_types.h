@@ -7,6 +7,7 @@ typedef unsigned int ChildId;
 #define DOOM_SIDE_FRONT 0
 #define DOOM_SIDE_BACK 1
 #define DOOM_INVALID_LINEDEF 65535
+#define DOOM_NO_LINE_NEIGHBOR  666666
 
 enum LINEDEF_FLAG
 {

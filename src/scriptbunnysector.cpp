@@ -59,6 +59,8 @@ void RegisterDoomMap(mgdl_AngelScript* angel)
 	as_engine->RegisterObjectType("DoomLinedef", 0, asOBJ_REF|asOBJ_NOCOUNT);
 		as_engine->RegisterObjectProperty("DoomLinedef", "int sidefront", asOFFSET(DoomLinedef, sidefront));
 		as_engine->RegisterObjectProperty("DoomLinedef", "int sideback", asOFFSET(DoomLinedef, sideback));
+		as_engine->RegisterObjectProperty("DoomLinedef", "int v1", asOFFSET(DoomLinedef, v1));
+		as_engine->RegisterObjectProperty("DoomLinedef", "int v2", asOFFSET(DoomLinedef, v2));
 
 	as_engine->RegisterObjectType("DoomSidedef", 0, asOBJ_REF|asOBJ_NOCOUNT);
 		as_engine->RegisterObjectProperty("DoomSidedef", "int sector", asOFFSET(DoomSidedef, sector));

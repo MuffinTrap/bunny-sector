@@ -60,7 +60,6 @@ static RectF zeroOffset;
 
 // What OpenGL settings are active
 
-static float activeScale = 1.0f;
 static float unitsPerMeter = 1.0f;
 
 void OpenGLRender_SetUnitsToMeter(float unitsToMeter)
@@ -167,7 +166,7 @@ static void DrawBufferWithMaterial(MapMaterial* material, Vector3 normal, Buffer
             DrawGrassOnPolygonBuffer(m_grass,
                                      materialColor, normal,
                                      m_grass->height, 0.1f,
-                                     drawFunction, activeScale);
+                                     drawFunction, 1.0f/unitsPerMeter);
         }
             break;
         case Material_Function:
@@ -241,7 +240,7 @@ void DrawMeshOnSprite(MapMaterial* material, Vector3 position, float angleYRadia
     glPushMatrix();
         glTranslatef(position.x, position.y, position.z);
         glRotatef(Rad2Deg(angleYRadians), WORLD_UP.x, WORLD_UP.y, WORLD_UP.z);
-        float antiScale = 1.0f/activeScale;
+        float antiScale = unitsPerMeter;
         glScalef(antiScale, antiScale, antiScale);
         glPushMatrix();
             float ms = material->parameter.meshScale;
@@ -255,15 +254,15 @@ void DrawMeshOnSprite(MapMaterial* material, Vector3 position, float angleYRadia
 // Public functions
 // //////////////////////////////////////////////
 
-void OpenGLRender_StartDrawingPolygons(float scaleXYZ)
+void OpenGLRender_StartDrawingPolygons()
 {
     glEnableClientState(GL_VERTEX_ARRAY);
     glEnableClientState(GL_TEXTURE_COORD_ARRAY);
     glEnable(GL_TEXTURE_2D);
     glPushMatrix();
     mgdl_glSetAlphaTest(true);
+    float scaleXYZ = 1.0f / unitsPerMeter;
     glScalef(scaleXYZ, scaleXYZ, scaleXYZ);
-    activeScale = scaleXYZ;
 }
 
 void OpenGLRender_EndDrawingPolygons()
@@ -431,11 +430,11 @@ MaterialId OpenGLRender_GetMapMaterialId(MapMaterial* material)
 
 /** TODO remove settings3D. Scale should be set globally already
  */
-void DrawQuad(Vector2 start, Vector2 end, const Vector2 normalXZ, s32 floorY, s32 ceilingY, s16 picnum, s8 brightnessOffset, float scale)
+void DrawQuad(Vector2 start, Vector2 end, const Vector2 normalXZ, s32 floorY, s32 ceilingY, s16 picnum, s8 brightnessOffset, float uvScale)
 {
     // Keep texture aspect 1:1 unless told otherwise
-    float width = Vector2Length( Vector2Subtract(end, start)) * scale;
-    float height = (ceilingY - floorY) * scale;
+    float width = Vector2Length( Vector2Subtract(end, start)) * uvScale;
+    float height = (ceilingY - floorY) * uvScale;
 
     float aspect = width/height;
     float tex_x1 = 0.0f;

@@ -41,7 +41,7 @@ Actor Actor_CreateDefaultActor(int idNumber, float unitsToMeter)
 	a.verticalAccelerationDown = 4.0f * unitsToMeter;
 
 	// Size
-	a.standingHeight = 1.5f * unitsToMeter;
+	a.standingHeight = 2.5f * unitsToMeter;
 	a.climbHeight = a.standingHeight/2.0f;
 	a.eyeHeightNormalized = 0.85f;
 	a.radius = 0.5f * unitsToMeter;

@@ -1,5 +1,7 @@
 
-bool RENDER_WALLS_DOOM = true;
+bool RENDER_TOPDOWN = false;
+const int DOOM_SIDE_FRONT = 0;
+const int DOOM_SIDE_BACK = 0;
 
 // Kep Track which subsectors have been drewn
 int[] DrawnSubSectors(128);
@@ -10,18 +12,25 @@ class WallSegment
 {
 	int start;
 	int end;
-	WallSegment@ next;
-	WallSegment@ prev;
+	int nextIndex;
+	int prevIndex;
+	int myIndex;
 	WallSegment()
 	{
 		start = 0;
 		end = 0;
+		nextIndex = -1;
+		prevIndex = -1;
+		myIndex = -1;
 	}
 
-	WallSegment(int left, int right)
+	WallSegment(int left, int right, int prev, int next, int index)
 	{
 		start = left;
 		end = right;
+		prevIndex = prev;
+		nextIndex = next;
+		myIndex = index;
 	}
 
 	bool OverlapsWith(WallSegment@ other)
@@ -37,7 +46,7 @@ class WallSegment
 
 	}
 
-	bool MergeInto(WallSegment@ other)
+	void MergeInto(WallSegment@ other)
 	{
 		if (DEBUG_LOG)
 		{
@@ -57,17 +66,19 @@ class WallSegment
 		{
 			other.end = end;
 		}
-		return true;
-
-
 	}
-	void InsertBetween(WallSegment@ before, WallSegment@ after)
+	void Drop()
 	{
-		prev = before;
-		before.next = this;
-
-		next = after;
-		after.prev = this;
+		if (prevIndex >= 0)
+		{
+			WallSegment@ prevSegment = @wallSegments[prevIndex];
+			prevSegment.nextIndex = nextIndex;
+		}
+		if (nextIndex >= 0)
+		{
+			WallSegment@ nextSegment = @wallSegments[nextIndex];
+			nextSegment.prevIndex = prevIndex;
+		}
 	}
 }
 
@@ -86,10 +97,8 @@ void InitWallSegments()
 
 void ResetWallSegments()
 {
-	wallSegments[0] = WallSegment(-MAX_16, -SCREEN_WIDTH/2);
-	wallSegments[1] = WallSegment(SCREEN_WIDTH/2, MAX_16);
-	@wallSegments[0].next =  @wallSegments[1];
-	@wallSegments[1].prev =  @wallSegments[0];
+	wallSegments[0] = WallSegment(-MAX_16, -SCREEN_WIDTH/2, -1, 1, 0);
+	wallSegments[1] = WallSegment(SCREEN_WIDTH/2, MAX_16, 0, -1, 1);
 	lastWallSegment = 2;
 }
 
@@ -107,78 +116,98 @@ void PushWallSegment(int startx, int endx)
 	InsertNewSegment(drawn, 0);
 }
 
-void InsertRecursive(WallSegment@ drawn, int recursion)
-{
-	if (DEBUG_LOG)
-	{
-		mgdl_LogTextInt("  Inserrt recursion ", recursion);
-		InsertNewSegment(@drawn, recursion);
-	}
-
-}
+// Called after drawing a wall
+/*
+ * Start from the first segment ; this is the target
+ * 1. if incoming segment overlaps with target -> merge incoming to target -> BREAK
+ * 2. if incoming segment is before the target -> add it to segments -> BREAK
+ * 3. if incoming segment is after the target -> take next segment as target and repeat
+ *
+ * if incoming was merged:
+ * 	4. check if target now overlaps with the next one
+ * 		5. if it overlaps: merge next one into target. Take the next next one as new next and repeat
+ * else : STOP
+ *
+ * */
 
 void InsertNewSegment(WallSegment@ drawn, int recursion)
 {
 	bool merged = false;
-	WallSegment@ target = @wallSegments[0];
-
+	int prevTargetIndex = -1;
+	int targetIndex = 0;
 	while(true)
 	{
-		// Assume drawn to be on left of target
+		WallSegment@ target = @wallSegments[targetIndex];
+		// 1. Try merge
 		if (drawn.OverlapsWith(target))
 		{
 			if (DEBUG_LOG)
 			{
 				mgdl_LogText("   overlaps!");
 			}
-			merged = drawn.MergeInto(target);
-			if (merged)
+			drawn.MergeInto(target);
+			merged = true;
+			if (DEBUG_LOG)
 			{
-				if (DEBUG_LOG)
-				{
-					mgdl_LogText("   merged!");
-				}
-				break;
+				mgdl_LogText("   merged!");
 			}
-		}
-
-		// Go to next one
-		if (target.next == null)
+			break;
+		} // 2. Insert?
+		else if (drawn.end < target.start)
 		{
+			drawn.myIndex = lastWallSegment;
+			drawn.prevIndex = prevTargetIndex;
+			if (prevTargetIndex >= 0)
+			{
+				WallSegment@ previous = @wallSegments[prevTargetIndex];
+				previous.nextIndex = lastWallSegment;
+			}
+			WallSegment@ next = @wallSegments[targetIndex];
+			next.prevIndex = lastWallSegment;
+			drawn.nextIndex = targetIndex;
+
+			wallSegments[lastWallSegment] = drawn;
+			lastWallSegment += 1;
+			if (lastWallSegment >= WALL_SEGMENT_AMOUNT)
+			{
+				mgdl_LogText("Too many wall segments!");
+			}
 			break;
 		}
-		else
+		// 3. Try next one
+		else if (drawn.start > target.end)
 		{
-			// Drawn was on the right of target
-			if (drawn.start > target.end)
-			{
-				@drawn.prev = @target;
-			}
-			if (drawn.end < target.start)
-			{
-				@drawn.prev = @target;
-			}
 			if (DEBUG_LOG)
 			{
 				mgdl_LogText("  try next segment");
 			}
-			@target = @target.next;
+			prevTargetIndex += 1;
+			targetIndex += 1;
+			continue;
 		}
 	}
+
+
 	if (merged)
 	{
+		WallSegment@ target = @wallSegments[targetIndex];
+		int nextIndex = target.nextIndex;
 		// See if touches the next one
-		while (target.next !is null)
+		while (nextIndex >= 0)
 		{
-			if (target.OverlapsWith(target.next))
+			// 4. Check if merge reaches next one
+			WallSegment@ nextSegment = @wallSegments[nextIndex];
+			if (target.OverlapsWith(nextSegment))
 			{
 				if (DEBUG_LOG)
 				{
 					mgdl_LogText("    touches next");
 					// merge next one into this
-					target.next.MergeInto(target);
+					nextSegment.MergeInto(target);
 				}
-				break;
+				// 5.
+				nextSegment.Drop();
+				nextIndex = nextSegment.nextIndex;
 			}
 			else
 			{
@@ -186,24 +215,9 @@ void InsertNewSegment(WallSegment@ drawn, int recursion)
 				{
 					mgdl_LogText("    not touches next");
 				}
+				break;
 			}
-			@target = @target.next;
 		}
-	}
-	else
-	{
-		// TODO Does not work yet
-		// Did not find overlapping one
-		// Put between
-		if (drawn.prev !is null)
-		{
-			@drawn.prev.next = @drawn;
-		}
-		if (drawn.next !is null)
-		{
-			@drawn.next.prev = @drawn;
-		}
-		lastWallSegment += 1;
 	}
 
 	// DEBUG
@@ -215,20 +229,29 @@ void InsertNewSegment(WallSegment@ drawn, int recursion)
 			mgdl_LogTextInt("Wall seg ", i);
 			mgdl_LogTextInt("   start", seg.start);
 			mgdl_LogTextInt("   end", seg.end);
-			if (seg.prev == null)
-			{
-				mgdl_LogText("   no prev");
-			}
-			if (seg.next == null)
-			{
-				mgdl_LogText("   no next");
-			}
+			mgdl_LogTextInt("   <- prev", seg.prevIndex);
+			mgdl_LogTextInt("   next ->", seg.nextIndex);
 		}
 		if (IsWallSegmentFilled())
 		{
 			mgdl_LogText("   WALL SEGMENTS FILLED");
 		}
 	}
+}
+
+bool IsWallSegmentOccluded(int startx, int endx)
+{
+	int nextIndex = 0;
+	while(nextIndex >= 0)
+	{
+		WallSegment@ seg = @wallSegments[nextIndex];
+		if (startx >= seg.start && endx <= seg.end)
+		{
+			return true;
+		}
+		nextIndex = seg.nextIndex;
+	}
+	return false;
 }
 
 bool IsWallSegmentFilled()
@@ -431,6 +454,7 @@ bool PlayerSeesNode(Actor@ player, s16 top, s16 bot, s16 left, s16 right)
 	bool see1 = SeesSide(sideA, sideB);
 	if (DEBUG_DRAW)
 	{
+		DrawCross(A, Debug_Yellow);
 		if (see1 == false)
 		{
 			// Draw Cross over rejected bounding box
@@ -442,7 +466,7 @@ bool PlayerSeesNode(Actor@ player, s16 top, s16 bot, s16 left, s16 right)
 			glVertex2f(D.x, D.y);
 
 			// Show the test side
-			glColor3f(0.2f, 1.0f, 1.0f);
+			glColor3f(0.8f, 1.0f, 1.0f);
 			glVertex2f(sideA.x, sideA.y);
 			glVertex2f(sideB.x, sideB.y);
 			glEnd();
@@ -465,6 +489,42 @@ bool PlayerSeesNode(Actor@ player, s16 top, s16 bot, s16 left, s16 right)
 	}
 
 	return see1;
+}
+
+int GetWallSide(Vector2 wstart, Vector2 wend, Vector2 point)
+{
+	Vector2 delta = Vector2Subtract(wend, wstart);
+
+	if (delta.x == 0)
+	{
+		// Vertical cut
+		if (point.x < wstart.x)
+		{
+			if (delta.y > 0) {return 1;}
+			else {return 0;}
+		}
+		if (delta.y < 0) {return 1;}
+		else {return 0;}
+	}
+	if (delta.y == 0)
+	{
+		// Horizontal cut
+		if (point.y < wstart.y)
+		{
+			if (delta.x > 0) {return 0;}
+			else {return 1;}
+		}
+		if (delta.x < 0) {return 0;}
+		else {return 1;}
+	}
+	float dxp = point.x - wstart.x;
+	float dyp = point.y - wstart.y;
+	if( dxp * delta.y < dyp * delta.x)
+	{
+		return 1;
+	}
+	return 0;
+
 }
 
 // NOTE THIS IS CORRECT
@@ -503,16 +563,13 @@ int GetChildSide(DoomNode@ node, Vector2 v)
 
 int drawOrder = 0;
 
-void DrawSubSector(DoomMap@ map, Actor@ player, DoomSubSector@ sub, int sectorIndex)
+void DrawSubSectorTopDown(DoomMap@ map, Actor@ player, DoomSubSector@ sub, int sectorIndex)
 {
+
 	BunnyV2@ pp = player.GetPosition();
 	Vector2 playerPos = Vector2New(pp.x, pp.y);
 	float playerAngle = player.yawRad;
 	PLAYER_Y = player.elevation + 40;
-
-	// TODO Keep track of screen free space
-	DRAW_LIMIT_LEFT_CANVAS = -SCREEN_WIDTH/2;
-	DRAW_LIMIT_RIGHT_CANVAS = SCREEN_WIDTH/2;
 
 	// NOTE in doom the vertices are stored in counter
 	// clockwise order, but ProcessWallTopDown excepts
@@ -524,22 +581,18 @@ void DrawSubSector(DoomMap@ map, Actor@ player, DoomSubSector@ sub, int sectorIn
 	{
 		DoomSegment@ seg = map.segments[i];
 
+		// This segment is just for nodes. No need to do anything for it
+		if (seg.linedef == 0xFFFF)
+		{
+			continue;
+		}
+
 		uint next = i + 1;
 		if (next >= lastSeg) { next = firstSeg;}
 
 		DoomSegment@ partner = map.segments[next];
-
-
 		DoomVertex@ v1 = map.vertices[seg.v1];
 		DoomVertex@ v2 = map.vertices[partner.v1];
-
-		/*
-		glBegin(GL_LINES);
-		mgdl_glColor32(Debug_Yellow);
-		glVertex2f(v1.x, v1.y);
-		glVertex2f(v2.x, v2.y);
-		glEnd();
-		*/
 
 		Vector2 wall1 = Vector2New(v1.x, v1.y);
 		Vector2 wall2 = Vector2New(v2.x, v2.y);
@@ -547,38 +600,94 @@ void DrawSubSector(DoomMap@ map, Actor@ player, DoomSubSector@ sub, int sectorIn
 		Vector2 trans1 = WorldToCamera(wall1, playerPos, playerAngle);
 		Vector2 trans2 = WorldToCamera(wall2, playerPos, playerAngle);
 
-		if (RENDER_WALLS_DOOM == false)
+		DrawCross(Vector2New(trans1.x, trans1.y), Debug_Yellow);
+		bool isPortal = seg.neighbourSubSector >= 0;
+		ProcessWallTopDown(trans2, trans1, player.radius, isPortal);
+	}
+}
+
+void DrawSubSector(DoomMap@ map, Actor@ player, DoomSubSector@ sub, int sectorIndex)
+{
+	BunnyV2@ pp = player.GetPosition();
+	Vector2 playerPos = Vector2New(pp.x, pp.y);
+	float playerAngle = player.yawRad;
+	PLAYER_Y = player.elevation + 40;
+
+	// NOTE in doom the vertices are stored in counter
+	// clockwise order, but ProcessWallTopDown excepts
+	// left to right
+	uint nexti= 0;
+	uint firstSeg = sub.firstSegment;
+	uint lastSeg = sub.firstSegment + sub.segmentAmount;
+	for (uint i = firstSeg; i < lastSeg; i++)
+	{
+		DoomSegment@ seg = map.segments[i];
+
+		// This segment is just for nodes. No need to do anything for it
+		if (seg.linedef == 0xFFFF)
 		{
-			DrawCross(Vector2New(trans1.x, trans1.y), Debug_Yellow);
-			ProcessWallTopDown(trans2, trans1, player.radius, seg.neighbourSubSector >= 0);
-			//if (sectorIndex == 1)
-			{
-			mgdl_DrawTextInt("Sub", sectorIndex, trans2.x, trans2.y-8, 8, Debug_Yellow);
-			Vector2 middle = Vector2Add(trans2, Vector2Scale(Vector2Subtract(trans1, trans2), 0.5f));
-			// mgdl_DrawTextInt("Seg", i, middle.x, middle.y, 8, Debug_Yellow);
-			}
+			continue;
 		}
+
+		uint next = i + 1;
+		if (next >= lastSeg) { next = firstSeg;}
+
+		DoomSegment@ partner = map.segments[next];
+		DoomVertex@ v1 = map.vertices[seg.v1];
+		DoomVertex@ v2 = map.vertices[partner.v1];
+
+		Vector2 wall1 = Vector2New(v1.x, v1.y);
+		Vector2 wall2 = Vector2New(v2.x, v2.y);
+
+		Vector2 trans1 = WorldToCamera(wall1, playerPos, playerAngle);
+		Vector2 trans2 = WorldToCamera(wall2, playerPos, playerAngle);
+
 		// Check if wall is facing away
-		else if ( SeesSide(trans2, trans1))
+		// NOTE Portals can be either way around and these checks don't work
+		DoomLinedef@ linedef = map.linedefs[seg.linedef];
+		bool isPortal = seg.neighbourSubSector >= 0;
+		if (isPortal || SeesSide(trans2, trans1))
 		{
 			bool draw = ProcessWall(trans2, trans1, DRAW_LIMIT_LEFT_CANVAS, DRAW_LIMIT_RIGHT_CANVAS);
-			if (draw)
+			if ((isPortal || draw) && CANVAS_BX > DRAW_LIMIT_LEFT_CANVAS && CANVAS_AX < DRAW_LIMIT_RIGHT_CANVAS)
 			{
-				// Get sector info
-				if (seg.linedef == 0xFFFF)
+				// Which side are we on of the linedef
+				DoomVertex@ lineStart = map.vertices[linedef.v1];
+				DoomVertex@ lineEnd = map.vertices[linedef.v2];
+				int wallSide = GetWallSide(Vector2New(lineStart.x, lineStart.y), Vector2New(lineEnd.x, lineEnd.y), playerPos);
+				int frontSide = 0;
+				int backSide = 0;
+				if (wallSide == DOOM_SIDE_FRONT)
 				{
-					continue;
+					frontSide = linedef.sidefront;
+					backSide = linedef.sideback;
 				}
-				DoomLinedef@ linedef = map.linedefs[seg.linedef];
-				DoomSidedef@ sidedef = map.sidedefs[linedef.sidefront];
+				else
+				{
+					frontSide = linedef.sideback;
+					backSide = linedef.sidefront;
+				}
+
+				DoomSidedef@ sidedef = map.sidedefs[frontSide];
+
+				// Occlusion test and book keeping
+				if (sidedef.texturemiddle >= 0)
+				{
+					if (IsWallSegmentOccluded(CANVAS_AX, CANVAS_BX))
+					{
+						continue;
+					}
+					PushWallSegment(CANVAS_AX, CANVAS_BX);
+				}
+
 				DoomSector@ sector = map.sectors[sidedef.sector];
 				SECTOR_FLOORY = sector.heightfloor;
 				SECTOR_CEILINGY = sector.heightceiling;
 
-				SECTOR_NEIGHBOR_ID = linedef.sideback;
-				if (linedef.sideback >= 0)
+				SECTOR_NEIGHBOR_ID = backSide;
+				if (backSide >= 0)
 				{
-					DoomSidedef@ back_sidedef = map.sidedefs[linedef.sideback];
+					DoomSidedef@ back_sidedef = map.sidedefs[backSide];
 					DoomSector@ back_sector = map.sectors[back_sidedef.sector];
 					SECTOR_NEIGHBOR_CEILINGY = back_sector.heightceiling;
 					SECTOR_NEIGHBOR_FLOORY = back_sector.heightfloor;
@@ -586,37 +695,11 @@ void DrawSubSector(DoomMap@ map, Actor@ player, DoomSubSector@ sub, int sectorIn
 				if (RENDER_2D_WALLS)
 				{
 					DrawWall2D(false);
-					if (DRAW_START_X < DRAW_END_X && DRAW_END_X > DRAW_LIMIT_LEFT_CANVAS && DRAW_START_X < DRAW_LIMIT_RIGHT_CANVAS)
-					{
-						PushWallSegment(DRAW_START_X, DRAW_END_X);
-					}
 				}
 				else
 				{
-
-					/*
-				if (linedef.sideback < 0)
-				{
-					glColor3f( (1+i % 7) * 0.15f, (sub.segmentAmount) * 0.05f, 1.0f -(1+i) * 0.15f);
-					// Counterclockwise!
-					glVertex3f(v2.x, sector.heightfloor, v2.y);
-					glVertex3f(v1.x, sector.heightfloor, v1.y);
-					glVertex3f(v1.x, sector.heightceiling, v1.y);
-					glVertex3f(v2.x, sector.heightceiling, v2.y);
-				}
-				*/
 					DrawWall3D(wall1, wall2, sidedef.texturemiddle, sidedef.texturebottom, sidedef.texturetop, sector.lightlevel);
-
-					/*
-					glVertex3f(v1.x, sector.heightfloor, v1.y);
-					glVertex3f(v1.x, sector.heightceiling, v1.y);
-
-					glVertex3f(v2.x, sector.heightfloor, v2.y);
-					glVertex3f(v2.x, sector.heightceiling, v2.y);
-					*/
 				}
-
-				// TODO Update used screen area
 			}
 		}
 	}
@@ -638,8 +721,14 @@ void DrawNodeChild(DoomMap@ map, Actor@ player, ChildId id)
 		DrawnSubSectors[drawnIndex] = sectorId;
 		drawnIndex += 1;
 
-		DrawSubSector(map, player, sub, sectorId);
-
+		if (RENDER_TOPDOWN)
+		{
+			DrawSubSectorTopDown(map, player, sub, sectorId);
+		}
+		else if (IsWallSegmentFilled() == false)
+		{
+			DrawSubSector(map, player, sub, sectorId);
+		}
 	}
 }
 
@@ -659,6 +748,10 @@ int FindSubSectorRec(DoomMap@ map, DoomNode@ node, Vector2 point)
 
 void DrawNode(DoomMap@ map, Actor@ player, DoomNode@ node)
 {
+	if (IsWallSegmentFilled())
+	{
+		return;
+	}
 	BunnyV2@ bunnypos = player.GetPosition();
 	// This determines which branch is done first so that
 	// eventually the players subsector is drawn first
@@ -683,15 +776,6 @@ void DrawNode(DoomMap@ map, Actor@ player, DoomNode@ node)
 	{
 		DrawNodeChild(map, player, node.children[childSide ^ 1]);
 	}
-		//DrawNodeChild(map, player, node.children[childSide ^ 1]);
-
-	/*
-	glBegin(GL_LINES);
-		glColor3f(0.0f, 1.0f, 1.0f);
-		glVertex2i(node.x, node.y);
-		glVertex2i(node.x + node.dx * 100, node.y + node.dy * 100);
-	glEnd();
-	*/
 }
 
 void RenderMiniMapDoom(DoomMap@ map)
@@ -706,16 +790,24 @@ glPushMatrix();
 	glScalef(scale, scale, 1.0f);
 
 	// Draw Nodes and bounding boxes
-
-	RENDER_WALLS_DOOM = false;
 	Actor@ player = BunnySector_GetActor(0);
+
 	DoomNode@ root = map.GetRootNode();
-	DrawNode(map, player, root);
+	RENDER_TOPDOWN = true;
+	if (map.nodeAmount > 0)
+	{
+		DrawNode(map, player, root);
+	}
+	else
+	{
+		DoomSubSector@ sub =  map.GetChildSubSector(0);
+		DrawSubSector(map, player, sub, 0);
+	}
+	RENDER_TOPDOWN = false;
 
 	DrawCross(Vector2New(0,0), Debug_Blue);
 	DrawPlayerFOV();
 	DrawPlayerPositionAndAngle(player);
-	RENDER_WALLS_DOOM = true;
 
 	// Testing the player sees node
 	//PlayerSeesNode (player, 60, 10, 70, 220);
@@ -737,9 +829,26 @@ void StartFrame_Doom()
 	}
 	drawnIndex = 0;
 	ResetWallSegments();
-
-
 }
+
+void RenderDoomMapLines(DoomMap@ map)
+{
+	Init2D_YDown();
+	glPushMatrix();
+
+		float screen_half_width = SCREEN_WIDTH / 2.0f;
+		float screen_half_height = SCREEN_HEIGHT / 2.0f;
+		glTranslatef(screen_half_width, screen_half_height, 0);
+
+	Actor@ player = BunnySector_GetActor(0);
+
+	// Draw Nodes and bounding boxes
+	DoomNode@ root = map.GetRootNode();
+	DrawNode(map, player, root);
+
+	glPopMatrix();
+}
+
 void RenderDoomMap(DoomMap@ map)
 {
 	if (DEBUG_LOG)
@@ -749,14 +858,6 @@ void RenderDoomMap(DoomMap@ map)
 	drawOrder = 0;
 
 	Actor@ player = BunnySector_GetActor(0);
-	if (RENDER_2D_WALLS)
-	{
-		glPushMatrix();
-
-			float screen_half_width = SCREEN_WIDTH / 2.0f;
-			float screen_half_height = SCREEN_HEIGHT / 2.0f;
-			glTranslatef(screen_half_width, screen_half_height, 0);
-	}
 
 	// Draw Nodes and bounding boxes
 	DoomNode@ root = map.GetRootNode();
@@ -768,11 +869,6 @@ void RenderDoomMap(DoomMap@ map)
 	{
 		BunnySector_DrawSectorFloorOrCeiling(DrawnSubSectors[i], true);
 		BunnySector_DrawSectorFloorOrCeiling(DrawnSubSectors[i], false);
-	}
-
-	if (RENDER_2D_WALLS)
-	{
-		glPopMatrix();
 	}
 
 	if (DEBUG_LOG)
