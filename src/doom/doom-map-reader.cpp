@@ -817,37 +817,86 @@ static void read_sector() {
 		// NOTE DANGER
 		// SLADE stores maps with Y increasing up.
 		// so we need to rotate all coordinates by 180 degrees
-		// FLIP THE Y!
-		/*
-		float rotation = 180.0f;
-		for (int i = 0; i < map->thingAmount; i++)
+		bool FLIP_THE_Y = true;
+		if (FLIP_THE_Y)
 		{
-			map->things[i].angleDeg += rotation;
-			map->things[i].y *= -1.0f;
+			float rotation = 180.0f;
+			for (int i = 0; i < map->thingAmount; i++)
+			{
+				map->things[i].angleDeg += rotation;
+				map->things[i].y *= -1.0f;
+			}
+			for (int i = 0; i < map->vertexAmount; i++)
+			{
+				map->vertices[i].y *= -1.0f;
+			}
+
+			for (int ni = 0; ni < NumNodes; ni++)
+			{
+				// Bounding box top and bottom change places
+				int btop0 = map->nodes[ni].bbox0[BB_TOP];
+				int bbot0 = map->nodes[ni].bbox0[BB_BOT];
+				map->nodes[ni].bbox0[BB_TOP] = bbot0 * -1;
+				map->nodes[ni].bbox0[BB_BOT] = btop0 * -1;
+
+				int btop1 = map->nodes[ni].bbox1[BB_TOP];
+				int bbot1 = map->nodes[ni].bbox1[BB_BOT];
+				map->nodes[ni].bbox1[BB_TOP] = bbot1 * -1;
+				map->nodes[ni].bbox1[BB_BOT] = btop1 * -1;
+
+				// Divider is flipped
+				map->nodes[ni].dy *= -1.0f;
+				map->nodes[ni].y *= -1.0f;
+			}
 		}
-		for (int i = 0; i < map->vertexAmount; i++)
-		{
-			map->vertices[i].y *= -1.0f;
-		}
-		*/
 
 
 		// Link sectors to subsectors directly
 		for (int ssi = 0; ssi < map->subSectorAmount; ssi++)
 		{
 			DoomSubSector* sub = &map->subsectors[ssi];
+			bool sectorSet = false;
 			for (int segi = 0; segi < sub->segmentAmount; segi++)
 			{
 				DoomSegment *seg = &map->segments[sub->firstSegment + segi];
-				if (seg->lineSide == 0)
+				// NOTE Only looking at the first is incorrect, since portals can point either way
+				DoomLinedef *linedef = &map->linedefs[seg->linedef];
+				bool isPortal = (linedef->sidefront >= 0 && linedef->sideback >=0);
+
+				// Find first that is not portal
+				if (!isPortal)
 				{
-					DoomLinedef *linedef = &map->linedefs[seg->linedef];
-					DoomSidedef *sidedef = &map->sidedefs[linedef->sidefront];
-					sub->sector = sidedef->sector;
-					printf("Subsector %d linked to sector %d\n", ssi, sidedef->sector);
-					break;
+					if (seg->lineSide == DOOM_SIDE_FRONT)
+					{
+						DoomSidedef *sidedef = &map->sidedefs[linedef->sidefront];
+						sub->sector = sidedef->sector;
+						sectorSet = true;
+						break;
+					}
 				}
 			}
+			if (sectorSet == false)
+			{
+				// Was only portals. This is a pit or pedestral. All portals should have one side in common
+				// Take first two and find the common sector
+				DoomSegment *seg_0 = &map->segments[sub->firstSegment + 0];
+				DoomSegment *seg_1 = &map->segments[sub->firstSegment + 1];
+				DoomLinedef *linedef_0 = &map->linedefs[seg_0->linedef];
+				DoomLinedef *linedef_1 = &map->linedefs[seg_1->linedef];
+				DoomSidedef *sidedef_0f = &map->sidedefs[linedef_0->sidefront];
+				DoomSidedef *sidedef_0b = &map->sidedefs[linedef_0->sideback];
+				DoomSidedef *sidedef_1f = &map->sidedefs[linedef_1->sidefront];
+				DoomSidedef *sidedef_1b = &map->sidedefs[linedef_1->sideback];
+				if (sidedef_0f->sector == sidedef_1f->sector)
+				{
+					sub->sector = sidedef_0f->sector;
+				}
+				else if (sidedef_0b->sector == sidedef_1b->sector)
+				{
+					sub->sector = sidedef_0b->sector;
+				}
+			}
+			printf("Subsector %d linked to sector %d\n", ssi, sub->sector);
 		}
 		// Find neighbourSubSector values
 		for (int ssi = 0; ssi < map->subSectorAmount; ssi++)

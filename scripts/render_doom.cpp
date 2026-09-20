@@ -527,39 +527,6 @@ int GetWallSide(Vector2 wstart, Vector2 wend, Vector2 point)
 
 }
 
-// NOTE THIS IS CORRECT
-int GetChildSide(DoomNode@ node, Vector2 v)
-{
-	if (node.dx == 0)
-	{
-		// Vertical cut
-		if (v.x < node.x)
-		{
-			if (node.dy > 0) {return 1;}
-			else {return 0;}
-		}
-		if (node.dy < 0) {return 1;}
-		else {return 0;}
-	}
-	if (node.dy == 0)
-	{
-		// Horizontal cut
-		if (v.y < node.y)
-		{
-			if (node.dx > 0) {return 0;}
-			else {return 1;}
-		}
-		if (node.dx < 0) {return 0;}
-		else {return 1;}
-	}
-	float dx = v.x - node.x;
-	float dy = v.y - node.y;
-	if( dx * node.dy < dy * node.dx)
-	{
-		return 1;
-	}
-	return 0;
-}
 
 int drawOrder = 0;
 
@@ -577,6 +544,8 @@ void DrawSubSectorTopDown(DoomMap@ map, Actor@ player, DoomSubSector@ sub, int s
 	uint nexti= 0;
 	uint firstSeg = sub.firstSegment;
 	uint lastSeg = sub.firstSegment + sub.segmentAmount;
+	float middlex = 0;
+	float middley = 0;
 	for (uint i = firstSeg; i < lastSeg; i++)
 	{
 		DoomSegment@ seg = map.segments[i];
@@ -602,8 +571,13 @@ void DrawSubSectorTopDown(DoomMap@ map, Actor@ player, DoomSubSector@ sub, int s
 
 		DrawCross(Vector2New(trans1.x, trans1.y), Debug_Yellow);
 		bool isPortal = seg.neighbourSubSector >= 0;
-		ProcessWallTopDown(trans2, trans1, player.radius, isPortal);
+		ProcessWallTopDown(trans1, trans2, player.radius, isPortal); // NOTE: FLIP_THE_Y changes this
+
+		middlex += trans1.x;
+		middley += trans1.y;
+
 	}
+	mgdl_DrawTextInt("Subs", sectorIndex, middlex/sub.segmentAmount, middley/sub.segmentAmount, 8, Debug_Yellow);
 }
 
 void DrawSubSector(DoomMap@ map, Actor@ player, DoomSubSector@ sub, int sectorIndex)
@@ -646,14 +620,15 @@ void DrawSubSector(DoomMap@ map, Actor@ player, DoomSubSector@ sub, int sectorIn
 		// NOTE Portals can be either way around and these checks don't work
 		DoomLinedef@ linedef = map.linedefs[seg.linedef];
 		bool isPortal = seg.neighbourSubSector >= 0;
-		if (isPortal || SeesSide(trans2, trans1))
+		if (isPortal || SeesSide(trans1, trans2)) // NOTE FLIP_THE_Y affets this check
 		{
-			bool draw = ProcessWall(trans2, trans1, DRAW_LIMIT_LEFT_CANVAS, DRAW_LIMIT_RIGHT_CANVAS);
+			// NOTE FLIP_THE_Y affets this call
+			bool draw = ProcessWall(trans1, trans2, DRAW_LIMIT_LEFT_CANVAS, DRAW_LIMIT_RIGHT_CANVAS);
 			if ((isPortal || draw) && CANVAS_BX > DRAW_LIMIT_LEFT_CANVAS && CANVAS_AX < DRAW_LIMIT_RIGHT_CANVAS)
 			{
 				// Which side are we on of the linedef
-				DoomVertex@ lineStart = map.vertices[linedef.v1];
-				DoomVertex@ lineEnd = map.vertices[linedef.v2];
+				DoomVertex@ lineStart = map.vertices[linedef.v2];
+				DoomVertex@ lineEnd = map.vertices[linedef.v1];
 				int wallSide = GetWallSide(Vector2New(lineStart.x, lineStart.y), Vector2New(lineEnd.x, lineEnd.y), playerPos);
 				int frontSide = 0;
 				int backSide = 0;
@@ -698,7 +673,9 @@ void DrawSubSector(DoomMap@ map, Actor@ player, DoomSubSector@ sub, int sectorIn
 				}
 				else
 				{
-					DrawWall3D(wall1, wall2, sidedef.texturemiddle, sidedef.texturebottom, sidedef.texturetop, sector.lightlevel);
+
+					// NOTE FLIP_THE_Y affets this call
+					DrawWall3D(wall2, wall1, sidedef.texturemiddle, sidedef.texturebottom, sidedef.texturetop, sector.lightlevel);
 				}
 			}
 		}
@@ -719,7 +696,6 @@ void DrawNodeChild(DoomMap@ map, Actor@ player, ChildId id)
 		// TODO better way
 		int sectorId = id & 0x7fffffff;
 		DrawnSubSectors[drawnIndex] = sectorId;
-		drawnIndex += 1;
 
 		if (RENDER_TOPDOWN)
 		{
@@ -729,12 +705,14 @@ void DrawNodeChild(DoomMap@ map, Actor@ player, ChildId id)
 		{
 			DrawSubSector(map, player, sub, sectorId);
 		}
+
+		drawnIndex += 1;
 	}
 }
 
 int FindSubSectorRec(DoomMap@ map, DoomNode@ node, Vector2 point)
 {
-	int childSide = GetChildSide(node, point);
+	int childSide = node.GetChildSide(point.x, point.y);
 	if (ChildIsNode(node.children[childSide]))
 	{
 		return FindSubSectorRec(map, map.nodes[node.children[childSide]], point);
@@ -758,9 +736,25 @@ void DrawNode(DoomMap@ map, Actor@ player, DoomNode@ node)
 
 	// Check if player even sees the other side.
 	// If not, then then no need to traverse the tree in that direction
+	if (RENDER_TOPDOWN)
+	{
+		BunnyV2@ pp = player.GetPosition();
+		Vector2 playerPos = Vector2New(pp.x, pp.y);
+		float playerAngle = player.yawRad;
+		Vector2 ns = Vector2New(node.x, node.y);
+		Vector2 ne = Vector2New(node.x + node.dx, node.y + node.dy);
 
-	Vector2  playerpos = Vector2New(bunnypos.x, bunnypos.y);
-	int childSide = GetChildSide(node, playerpos);
+		Vector2 trans1 = WorldToCamera(ns, playerPos, playerAngle);
+		Vector2 trans2 = WorldToCamera(ne, playerPos, playerAngle);
+
+		glBegin(GL_LINES);
+		mgdl_glColor32(Debug_Blue);
+		glVertex2f(trans1.x + 1, trans1.y + 1);
+		glVertex2f(trans2.x + 1, trans2.y + 1);
+		glEnd();
+	}
+
+	int childSide = node.GetChildSide(bunnypos.x, bunnypos.y);
 
 	DrawNodeChild(map, player, node.children[childSide]);
 

@@ -170,6 +170,7 @@ struct DoomNode
 };
 typedef struct DoomNode DoomNode;
 ChildId DoomNode_GetChild(DoomNode* node, unsigned int index);
+int DoomNode_GetChildSide(DoomNode* node, float x, float y);
 s16 DoomNode_GetBBox0(DoomNode* node, unsigned int index);
 s16 DoomNode_GetBBox1(DoomNode* node, unsigned int index);
 s16 DoomNode_GetBBox(DoomNode* node, unsigned int index); // Combined 0-7 index

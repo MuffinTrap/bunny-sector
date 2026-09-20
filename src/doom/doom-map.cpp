@@ -183,42 +183,9 @@ int DoomMap::GetWallVertexAmount()
 	return segmentAmount;
 }
 
-int GetChildSide(DoomNode* node, Vector2 v)
-{
-	if (node->dx == 0)
-	{
-		// Vertical cut
-		if (v.x < node->x)
-		{
-			if (node->dy > 0) {return 1;}
-			else {return 0;}
-		}
-		if (node->dy < 0) {return 1;}
-		else {return 0;}
-	}
-	if (node->dy == 0)
-	{
-		// Horizontal cut
-		if (v.y < node->y)
-		{
-			if (node->dx > 0) {return 0;}
-			else {return 1;}
-		}
-		if (node->dx < 0) {return 0;}
-		else {return 1;}
-	}
-	float dx = v.x - node->x;
-	float dy = v.y - node->y;
-	if( dx * node->dy < dy * node->dx)
-	{
-		return 1;
-	}
-	return 0;
-}
-
 int DoomMap::FindSubSector(DoomNode* node, Vector2 point)
 {
-	int childSide = GetChildSide(node, point);
+	int childSide = DoomNode_GetChildSide(node, point.x, point.y);
 	if (ChildIsNode(node->children[childSide]))
 	{
 		return FindSubSector(&nodes[node->children[childSide]], point);
@@ -293,9 +260,10 @@ u32 DoomMap::MovePointInMap(
         }
         if (treatAsWall)
         {
-			DoomVertex* w2 = &vertices[wall->v1];
+			// NOTE FLIP_THE_Y affects this code
+			DoomVertex* w1 = &vertices[wall->v1];
 			DoomSegment* wall2 = &segments[sector->firstSegment + ((wi + 1) % sector->segmentAmount)];
-            DoomVertex* w1 = &vertices[wall2->v1];
+            DoomVertex* w2 = &vertices[wall2->v1];
             // Keep player away from walls
             Vector2 wstart = Vector2New(w1->x, w1->y);
             Vector2 wend = Vector2New(w2->x, w2->y);

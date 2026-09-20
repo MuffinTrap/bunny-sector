@@ -94,6 +94,43 @@ s16 DoomNode_GetBBox(DoomNode* node, unsigned int index) // Combined 0-7 index
 	}
 }
 
+// NOTE This was changed because map data was flipped with FLIP_THE_Y
+#define CHILD_0 1
+#define CHILD_1 0
+
+int DoomNode_GetChildSide(DoomNode* node, float x, float y)
+{
+	if (node->dx == 0)
+	{
+		// Vertical cut
+		if (x < node->x)
+		{
+			if (node->dy > 0) {return CHILD_1;}
+			else {return CHILD_0;}
+		}
+		if (node->dy < 0) {return CHILD_1;}
+		else {return CHILD_0;}
+	}
+	if (node->dy == 0)
+	{
+		// Horizontal cut
+		if (y < node->y)
+		{
+			if (node->dx > 0) {return CHILD_0;}
+			else {return CHILD_1;}
+		}
+		if (node->dx < 0) {return CHILD_0;}
+		else {return CHILD_1;}
+	}
+	float dx = x - node->x;
+	float dy = y - node->y;
+	if( dx * node->dy < dy * node->dx)
+	{
+		return CHILD_1;
+	}
+	return CHILD_0;
+}
+
 bool DoomNode_PointInsideBox(DoomNode* node, Vector2 point, int childIndex)
 {
 	s16 left =node->bbox0[BB_LFT];

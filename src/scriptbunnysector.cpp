@@ -88,6 +88,7 @@ void RegisterDoomMap(mgdl_AngelScript* angel)
 		as_engine->RegisterObjectMethod("DoomNode", "s16 get_bbox1(uint) property", asFUNCTION(DoomNode_GetBBox1), asCALL_CDECL_OBJFIRST);
 		as_engine->RegisterObjectMethod("DoomNode", "s16 get_bbox(uint) property", asFUNCTION(DoomNode_GetBBox), asCALL_CDECL_OBJFIRST);
 		as_engine->RegisterObjectMethod("DoomNode", "ChildId get_children(uint) property", asFUNCTION(DoomNode_GetChild), asCALL_CDECL_OBJFIRST);
+		as_engine->RegisterObjectMethod("DoomNode", "int GetChildSide(float x, float y)", asFUNCTION(DoomNode_GetChildSide), asCALL_CDECL_OBJFIRST);
 
 		as_engine->RegisterGlobalProperty("const int BB_TOP", &BB_TOP);
 		as_engine->RegisterGlobalProperty("const int BB_BOT", &BB_BOT);
