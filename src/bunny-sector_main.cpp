@@ -24,6 +24,9 @@ static Camera* defaultCamera = nullptr;
 static Actor demoActor;
 static Texture* defaultChecker = nullptr;
 
+// TODO Actor pool?
+// Map creates actors when it is loaded
+
 static float bunny_UnitsToMeter = 1.0f;
 
 static void s_AlignCameraToViewpoint(Viewpoint* info, Camera* camera)
@@ -152,7 +155,7 @@ int BunnySector_LoadMap(const zstr& mapfilename)
 
 		mapsArray[firstFree] = loaded;
 		activeMap = loaded;
-		demoActor = Actor_CreateDefaultActor(0, unitsToMeter);
+		demoActor = Actor_CreatePlayer(0, unitsToMeter);
 		return firstFree;
 	}
 	else
@@ -182,8 +185,9 @@ void BunnySector_StartMap(MapId mapId)
 				RenderSettingsOpenGL_SetUnitToMeter(&defaultOpenGL, DOOM_UNITS_TO_METER);
 				BunnySector_SetOpenGLUnitsToMeter(DOOM_UNITS_TO_METER);
 			}
+			map->CreateActors();
 			map->SetActorToStart(&demoActor);
-			printf("BunnySector startmap put actor to %.2f, %.2f, sector %d\n", demoActor.position.vectorPosition.x, demoActor.position.vectorPosition.y, demoActor.sectorNumber);
+			printf("BunnySector startmap put actor to %.2f, %.2f, sector %d\n", demoActor.position.vectorPosition.x, demoActor.position.vectorPosition.y, demoActor.subSectorNumber);
 			defaultView = Actor_GetViewpoint(&demoActor);
 			s_AlignCameraToViewpoint(&defaultView, defaultCamera);
 		}
@@ -210,6 +214,7 @@ void BunnySector_UpdateMap(MapId mapId, float deltaTime)
 			{
 				// Note: to prevent insane delta times when debugging this is done in fixed time
 				map->MoveActorInMap(FIXED_STEP, &demoActor);
+				map->UpdateActions(FIXED_STEP);
 				deltaTime -= FIXED_STEP;
 			}
 			leftOverTime = deltaTime;
@@ -238,7 +243,7 @@ void BunnySector_AlignCameraToActor(int actorId)
 	// NOTE Must set GL_PROJECTION first then GL_MODELVIEW
 
 
-	demoActor.sectorNumber = activeMap->FindSectorV2(demoActor.sectorNumber, demoActor.position.vectorPosition);
+	demoActor.subSectorNumber = activeMap->FindSubSectorV2(demoActor.subSectorNumber, demoActor.position.vectorPosition);
 	defaultView = Actor_GetViewpoint(&demoActor);
 
 	s_AlignCameraToViewpoint(&defaultView, defaultCamera);
@@ -365,8 +370,17 @@ Wall* BunnySector_GetWallEnd(Wall* wall)
 	return DukeMap_GetWallEnd((DukeMap*)activeMap, wall);
 }
 
+Actor* BunnySector_GetPlayer(int playerIndex)
+{
+		return &demoActor;
+}
+
 Actor* BunnySector_GetActor(int actorId)
 {
+	if (actorId >= 0 && actorId < activeMap->GetActorAmount())
+	{
+		return &activeMap->actors[actorId];
+	}
 	return &demoActor;
 }
 void BunnySector_StartMapDrawing()
@@ -400,6 +414,11 @@ void BunnySector_StartFloorCeilingDrawing()
 void BunnySector_DrawSectorFloorOrCeiling(s16 sectorNumber, bool floor)
 {
 	OpenGLRender_DrawFloorOrCeiling(activeMap, sectorNumber, activeMap->GetSectorShade(sectorNumber, floor), floor ? activeMap->GetFloory(sectorNumber) : activeMap->GetCeilingy(sectorNumber), activeMap->GetSectorMaterial(sectorNumber, floor), floor);
+}
+
+void BunnySector_DrawMapActors()
+{
+	OpenGLRender_DrawActors(activeMap, demoActor.position.vectorPosition);
 }
 
 #define V2_CROSS(ax, ay, bx, by)(ax * by - ay * bx)

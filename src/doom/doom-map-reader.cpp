@@ -14,6 +14,9 @@ static int sectorAmount = 0;
 static DoomMap* map;
 
 
+// UNITS
+// 16 horizontal Doom units = 10 vertical Doom units = 1 foot = 0.6 meters.
+// https://doomwiki.org/wiki/Map_unit
 
 #define ENTITY_START "{"
 #define ENTITY_END "}"
@@ -57,6 +60,7 @@ static DoomMap* map;
 #define BLOCKSOUND "blocksound"
 #define DONTDRAW "dontdraw"
 #define MAPPED "mapped"
+#define PLAYERCROSS "playercross"
 
 // Thing flags
 #define SKILL1 "skill1"
@@ -240,9 +244,9 @@ static bool readBool()
 }
 static s8 readByte()
 {
-	s8 i;
-	sscanf(lineBuffer, "%s = %c;", identifierBuffer, &i);
-	return i;
+	int i;
+	sscanf(lineBuffer, "%s = %d;", identifierBuffer, &i);
+	return (s8)i;
 }
 
 static MaterialId readTextureId()
@@ -289,6 +293,10 @@ static void read_thing() {
 			{
 				t->id = readInt();
 			}
+			else if (line_startswith(TYPE))
+			{
+				t->type = readInt();
+			}
 			else if (line_startswith(HEIGHT))
 			{
 				t->height = readFloat();
@@ -307,7 +315,7 @@ static void read_thing() {
 			}
 			else if (line_startswith(ARG1))
 			{
-				t->arg0 = readByte();
+				t->arg1 = readByte();
 			}
 			else if (line_startswith(ARG2))
 			{
@@ -448,6 +456,26 @@ static void read_linedef() {
 			{
 				t->special = readInt();
 			}
+			else if (line_startswith(ARG0))
+			{
+				t->arg0 = readByte();
+			}
+			else if (line_startswith(ARG1))
+			{
+				t->arg1 = readByte();
+			}
+			else if (line_startswith(ARG2))
+			{
+				t->arg2 = readByte();
+			}
+			else if (line_startswith(ARG3))
+			{
+				t->arg3 = readByte();
+			}
+			else if (line_startswith(ARG4))
+			{
+				t->arg4 = readByte();
+			}
 			else if (line_startswith(SIDEFRONT))
 			{
 				t->sidefront = readInt();
@@ -455,6 +483,20 @@ static void read_linedef() {
 			else if (line_startswith(SIDEBACK))
 			{
 				t->sideback = readInt();
+			}
+			else if (line_startswith(TWOSIDED))
+			{
+				if (readBool())
+				{
+					t->linedef_flags = Flag_SetBit(t->linedef_flags, linedef_twosided);
+				}
+			}
+			else if (line_startswith(PLAYERCROSS))
+			{
+				if (readBool())
+				{
+					t->linedef_flags = Flag_SetBit(t->linedef_flags, linedef_activate_player_cross);
+				}
 			}
 			else if (line_has("}"))
 			{
@@ -551,6 +593,37 @@ static void read_sector() {
 		sectorAmount += 1;
 	}
 
+}
+
+static int INVALID_TARGET_HEIGHT = 0xffff;
+
+static int FindDoorOpenHeight(DoomMap* map, int sectorIndex)
+{
+	int targetHeight = INVALID_TARGET_HEIGHT;
+	for (int li = 0; li < map->lineAmount; li++)
+	{
+		DoomSector* neighbor  = nullptr;
+		DoomLinedef* line = &map->linedefs[li];
+		if (Flag_IsBitSet(line->linedef_flags, linedef_twosided))
+		{
+			DoomSidedef* front = &map->sidedefs[line->sidefront];
+			DoomSidedef* back = &map->sidedefs[line->sideback];
+			if (front->sector == sectorIndex)
+			{
+				neighbor = &map->sectors[back->sector];
+			}
+			else if (back->sector == sectorIndex)
+			{
+				neighbor = &map->sectors[front->sector];
+			}
+		}
+
+		if (neighbor && neighbor->heightceiling < targetHeight )
+		{
+			targetHeight = neighbor->heightceiling;
+		}
+	}
+	return targetHeight;
 }
 
     BunnySector_Map* Doom_ReadMapFromFile(const char* mapfilename)
@@ -666,6 +739,7 @@ static void read_sector() {
 				printf("Adding %d new vertices for nodes\n", NewVertes);
 
 				BunnyMap = new DoomMap();// (BunnySector_Map*)mgdl_AllocateGeneralMemory(sizeof(BunnySector_Map));
+				BunnyMap->AllocateActors();
 				map = (DoomMap*)BunnyMap;
 
 				DoomMap_Allocate(map, thingAmount, sectorAmount, sidedefAmount, linedefAmount, vertexAmount + NewVertes);
@@ -898,7 +972,8 @@ static void read_sector() {
 			}
 			printf("Subsector %d linked to sector %d\n", ssi, sub->sector);
 		}
-		// Find neighbourSubSector values
+
+		// Find neighbourSector values
 		for (int ssi = 0; ssi < map->subSectorAmount; ssi++)
 		{
 			DoomSubSector* sub = &map->subsectors[ssi];
@@ -915,11 +990,11 @@ static void read_sector() {
 						if (linedef->sideback >= 0)
 						{
 							DoomSidedef *sidedef_back = &map->sidedefs[linedef->sideback];
-							seg->neighbourSubSector = sidedef_back->sector;
+							seg->neighbourSector = sidedef_back->sector;
 						}
 						else
 						{
-							seg->neighbourSubSector = -1;
+							seg->neighbourSector = -1;
 						}
 					}
 					else if (seg->lineSide == DOOM_SIDE_BACK)
@@ -927,21 +1002,66 @@ static void read_sector() {
 						if (linedef->sidefront >= 0)
 						{
 							DoomSidedef *sidedef_front = &map->sidedefs[linedef->sidefront];
-							seg->neighbourSubSector = sidedef_front->sector;
+							seg->neighbourSector = sidedef_front->sector;
 						}
 						else
 						{
-							seg->neighbourSubSector = -1;
+							seg->neighbourSector = -1;
 						}
 					}
 				}
 				else
 				{
 					// Must be portal somewhere?
-					seg->neighbourSubSector = -1;//DOOM_NO_LINE_NEIGHBOR;// TODO Figure this out
+					seg->neighbourSector = -1;//DOOM_NO_LINE_NEIGHBOR;// TODO Figure this out
 				}
 
-				printf("Subsector %d segment %d neighbor is %d\n", ssi, sub->firstSegment + segi, seg->neighbourSubSector);
+				printf("Subsector %d segment %d neighbor is %d\n", ssi, sub->firstSegment + segi, seg->neighbourSector);
+			}
+		}
+
+		// TODO
+		// for sectors that are doors, calculate the ceilingheight for when the door is open
+		// find all doors
+		for (int li = 0; li < map->lineAmount; li++ )
+		{
+			DoomLinedef* line = &map->linedefs[li];
+			if (line->special >= 0)
+			{
+				if (line->special == special_door_close || line->special == special_door_open || line->special == special_door_raise)
+				{
+					int doorSectorTag = line->arg0;
+
+					if (doorSectorTag == 0)
+					{
+						// Backside
+						DoomSidedef* back = &map->sidedefs[line->sideback];
+						DoomSector* sector = &map->sectors[back->sector];
+						int openHeight = FindDoorOpenHeight(map, back->sector);
+						if (openHeight != INVALID_TARGET_HEIGHT)
+						{
+							sector->doorOpenHeight = openHeight - 4;
+							sector->usecase = sector_door;
+						}
+					}
+					else
+					{
+						// Find all sectors with this tag
+						for (int si = 0; si < sectorAmount; si++)
+						{
+							DoomSector* sector = &map->sectors[si];
+							if (sector->id == doorSectorTag)
+							{
+								int openHeight = FindDoorOpenHeight(map, si);
+								if (openHeight != INVALID_TARGET_HEIGHT)
+								{
+									sector->doorOpenHeight = openHeight - 4;
+									sector->usecase = sector_door;
+								}
+							}
+						}
+					}
+				}
 			}
 		}
 
@@ -984,6 +1104,7 @@ static void read_sector() {
             map->highY = sector->heightceiling;
         }
     }
+
 
 
 		return BunnyMap;

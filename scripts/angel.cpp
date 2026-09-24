@@ -30,7 +30,7 @@ void angelscript_init()
 	int screenHeight = mgdl_GetScreenHeight();
 
 	BunnySector_Init();
-	doomMapId = BunnySector_LoadMap("assets/doomroom.wad");
+	doomMapId = BunnySector_LoadMap("assets/slade_test.wad");
 	//dukeMapId = BunnySector_LoadMap("assets/doome1m1.map");
 	BunnySector_StartMap(doomMapId);
 
@@ -116,7 +116,7 @@ void movePlayer(float deltatime)
 	else
 	{
 		vertical = 0.0f;
-		Actor@ actor = BunnySector_GetActor(0);
+		Actor@ actor = BunnySector_GetPlayer(0);
 		actor.verticalVelocity = 0.0f;
 	}
 
@@ -171,6 +171,10 @@ void angelscript_frame_doom(float deltatime)
 	float aspect = mgdl_GetScreenWidth()/mgdl_GetScreenHeight();
 	glClearColor(0.3f, 0.2f, 0.3f, 1.0f);
 
+	if (mgdl_IsButtonDown(0, ButtonC))
+	{
+		DEBUG_LOG = true;
+	}
 	StartFrame();
 	StartFrame_Doom();
 	if (RENDER_2D_WALLS)
@@ -183,6 +187,7 @@ void angelscript_frame_doom(float deltatime)
 		BunnySector_AlignCameraToActor(0);
 		BunnySector_StartMapDrawing();
 			RenderDoomMap(BunnySector_GetDoomMap(doomMapId));
+			BunnySector_DrawMapActors();
 		BunnySector_EndMapDrawing();
 	}
 
@@ -242,10 +247,6 @@ void angelscript_frame(float deltatime)
 	if (mgdl_IsButtonDown(0, Button1))
 	{
 		DEBUG_DRAW = true;
-	}
-	if (mgdl_IsButtonDown(0, ButtonC))
-	{
-		DEBUG_LOG = true;
 	}
 		angelscript_frame_doom(deltatime);
 		//angelscript_frame_duke(deltatime);

@@ -63,7 +63,7 @@ Vector2 DukeMap::GetWallVertexInSector(int sectorIndex, int wallIndex)
 }
 
 
-int DukeMap::FindSectorV2(int currentSector, Vector2 currentPosition)
+int DukeMap::FindSubSectorV2(int currentSector, Vector2 currentPosition)
 {
     return Map_FindSectorV2(this, currentSector, currentPosition);
 }
@@ -93,8 +93,16 @@ Vector2 DukeMap::GetSectorSize(int sectorIndex)
 }
 
 
+int DukeMap::GetSpriteAmount()
+{
+    return spriteAmount;
+}
 
 
+int DukeMap::GetActorAmount()
+{
+    return actorCount;
+}
 
 
 
@@ -143,8 +151,8 @@ void DukeMap_InitActors(DukeMap* map, Actor* players, int playerAmount)
             Log_InfoF("Found starting position for player %d\n", pi);
             players[pi].position.vectorPosition= Vector2New(startingPos->position.x, startingPos->position.z);
             players[pi].yawRad = Math_DukeAngleToRad(startingPos->ang);
-            players[pi].sectorNumber = startingPos->sectnum;
-            players[pi].elevation = map->GetFloory(players[pi].sectorNumber) + players[pi].standingHeight;
+            players[pi].subSectorNumber = startingPos->sectnum;
+            players[pi].elevation = map->GetFloory(players[pi].subSectorNumber) + players[pi].standingHeight;
         }
         else
         {
@@ -158,7 +166,7 @@ void DukeMap::SetActorToStart(Actor* actor)
 {
     actor->position.vectorPosition= startPosition;
     actor->yawRad = Math_DukeAngleToRad(startAngle);
-    actor->sectorNumber = startingSector;
+    actor->subSectorNumber = startingSector;
     actor->elevation = GetFloory(startingSector) + actor->standingHeight;
 }
 
@@ -173,7 +181,7 @@ void DukeMap_InitActor(DukeMap* map, Actor* player)
 {
     player->position.vectorPosition= map->startPosition;
     player->yawRad = Math_DukeAngleToRad(map->startAngle);
-    player->sectorNumber = map->startingSector;
+    player->subSectorNumber = map->startingSector;
     player->elevation = DukeMap_GetSectorFloorHeight(map, map->startingSector) + player->standingHeight;
 }
 
@@ -476,9 +484,9 @@ MapSprite* DukeMap_GetSprite(DukeMap* map, s16 spriteIndex)
 
 
 
-u32 DukeMap::MovePointInMap(
+u32 DukeMap::MoveActorInMapImpl(
 	Vector2 start, Vector2 end, float radius, s16 sectorNumber,
-	float elevationEnd, float maxElevationChange, float height,
+	float elevationEnd, float maxElevationChange, float height, Actor* actor,
 	Vector2* positionOut, s16* sectorOut)
 {
     u32 moveResultBitfield = 0;
@@ -655,3 +663,9 @@ s16 Map_FindSectorV2(DukeMap* map, s16 startingSector, Vector2 position2D)
     }
     return -1;
 }
+
+void DukeMap::UpdateActions(float delta)
+{
+    // NOP
+}
+

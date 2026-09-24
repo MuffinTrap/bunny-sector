@@ -2,6 +2,7 @@
 #include "opengl-render.h"
 #include <mgdl.h>
 #include <mgdl/mgdl-memory.h>
+#include "../gameplay/actor.h"
 #include "../duke/dukemap.h"
 #include "../duke/build-render.h"
 #include "../bunny-sector-math.h"
@@ -279,6 +280,26 @@ void OpenGLRender_EndDrawingPolygons()
 
 }
 
+void OpenGLRender_DrawActors(BunnySector_Map* map, Vector2 cameraPosition)
+{
+    for (int i = 0; i < map->actorCount; i++)
+    {
+        Actor* actor = &map->actors[i];
+
+        // TODO Check if this actor is in sector that was drawn
+
+        // Draw a sprite representing this actor
+        OpenGLRender_DrawSprite(
+            Vector3New( actor->position.vectorPosition.x, actor->elevation, actor->position.vectorPosition.y),
+                                actor->radius*2.0f, actor->standingHeight,
+                                actor->yawRad, cameraPosition,
+                                SpriteAlignment::Sprite_FACE, Sprite_PivotFoot,
+                                actor->texture, // TODO Depends on facing
+                                0); // Get from sector
+    }
+}
+
+
 /**
  * @brief Calculate the uv coordinates of a floor or ceiling vertex in a sector
  */
@@ -547,76 +568,94 @@ void OpenGLRender_DrawFloorOrCeiling(BunnySector_Map* map, int sectorIndex, u8 s
     glPopMatrix();
 }
 
-void OpenGLRender_DrawSprite(Vector3 position, float width, float height, float spriteAngle, float playerAngle, SpriteAlignment alignment, SpritePivot pivot, s16 picnum, s8 brightnessOffset)
+// TODO Precalcuate different pivots and aligments
+// Only change UV when rendering
+// Use Ambient light to do brightness on the whole sector simultaneously
+void OpenGLRender_DrawSprite(Vector3 position, float width, float height, float spriteAngle, Vector2 playerPosition, SpriteAlignment alignment, SpritePivot pivot, s16 picnum, s8 brightnessOffset)
 {
-
-    static const float pushOut = unitsPerMeter * 0.08f;
-	if (alignment == Sprite_FACE)
-	{
-		spriteAngle = playerAngle + Deg2Rad(180);
-	}
-
-	Vector3 spriteForward = Vector3RotateY(WORLD_FORWARD, spriteAngle+M_PI_2);
-	Vector3 spriteRight = Vector3RotateY(spriteForward, -M_PI_2);
-
-    // Sprite right is on the left side when looking
-    // from the player
-	Vector3 toRight = Vector3Scale(spriteRight, width/2);
-
-    // These are from player's point of view
-    Vector3 bottomRight, bottomLeft, topLeft, topRight;
-	if (alignment == Sprite_FLOOR)
-    {
-		// Raise up to avoid Z fighting
-		position.y += pushOut;
-
-		// Calculate four carpet corners
-		bottomLeft = Vector3Add(position, Vector3Add( Vector3Scale(spriteRight, -width/2), Vector3Scale(spriteForward, -width/2)));
-		bottomRight = Vector3Add(position, Vector3Add( Vector3Scale(spriteRight, width/2), Vector3Scale(spriteForward, -width/2)));
-		topLeft = Vector3Add(position, Vector3Add( Vector3Scale(spriteRight, -width/2), Vector3Scale(spriteForward, width/2)));
-		topRight = Vector3Add(position, Vector3Add( Vector3Scale(spriteRight, width/2), Vector3Scale(spriteForward, width/2)));
-        // Change forward to up
-        spriteForward = WORLD_UP;
-    }
-    else
-    {
-        if (alignment == Sprite_WALL)
-        {
-            // Push out of wall to avoid Z fight
-            position = Vector3Add(position, Vector3Scale(spriteForward, pushOut));
-        }
-        if (pivot == Sprite_PivotCenter)
-        {
-            bottomRight = Vector3Subtract(position, toRight);
-            bottomRight = Vector3Add(bottomRight, Vector3Scale(WORLD_UP, -height / 2));
-            bottomLeft = Vector3Add(position, toRight);
-            bottomLeft = Vector3Add(bottomLeft, Vector3Scale(WORLD_UP, -height / 2));
-            topLeft = Vector3Add(bottomLeft, Vector3Scale(WORLD_UP, height));
-            topRight = Vector3Add(bottomRight, Vector3Scale(WORLD_UP, height));
-        }
-        else
-        {
-            bottomRight = Vector3Subtract(position, toRight);
-            bottomLeft = Vector3Add(position, toRight);
-            topLeft = Vector3Add(bottomLeft, Vector3Scale(WORLD_UP, height));
-            topRight = Vector3Add(bottomRight, Vector3Scale(WORLD_UP, height));
-        }
-    }
 
     MapMaterial* material = GetMaterialForMaterialId(picnum);
     if (material->type == Material_SpriteModel)
     {
         DrawMeshOnSprite(material, position, spriteAngle);
-
+        return;
     }
-    else
-    {
 
-        /* NOTE THIS BROKE FOR SOME REASON LOL
+    glPushMatrix();
+        glTranslatef(position.x, position.y, position.z);
+
+        if (alignment == Sprite_FACE)
+        {
+            // Sprite points towards player
+            Vector2 toPlayer = Vector2Subtract(playerPosition, Vector2New(position.x, position.z));
+            spriteAngle = atan2(toPlayer.y, -toPlayer.x); // NOTE Our world is Y down
+            float spriteAngleDeg = Rad2Deg(spriteAngle);
+
+
+            glRotatef(spriteAngleDeg, 0.0f,1.0f, 0.0f);
+        }
+        else
+        {
+            glRotatef(Rad2Deg(spriteAngle), 0.0f,1.0f, 0.0f);
+        }
+
+        // From here on the world is centered on position
+        position.x =0.0f;
+        position.y =0.0f;
+        position.z =0.0f;
+
+        static const float pushOut = unitsPerMeter * 0.08f;
+
+        Vector3 spriteForward = WORLD_RIGHT;
+        Vector3 spriteRight = Vector3RotateY(spriteForward, -M_PI_2);
+        // Sprite right is on the left side when looking
+        // from the player
+        Vector3 toRight = Vector3Scale(spriteRight, width/2);
+
+    // These are from player's point of view
+        Vector3 bottomRight, bottomLeft, topLeft, topRight;
+        if (alignment == Sprite_FLOOR)
+        {
+            // Raise up to avoid Z fighting
+            position.y += pushOut;
+
+            // Calculate four carpet corners
+            bottomLeft = Vector3Add(position, Vector3Add( Vector3Scale(spriteRight, -width/2), Vector3Scale(spriteForward, -width/2)));
+            bottomRight = Vector3Add(position, Vector3Add( Vector3Scale(spriteRight, width/2), Vector3Scale(spriteForward, -width/2)));
+            topLeft = Vector3Add(position, Vector3Add( Vector3Scale(spriteRight, -width/2), Vector3Scale(spriteForward, width/2)));
+            topRight = Vector3Add(position, Vector3Add( Vector3Scale(spriteRight, width/2), Vector3Scale(spriteForward, width/2)));
+            // Change forward to up
+            spriteForward = WORLD_UP;
+        }
+        else
+        {
+            if (alignment == Sprite_WALL)
+            {
+                // Push out of wall to avoid Z fight
+                position = Vector3Add(position, Vector3Scale(spriteForward, pushOut));
+            }
+            if (pivot == Sprite_PivotCenter)
+            {
+                bottomRight = Vector3Subtract(position, toRight);
+                bottomRight = Vector3Add(bottomRight, Vector3Scale(WORLD_UP, -height / 2));
+                bottomLeft = Vector3Add(position, toRight);
+                bottomLeft = Vector3Add(bottomLeft, Vector3Scale(WORLD_UP, -height / 2));
+                topLeft = Vector3Add(bottomLeft, Vector3Scale(WORLD_UP, height));
+                topRight = Vector3Add(bottomRight, Vector3Scale(WORLD_UP, height));
+            }
+            else
+            {
+                bottomRight = Vector3Subtract(position, toRight);
+                bottomLeft = Vector3Add(position, toRight);
+                topLeft = Vector3Add(bottomLeft, Vector3Scale(WORLD_UP, height));
+                topRight = Vector3Add(bottomRight, Vector3Scale(WORLD_UP, height));
+            }
+        }
+
         BeginVertexBufferPolygon(spriteForward, BrightnessOffsetToColor(brightnessOffset));
 
-        float U = width;
-        float V = height;
+        float U = 1.0f;
+        float V = 1.0f;
         BufferVertex(bottomLeft.x, bottomLeft.y, bottomLeft.z, 0.0f, 0.0f);
         BufferVertex(bottomRight.x, bottomRight.y, bottomRight.z, U, 0.0f);
         BufferVertex(topRight.x, topRight.y, topRight.z, U, V);
@@ -624,14 +663,7 @@ void OpenGLRender_DrawSprite(Vector3 position, float width, float height, float 
 
         ActivateVertexBuffer();
         DrawVertexBufferWithMaterial(material, spriteForward);
-        */
-        glPushMatrix();
-            glTranslatef(position.x, position.y, position.z);
-            glRotatef(spriteAngle + M_PI_2, 0.0f,1.0f, 0.0f);
-
-        Texture_Draw(material->mgdlMaterial->texture, width, LJustify, Centered);
-        glPopMatrix();
-    }
+    glPopMatrix();
 }
 
 void OpenGLRender_AnimateSprites()

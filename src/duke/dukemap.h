@@ -99,6 +99,7 @@ public:
 
 
     // Inherited functions
+    int GetActorAmount() override;
 	void SetActorToStart(Actor* actor) override;
 	int GetSectorAmount() override;
 	int GetWallVertexAmount() override;
@@ -110,7 +111,8 @@ public:
 	MaterialId GetSectorMaterial(int sectorIndex, bool floor) override;
 	float GetCeilingy(int sectorIndex) override;
 	float GetFloory(int sectorIndex) override;
-    int FindSectorV2(int currentSector, Vector2 currentPosition) override;
+    int FindSubSectorV2(int currentSector, Vector2 currentPosition) override;
+    int GetSpriteAmount() override;
 
     Vector2 GetSectorSize(int sectorIndex) override;
     Vector2 GetSectorMaxTexCoord(int sectorIndex) override;
@@ -118,9 +120,11 @@ public:
     int GetNeighbourOfWall(int sectorIndex, int wallIndex) override;
     u8 GetSectorShade(int sectorIndex, bool floor) override;
     void PrintInfo() override;
+    void UpdateActions(float delta) override;
 
 
-    u32 MovePointInMap(Vector2 start, Vector2 end, float radius, s16 sectorNumber, float elevationEnd, float maxElevationChange, float height, Vector2 * positionOut, s16 * sectorOut) override;
+    u32 MoveActorInMapImpl(Vector2 start, Vector2 end, float radius, s16 sectorNumber, float elevationEnd, float maxElevationChange, float height, Actor* actor,
+                       Vector2 * positionOut, s16 * sectorOut) override;
     bool IsPointInsideWall(Vector2 point, Vector2 wallStart, Vector2 wallEnd) override;
 
 };

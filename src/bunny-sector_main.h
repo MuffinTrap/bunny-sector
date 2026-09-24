@@ -42,11 +42,13 @@ DoomMap* BunnySector_GetDoomMap(MapId mapId);
 DukeMap* BunnySector_GetDukeMap(MapId mapId);
 
 // Actor functions
-Actor* BunnySector_GetActor(int actorId);
-void BunnySector_SetActorPosition(int actorId, float x, float z);
-void BunnySector_SetActorSpeeds(int actorId, float walkSpeedMultiplier, float turnSpeedMultiplier);
-void BunnySector_SetActorDriveInput(int actorId, float forward, float strafe, float vertical, float turnYaw, float turnPitch);
-void BunnySector_MoveActorFreely(int actorId, float deltatime);
+Actor* BunnySector_GetPlayer(int playerIndex);
+Actor* BunnySector_GetActor(int actorIndex);
+void BunnySector_SetActorPosition(int actorIndex, float x, float z);
+void BunnySector_SetActorSpeeds(int actorIndex, float walkSpeedMultiplier, float turnSpeedMultiplier);
+void BunnySector_SetActorDriveInput(int actorIndex, float forward, float strafe, float vertical, float turnYaw, float turnPitch);
+void BunnySector_MoveActorFreely(int actorIndex, float deltatime)
+;
 
 // Camera functions
 float BunnySector_GetOpenGLCameraVerticalFOVDeg();
@@ -62,6 +64,8 @@ void BunnySector_DrawWall(Wall* start , Wall* end, s32 floory, s32 ceilingy, s16
 
 void BunnySector_StartFloorCeilingDrawing();
 void BunnySector_DrawSectorFloorOrCeiling(s16 sectorNumber, bool floor);
+
+void BunnySector_DrawMapActors();
 
 void BunnySector_EndMapDrawing();
 

@@ -10,10 +10,16 @@ struct RenderSettingsOpenGL;
  * @details It starts with the info loaded from the map
  * and then comes game specific stuff
  */
+
+
+
 struct Actor
 {
     int idNumber;
-    s16 sectorNumber;
+    s16 subSectorNumber;
+    ActorType actorType;
+    int typeNumber; //< DOOM editor number
+    MaterialId texture;
 
     // Drive: either from AI or input
     // All [-1,1]/
@@ -70,6 +76,9 @@ struct Actor
     // changed during gameplay
     float walkSpeedMultiplier;
     float turnSpeedMultiplier;
+
+    // What player is doing
+    u32 actionFlags;
     
     u32 lastMoveResultFlags;
 };
@@ -77,7 +86,7 @@ typedef struct Actor Actor;
 
 Actor Actor_CreateFromViewPoint(Viewpoint point);
 Actor Actor_Create(int idNumber, s16 sector, Vector3 position, float yawRad, float moveSpeed, float moveAcceleration, float turnSpeed, float turnAccelerationDeg, float standingHeight);
-Actor Actor_CreateDefaultActor(int idNumber, float unitsToMeter);
+Actor Actor_CreatePlayer(int idNumber, float unitsToMeter);
 
 Vector2 Actor_ApplyDrive(Actor* actor, float deltaTime);
 float Actor_ApplyVerticalMove(Actor* actor, float gravity, float deltaTime);
@@ -86,3 +95,6 @@ Viewpoint Actor_GetViewpoint(Actor* actor);
 BunnyV2* Actor_GetPosition(Actor* actor);
 BunnyV2* Actor_GetFloorDirection(Actor* actor);
 void Actor_SetPosition(Actor* actor, float x, float y);
+void Actor_StartAction(Actor* actor, ACTOR_ACTION_FLAGS flags);
+void Actor_EndAction(Actor* actor, ACTOR_ACTION_FLAGS flags);
+bool Actor_IsDoing(Actor* actor, ACTOR_ACTION_FLAGS flags);

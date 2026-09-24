@@ -2,8 +2,26 @@
 
 #define DUKE_UNITS_TO_METER 1024.0f
 #define DOOM_UNITS_TO_METER 32.0f
+#define MAP_ACTOR_AMOUNT 128
 
 #include <mgdl.h>
+
+enum ActorType
+{
+    actor_player,
+    actor_monster,
+	actor_item,
+    actor_projectile,
+    actor_decoration,
+    actor_particle
+};
+
+enum ACTOR_ACTION_FLAGS
+{
+	action_use = 0,
+	action_shoot,
+	action_jump
+};
 
 enum MapMaterialType
 {

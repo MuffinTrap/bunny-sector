@@ -66,6 +66,17 @@ int CANVAS_BX;
 Vector2 A_XZ;
 Vector2 B_XZ;
 
+void ResetGlobalRenderVariables()
+{
+	SECTOR_FLOORY = -16000;
+	SECTOR_CEILINGY = 16000;
+	CANVAS_AX = -SCREEN_WIDTH;
+	CANVAS_BX = -SCREEN_WIDTH;
+	DRAW_START_X = -SCREEN_WIDTH;
+	DRAW_END_X = -SCREEN_WIDTH;
+
+}
+
 void RenderInit(int VerticalFovDegrees)
 {
 	//SCREEN_WIDTH = mgdl_GetScreenWidth();

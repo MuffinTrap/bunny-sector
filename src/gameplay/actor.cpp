@@ -5,11 +5,13 @@
 #include "../bunny-sector-math.h"
 #include "math.h"
 
-Actor Actor_CreateDefaultActor(int idNumber, float unitsToMeter)
+Actor Actor_CreatePlayer(int idNumber, float unitsToMeter)
 {
 	Actor a;
 	a.idNumber = idNumber;
-	a.sectorNumber = -1;
+	a.subSectorNumber = -1;
+	a.actorType = actor_player;
+	a.typeNumber = 1;
 
 	a.forwardDrive = 0.0f;
 	a.strafeDrive = 0.0f;
@@ -41,9 +43,9 @@ Actor Actor_CreateDefaultActor(int idNumber, float unitsToMeter)
 	a.verticalAccelerationDown = 4.0f * unitsToMeter;
 
 	// Size
-	a.standingHeight = 2.5f * unitsToMeter;
+	a.standingHeight = 1.5f * unitsToMeter;
 	a.climbHeight = a.standingHeight/2.0f;
-	a.eyeHeightNormalized = 0.85f;
+	a.eyeHeightNormalized = 1.00f;
 	a.radius = 0.5f * unitsToMeter;
 	a.noclip = false;
 
@@ -51,6 +53,7 @@ Actor Actor_CreateDefaultActor(int idNumber, float unitsToMeter)
 	a.walkSpeedMultiplier = 1.0f;
 
 	a.lastMoveResultFlags = 0;
+	a.actionFlags = 0;
 
 	return a;
 }
@@ -59,7 +62,7 @@ Viewpoint Actor_GetViewpoint(Actor* actor)
 {
 	Viewpoint p;
 	p.position = Vector3New(actor->position.vectorPosition.x, actor->elevation, actor->position.vectorPosition.y);
-	p.sector = actor->sectorNumber;
+	p.sector = actor->subSectorNumber;
 	p.yawRad = actor->yawRad;
 	p.pitchRad = actor->pitchRad;
 	return p;
@@ -258,5 +261,17 @@ void Actor_SetPosition(Actor* actor, float x, float y)
 	actor->position.vectorPosition.y = y;
 }
 
+void Actor_StartAction(Actor* actor, ACTOR_ACTION_FLAGS flags)
+{
+	actor->actionFlags = Flag_SetAll(actor->actionFlags, flags);
+}
+void Actor_EndAction(Actor* actor, ACTOR_ACTION_FLAGS flags)
+{
+	actor->actionFlags = Flag_UnsetBit(actor->actionFlags, flags);
+}
+bool Actor_IsDoing(Actor* actor, ACTOR_ACTION_FLAGS flags)
+{
+	return Flag_IsBitSet(actor->actionFlags, flags);
+}
 
 

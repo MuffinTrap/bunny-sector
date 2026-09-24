@@ -603,6 +603,8 @@ void DrawSubSector(DoomMap@ map, Actor@ player, DoomSubSector@ sub, int sectorIn
 			continue;
 		}
 
+		if (DEBUG_LOG) { mgdl_LogTextInt("> Drawing segment:", i);}
+
 		uint next = i + 1;
 		if (next >= lastSeg) { next = firstSeg;}
 
@@ -620,6 +622,7 @@ void DrawSubSector(DoomMap@ map, Actor@ player, DoomSubSector@ sub, int sectorIn
 		// NOTE Portals can be either way around and these checks don't work
 		DoomLinedef@ linedef = map.linedefs[seg.linedef];
 		bool isPortal = seg.neighbourSubSector >= 0;
+		bool isSolidWall = !isPortal;
 		if (isPortal || SeesSide(trans1, trans2)) // NOTE FLIP_THE_Y affets this check
 		{
 			// NOTE FLIP_THE_Y affets this call
@@ -645,15 +648,6 @@ void DrawSubSector(DoomMap@ map, Actor@ player, DoomSubSector@ sub, int sectorIn
 
 				DoomSidedef@ sidedef = map.sidedefs[frontSide];
 
-				// Occlusion test and book keeping
-				if (sidedef.texturemiddle >= 0)
-				{
-					if (IsWallSegmentOccluded(CANVAS_AX, CANVAS_BX))
-					{
-						continue;
-					}
-					PushWallSegment(CANVAS_AX, CANVAS_BX);
-				}
 
 				DoomSector@ sector = map.sectors[sidedef.sector];
 				SECTOR_FLOORY = sector.heightfloor;
@@ -673,8 +667,30 @@ void DrawSubSector(DoomMap@ map, Actor@ player, DoomSubSector@ sub, int sectorIn
 				}
 				else
 				{
+					// Occlusion test and book keeping
+					if (IsWallSegmentOccluded(CANVAS_AX, CANVAS_BX))
+					{
+						if (DEBUG_LOG)
+						{
+							mgdl_LogText("Wall skipped because it is occluded");
+						}
+						continue;
+					}
+					if (isPortal)
+					{
+						if (SECTOR_NEIGHBOR_FLOORY >= SECTOR_NEIGHBOR_CEILINGY) // Check if a door is closed
+						{
+							if (DEBUG_LOG) { mgdl_LogText("Closed door ");}
+							PushWallSegment(CANVAS_AX, CANVAS_BX);
+						}
+					}
+					else
+					{
+						PushWallSegment(CANVAS_AX, CANVAS_BX);
+					}
 
 					// NOTE FLIP_THE_Y affets this call
+					if (DEBUG_LOG) { mgdl_LogText("Draw 3D wall");}
 					DrawWall3D(wall2, wall1, sidedef.texturemiddle, sidedef.texturebottom, sidedef.texturetop, sector.lightlevel);
 				}
 			}
@@ -685,6 +701,43 @@ void DrawSubSector(DoomMap@ map, Actor@ player, DoomSubSector@ sub, int sectorIn
 
 void DrawNodeChild(DoomMap@ map, Actor@ player, ChildId id)
 {
+	if(RENDER_TOPDOWN == false && RENDER_2D_WALLS == false)
+	{
+		if (IsWallSegmentFilled())
+		{
+			if (DEBUG_LOG)
+			{
+				if (ChildIsNode(id))
+				{
+					mgdl_LogTextInt("Node skipped because wall segments filled: ", id);
+				}
+				else
+				{
+					int sectorId = id & 0x7fffffff;
+					mgdl_LogTextInt("SubSector skipped because wall segments filled: ", sectorId);
+				}
+			}
+
+			return;
+		}
+		else
+		{
+			if (DEBUG_LOG)
+			{
+				if (ChildIsNode(id))
+				{
+					mgdl_LogTextInt(">>> Drawing NODE:", id);
+				}
+				else
+				{
+					int sectorId = id & 0x7fffffff;
+					mgdl_LogTextInt(">> Drawing SubSector: ", sectorId);
+				}
+			}
+
+		}
+	}
+
 	if (ChildIsNode(id))
 	{
 		DrawNode(map, player, map.GetChildNode(id));
@@ -695,7 +748,6 @@ void DrawNodeChild(DoomMap@ map, Actor@ player, ChildId id)
 
 		// TODO better way
 		int sectorId = id & 0x7fffffff;
-		DrawnSubSectors[drawnIndex] = sectorId;
 
 		if (RENDER_TOPDOWN)
 		{
@@ -704,9 +756,9 @@ void DrawNodeChild(DoomMap@ map, Actor@ player, ChildId id)
 		else if (IsWallSegmentFilled() == false)
 		{
 			DrawSubSector(map, player, sub, sectorId);
+			DrawnSubSectors[drawnIndex] = sectorId;
+			drawnIndex += 1;
 		}
-
-		drawnIndex += 1;
 	}
 }
 
@@ -726,10 +778,6 @@ int FindSubSectorRec(DoomMap@ map, DoomNode@ node, Vector2 point)
 
 void DrawNode(DoomMap@ map, Actor@ player, DoomNode@ node)
 {
-	if (IsWallSegmentFilled())
-	{
-		return;
-	}
 	BunnyV2@ bunnypos = player.GetPosition();
 	// This determines which branch is done first so that
 	// eventually the players subsector is drawn first
@@ -784,7 +832,7 @@ glPushMatrix();
 	glScalef(scale, scale, 1.0f);
 
 	// Draw Nodes and bounding boxes
-	Actor@ player = BunnySector_GetActor(0);
+	Actor@ player = BunnySector_GetPlayer(0);
 
 	DoomNode@ root = map.GetRootNode();
 	RENDER_TOPDOWN = true;
@@ -799,6 +847,21 @@ glPushMatrix();
 	}
 	RENDER_TOPDOWN = false;
 
+
+	BunnyV2@ pp = player.GetPosition();
+	Vector2 playerPos = Vector2New(pp.x, pp.y);
+	float playerAngle = player.yawRad;
+	// Draw all actors
+	for (int i = 0; i < map.actorAmount; i++)
+	{
+		Actor@ act = BunnySector_GetActor(i);
+		BunnyV2@ ap = act.GetPosition();
+		Vector2 actorPos = Vector2New(ap.x, ap.y);
+		Vector2 actorCamera = WorldToCamera(actorPos, playerPos, playerAngle);
+		DrawCross(actorCamera, Debug_White);
+
+	}
+
 	DrawCross(Vector2New(0,0), Debug_Blue);
 	DrawPlayerFOV();
 	DrawPlayerPositionAndAngle(player);
@@ -806,10 +869,8 @@ glPushMatrix();
 	// Testing the player sees node
 	//PlayerSeesNode (player, 60, 10, 70, 220);
 
-	BunnyV2@ bp = player.GetPosition();
-	Vector2 pp = Vector2New(bp.x, bp.y);
 
-	mgdl_DrawTextInt("Player subsec", FindSubSectorRec(map, root, pp), text_x, NextY(), 8, Debug_Red);
+	mgdl_DrawTextInt("Player subsec", FindSubSectorRec(map, root, playerPos), text_x, NextY(), 8, Debug_Red);
 	//mgdl_DrawTextFloat("Units to meter ", angel_unitstometer, text_x, NextY(), 16, Debug_Red);
 	BunnySector_DrawCameraInfo(text_x, NextY());
 glPopMatrix();
@@ -817,6 +878,7 @@ glPopMatrix();
 
 void StartFrame_Doom()
 {
+	ResetGlobalRenderVariables();
 	for (int i = 0; i < 128; i++)
 	{
 	 DrawnSubSectors[i] = -1;
@@ -834,7 +896,7 @@ void RenderDoomMapLines(DoomMap@ map)
 		float screen_half_height = SCREEN_HEIGHT / 2.0f;
 		glTranslatef(screen_half_width, screen_half_height, 0);
 
-	Actor@ player = BunnySector_GetActor(0);
+	Actor@ player = BunnySector_GetPlayer(0);
 
 	// Draw Nodes and bounding boxes
 	DoomNode@ root = map.GetRootNode();
@@ -851,7 +913,7 @@ void RenderDoomMap(DoomMap@ map)
 	}
 	drawOrder = 0;
 
-	Actor@ player = BunnySector_GetActor(0);
+	Actor@ player = BunnySector_GetPlayer(0);
 
 	// Draw Nodes and bounding boxes
 	DoomNode@ root = map.GetRootNode();

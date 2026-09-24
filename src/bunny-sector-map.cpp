@@ -5,6 +5,14 @@ zstr * BunnySector_Map::GetMapFile()
 {
 	return &mapfile;
 }
+void BunnySector_Map::AllocateActors()
+{
+    if (actors == nullptr)
+    {
+        actors = (Actor*)mgdl_AllocateGeneralMemory(sizeof(Actor) * MAP_ACTOR_AMOUNT);
+        actorCount = 0;
+    }
+}
 
 
 WallInfo BunnySector_Map::GetWallInfo(int sectorIndex, int wallIndex)
@@ -27,14 +35,14 @@ void BunnySector_Map::MoveActorInMap(float deltaTime, Actor* inoutActor)
     float elevationEnd = Actor_ApplyVerticalMove(inoutActor, 8024.0, deltaTime);
 
 	Vector2 pointOut;
-	s16 sectorOut;
-	u32 resultFlags = MovePointInMap(
-		point,  endpoint, inoutActor->radius, inoutActor->sectorNumber,elevationEnd,inoutActor->climbHeight,inoutActor->standingHeight,
-		&pointOut, &sectorOut);
+	s16 subSectorOut;
+	u32 resultFlags = MoveActorInMapImpl(
+		point,  endpoint, inoutActor->radius, inoutActor->subSectorNumber,elevationEnd,inoutActor->climbHeight,inoutActor->standingHeight, inoutActor,
+		&pointOut, &subSectorOut);
 
 	// Keep actor above floor and under the ceiling
-    float minY = GetFloory(sectorOut) + inoutActor->climbHeight;
-    float maxY = GetCeilingy(sectorOut) - inoutActor->standingHeight;
+    float minY = GetFloory(subSectorOut) + inoutActor->climbHeight;
+    float maxY = GetCeilingy(subSectorOut) - inoutActor->standingHeight;
     if (elevationEnd < minY)
     {
         resultFlags = Flag_SetBit(resultFlags, Move_OnGround);
@@ -43,7 +51,7 @@ void BunnySector_Map::MoveActorInMap(float deltaTime, Actor* inoutActor)
 
 	inoutActor->position.vectorPosition = pointOut;
     inoutActor->elevation = verticalPosition;
-	inoutActor->sectorNumber = sectorOut;
+	inoutActor->subSectorNumber = subSectorOut;
     inoutActor->lastMoveResultFlags= resultFlags;
 }
 

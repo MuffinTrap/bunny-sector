@@ -47,6 +47,7 @@ void DoomSector_Init(DoomSector* def)
 	def->lightlevel = 160;
 	def->textureceiling = -1;
 	def->texturefloor = -1;
+	def->usecase = sector_none;
 }
 
 void DoomSegment_Init(DoomSegment* def)
@@ -60,6 +61,7 @@ void DoomSegment_Init(DoomSegment* def)
 void DoomThing_Init(DoomThing* def)
 {
 	def->id = 0;
+	def->type = 0;
 	def->height = 0;
 	def->angleDeg = 0;
 	def->thing_flags = 0;
@@ -153,4 +155,9 @@ bool DoomNode_PointInsideBox(DoomNode* node, Vector2 point, int childIndex)
 		return false;
 	}
 	return true;
+}
+
+float DoomSpeedToUnits(int doomSpeed)
+{
+	 return ((float)doomSpeed * DOOM_SPEED_TO_UNITS) / DOOM_TICK_DURATION_SECONDS;
 }

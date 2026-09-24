@@ -142,7 +142,7 @@ void BuildRender_DrawSprites(DukeMap* map, Viewpoint* player, RenderSettingsOpen
             float spriteHeight = settings->spriteDefaultWidth * scaleAspect;
 
             OpenGLRender_DrawSprite(sprite->position, spriteSize, spriteHeight,
-                                    Math_DukeAngleToRad(sprite->ang), player->yawRad,
+                                    Math_DukeAngleToRad(sprite->ang), Vector2New(player->position.x, player->position.z),
                                     Sprite_GetAlignment(sprite), Sprite_GetPivot(sprite),
                                     sprite->picnum, sprite->shade);
         }
