@@ -8,6 +8,7 @@
 #include "bunny-sector-materials.h"
 #include "render/opengl-render.h"
 #include "gameplay/actor.h"
+#include "gameplay/player.h"
 #include "doom/doom-map-reader.h"
 #include "duke/dukemapreader.h"
 #include "duke/build-render.h"
@@ -21,7 +22,7 @@ static const float MAP_AMOUNT = 4;
 static RenderSettingsOpenGL defaultOpenGL;
 static Viewpoint defaultView;
 static Camera* defaultCamera = nullptr;
-static Actor demoActor;
+static Player player0;
 static Texture* defaultChecker = nullptr;
 
 // TODO Actor pool?
@@ -155,7 +156,6 @@ int BunnySector_LoadMap(const zstr& mapfilename)
 
 		mapsArray[firstFree] = loaded;
 		activeMap = loaded;
-		demoActor = Actor_CreatePlayer(0, unitsToMeter);
 		return firstFree;
 	}
 	else
@@ -186,9 +186,9 @@ void BunnySector_StartMap(MapId mapId)
 				BunnySector_SetOpenGLUnitsToMeter(DOOM_UNITS_TO_METER);
 			}
 			map->CreateActors();
-			map->SetActorToStart(&demoActor);
-			printf("BunnySector startmap put actor to %.2f, %.2f, sector %d\n", demoActor.position.vectorPosition.x, demoActor.position.vectorPosition.y, demoActor.subSectorNumber);
-			defaultView = Actor_GetViewpoint(&demoActor);
+			Actor* player0Actor = activeMap->GetActor(actor_player, 0);
+			printf("BunnySector startmap put actor to %.2f, %.2f, sector %d\n", player0Actor->position.vectorPosition.x, player0Actor->position.vectorPosition.y, player0Actor->subSectorNumber);
+			defaultView = player0.GetViewpoint(player0Actor);
 			s_AlignCameraToViewpoint(&defaultView, defaultCamera);
 		}
 	}
@@ -213,7 +213,7 @@ void BunnySector_UpdateMap(MapId mapId, float deltaTime)
 			while (deltaTime >= FIXED_STEP)
 			{
 				// Note: to prevent insane delta times when debugging this is done in fixed time
-				map->MoveActorInMap(FIXED_STEP, &demoActor);
+				map->MoveActors(FIXED_STEP);
 				map->UpdateActions(FIXED_STEP);
 				deltaTime -= FIXED_STEP;
 			}
@@ -243,8 +243,9 @@ void BunnySector_AlignCameraToActor(int actorId)
 	// NOTE Must set GL_PROJECTION first then GL_MODELVIEW
 
 
-	demoActor.subSectorNumber = activeMap->FindSubSectorV2(demoActor.subSectorNumber, demoActor.position.vectorPosition);
-	defaultView = Actor_GetViewpoint(&demoActor);
+	Actor* player0Actor = activeMap->GetActor(actor_player, 0);
+	player0Actor->subSectorNumber = activeMap->FindSubSectorV2(player0Actor->subSectorNumber, player0Actor->position.vectorPosition);
+	defaultView = player0.GetViewpoint(player0Actor);
 
 	s_AlignCameraToViewpoint(&defaultView, defaultCamera);
 
@@ -335,34 +336,18 @@ void BunnySector_SetOpenGLCameraVerticalFOVDeg(float degrees)
 	defaultCamera->fovY = degrees;
 }
 
-void BunnySector_SetActorDriveInput(int actorId, float forward, float strafe, float vertical, float turnYaw, float turnPitch)
+void BunnySector_SetPlayerDriveInput(int actorId, float forward, float strafe, float vertical, float turnYaw, float turnPitch)
 {
-	demoActor.forwardDrive = Clamp(forward, -1.0f, 1.0f);
-	demoActor.strafeDrive = Clamp(strafe, -1.0f, 1.0f);
-	demoActor.verticalDrive = Clamp(vertical, -1.0f, 1.0f);
-	demoActor.turnDrive = Clamp(turnYaw, -1.0f, 1.0f);
+	player0.forwardDrive = Clamp(forward, -1.0f, 1.0f);
+	player0.strafeDrive = Clamp(strafe, -1.0f, 1.0f);
+	player0.verticalDrive = Clamp(vertical, -1.0f, 1.0f);
+	player0.turnDrive = Clamp(turnYaw, -1.0f, 1.0f);
 }
 
-void BunnySector_MoveActorFreely(int actorId, float deltatime)
+void BunnySector_SetPlayerSpeeds(int actorId, float walkSpeedMultiplier, float turnSpeedMultiplier)
 {
-	demoActor.elevation = Actor_ApplyVerticalMove(&demoActor, 0.0f, deltatime);
-	if (demoActor.elevation < -1.0f)
-	{
-		demoActor.elevation = -1.0f;
-		demoActor.verticalVelocity = 0;
-	}
-	if (demoActor.elevation > 300.0f)
-	{
-		demoActor.elevation = 299.0f;
-		demoActor.verticalVelocity = 0;
-	}
-	demoActor.position.vectorPosition = Actor_ApplyDrive(&demoActor, deltatime);
-}
-
-void BunnySector_SetActorSpeeds(int actorId, float walkSpeedMultiplier, float turnSpeedMultiplier)
-{
-	demoActor.walkSpeedMultiplier = walkSpeedMultiplier;
-	demoActor.turnSpeedMultiplier = turnSpeedMultiplier;
+	player0.walkSpeedMultiplier = walkSpeedMultiplier;
+	player0.turnSpeedMultiplier = turnSpeedMultiplier;
 }
 
 Wall* BunnySector_GetWallEnd(Wall* wall)
@@ -370,18 +355,22 @@ Wall* BunnySector_GetWallEnd(Wall* wall)
 	return DukeMap_GetWallEnd((DukeMap*)activeMap, wall);
 }
 
-Actor* BunnySector_GetPlayer(int playerIndex)
+Actor* BunnySector_GetPlayerActor(int playerIndex)
 {
-		return &demoActor;
+	return activeMap->GetActor(actor_player, playerIndex);
 }
 
-Actor* BunnySector_GetActor(int actorId)
+Actor* BunnySector_GetActorById(int actorId)
 {
-	if (actorId >= 0 && actorId < activeMap->GetActorAmount())
+	return activeMap->GetActorById(actorId);
+}
+Actor* BunnySector_GetActorByIndex(int actorIndex)
+{
+	if (actorIndex >= 0 && actorIndex < activeMap->GetActorAmount())
 	{
-		return &activeMap->actors[actorId];
+		return &activeMap->actors[actorIndex];
 	}
-	return &demoActor;
+	return nullptr;
 }
 void BunnySector_StartMapDrawing()
 {
@@ -418,14 +407,13 @@ void BunnySector_DrawSectorFloorOrCeiling(s16 sectorNumber, bool floor)
 
 void BunnySector_DrawMapActors()
 {
-	OpenGLRender_DrawActors(activeMap, demoActor.position.vectorPosition);
+	OpenGLRender_DrawActors(activeMap, Vector2New(defaultView.position.x, defaultView.position.z));
 }
 
 #define V2_CROSS(ax, ay, bx, by)(ax * by - ay * bx)
 
 bool BunnySector_Intersect(float a1x, float a1y, float a2x, float a2y, float b1x, float b1y, float b2x, float b2y, float& out_x, float& out_y)
 {
-
 	float AxA = V2_CROSS(a1x, a1y, a2x, a2y);
 	float BxB = V2_CROSS(b1x, b1y, b2x, b2y);
 	float alinex = a1x-a2x;

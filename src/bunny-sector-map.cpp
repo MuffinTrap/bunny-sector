@@ -23,26 +23,34 @@ WallInfo BunnySector_Map::GetWallInfo(int sectorIndex, int wallIndex)
 	wi.normal = GetWallNormal(wi.start, wi.end);
 	return wi;
 }
+void BunnySector_Map::MoveActors(float delta)
+{
+    for(int i = 0; i < actorCount; i++)
+    {
+        MoveActorInMap(delta,&actors[i]);
+    }
+}
+
 void BunnySector_Map::MoveActorInMap(float deltaTime, Actor* inoutActor)
 {
     Vector2 current = inoutActor->position.vectorPosition;
-    Vector2 destination = Actor_ApplyDrive(inoutActor, deltaTime);
+    Vector2 destination = Actor_MoveOnFloor(inoutActor, deltaTime);
 
 	Vector2 point = current;
 	Vector2 endpoint = destination;
 
     // TODO Gravity depens on map?
-    float elevationEnd = Actor_ApplyVerticalMove(inoutActor, 8024.0, deltaTime);
+    float elevationEnd = Actor_MoveVertically(inoutActor, 8024.0, deltaTime);
 
 	Vector2 pointOut;
 	s16 subSectorOut;
 	u32 resultFlags = MoveActorInMapImpl(
-		point,  endpoint, inoutActor->radius, inoutActor->subSectorNumber,elevationEnd,inoutActor->climbHeight,inoutActor->standingHeight, inoutActor,
+		point,  endpoint, inoutActor->radius, inoutActor->subSectorNumber,elevationEnd,inoutActor->climbHeight,inoutActor->height, inoutActor,
 		&pointOut, &subSectorOut);
 
 	// Keep actor above floor and under the ceiling
-    float minY = GetFloory(subSectorOut) + inoutActor->climbHeight;
-    float maxY = GetCeilingy(subSectorOut) - inoutActor->standingHeight;
+    float minY = GetFloory(subSectorOut);
+    float maxY = GetCeilingy(subSectorOut) - inoutActor->height;
     if (elevationEnd < minY)
     {
         resultFlags = Flag_SetBit(resultFlags, Move_OnGround);
@@ -178,5 +186,31 @@ float BunnySector_Map::GetDistanceToWall(Vector2 wallStart, Vector2 wallEnd, Vec
 	const float top = fabsf( (ydiff)*point.x - (xdiff)*point.y + wallEnd.x*wallStart.y - wallEnd.y*wallStart.x);
 	const float bot = sqrt( (ydiff)*(ydiff) + (xdiff)*(xdiff));
     return top/bot;
+}
+
+Actor* BunnySector_Map::GetActor(ActorType aType, int index)
+{
+    int indexCounter = 0;
+    for(int i = 0; i < actorCount; i++)
+    {
+        if (actors[i].actorType == aType)
+        {
+            if (indexCounter == index) {return &actors[i];}
+            else {indexCounter += 1;}
+        }
+    }
+    return nullptr;
+}
+
+Actor* BunnySector_Map::GetActorById(int actorId)
+{
+    for(int i = 0; i < actorCount; i++)
+    {
+        if (actors[i].idNumber == actorId)
+        {
+            return &actors[i];
+        }
+    }
+    return nullptr;
 }
 

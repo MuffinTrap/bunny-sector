@@ -69,6 +69,7 @@ public:
 	virtual void UpdateActions(float delta) = 0;
 
 	zstr* GetMapFile();
+	void MoveActors(float delta);
 	void MoveActorInMap(float delta,Actor* actor);
 	void AllocateActors();
 	virtual void CreateActors() = 0;
@@ -101,6 +102,9 @@ public:
 	// TODO Keep actors sorted by sector to make drawing and collision etc faster
 	Actor* actors;
 	int actorCount;
+
+	Actor* GetActor(ActorType aType, int index);
+	Actor* GetActorById(int actorId);
 
 	//
 	BunnyMapType m_type;

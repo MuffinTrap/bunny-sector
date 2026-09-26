@@ -291,7 +291,7 @@ void OpenGLRender_DrawActors(BunnySector_Map* map, Vector2 cameraPosition)
         // Draw a sprite representing this actor
         OpenGLRender_DrawSprite(
             Vector3New( actor->position.vectorPosition.x, actor->elevation, actor->position.vectorPosition.y),
-                                actor->radius*2.0f, actor->standingHeight,
+                                actor->radius*2.0f, actor->height,
                                 actor->yawRad, cameraPosition,
                                 SpriteAlignment::Sprite_FACE, Sprite_PivotFoot,
                                 actor->texture, // TODO Depends on facing
@@ -573,6 +573,10 @@ void OpenGLRender_DrawFloorOrCeiling(BunnySector_Map* map, int sectorIndex, u8 s
 // Use Ambient light to do brightness on the whole sector simultaneously
 void OpenGLRender_DrawSprite(Vector3 position, float width, float height, float spriteAngle, Vector2 playerPosition, SpriteAlignment alignment, SpritePivot pivot, s16 picnum, s8 brightnessOffset)
 {
+    if (picnum < 0)
+    {
+        return;
+    }
 
     MapMaterial* material = GetMaterialForMaterialId(picnum);
     if (material->type == Material_SpriteModel)

@@ -152,7 +152,7 @@ void DukeMap_InitActors(DukeMap* map, Actor* players, int playerAmount)
             players[pi].position.vectorPosition= Vector2New(startingPos->position.x, startingPos->position.z);
             players[pi].yawRad = Math_DukeAngleToRad(startingPos->ang);
             players[pi].subSectorNumber = startingPos->sectnum;
-            players[pi].elevation = map->GetFloory(players[pi].subSectorNumber) + players[pi].standingHeight;
+            players[pi].elevation = map->GetFloory(players[pi].subSectorNumber);
         }
         else
         {
@@ -167,7 +167,7 @@ void DukeMap::SetActorToStart(Actor* actor)
     actor->position.vectorPosition= startPosition;
     actor->yawRad = Math_DukeAngleToRad(startAngle);
     actor->subSectorNumber = startingSector;
-    actor->elevation = GetFloory(startingSector) + actor->standingHeight;
+    actor->elevation = GetFloory(startingSector);
 }
 
 void DukeMap_SetCameraToStart(DukeMap* map, Viewpoint* camera)
@@ -182,7 +182,7 @@ void DukeMap_InitActor(DukeMap* map, Actor* player)
     player->position.vectorPosition= map->startPosition;
     player->yawRad = Math_DukeAngleToRad(map->startAngle);
     player->subSectorNumber = map->startingSector;
-    player->elevation = DukeMap_GetSectorFloorHeight(map, map->startingSector) + player->standingHeight;
+    player->elevation = DukeMap_GetSectorFloorHeight(map, map->startingSector);
 }
 
 void DukeMap_FindIslandSectors(DukeMap* map)

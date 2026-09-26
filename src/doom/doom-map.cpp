@@ -30,6 +30,7 @@ void DoomMap::AddActor(ActorType actorType, int typeNumber, Vector2 position, in
 	{
 
 		Actor* a = &actors[actorCount];
+		Actor_Init(a);
 
 		a->actorType = actorType;
 		a->position.vectorPosition = position;
@@ -41,7 +42,7 @@ void DoomMap::AddActor(ActorType actorType, int typeNumber, Vector2 position, in
 
 		// These are needed for drawing
 		a->radius = width/2;
-		a->standingHeight = height;
+		a->height = height;
 
 		actorCount += 1;
 	}
@@ -52,19 +53,27 @@ void DoomMap::CreateActors()
 {
 	// TODO move somewhere else
 	int itemSize = 16;
+	bool playerCreated = false;
 	for (int i = 0; i < thingAmount; i++)
 	{
 		// Should this thing spawn an actor?
 		DoomThing* t = &things[i];
+		Vector2 pos = Vector2New(t->x, t->y);
+		MaterialId material = 0; // TODO get texture based on type
 		switch(t->type)
 		{
+			case editorNumber_player_start_1:
+				AddActor(actor_player, t->type, pos, itemSize, itemSize, t->angleDeg, material);
+				playerCreated = true;
+				break;
 
 			case editorNumber_blue_card:
-				AddActor(actor_item, t->type, Vector2New(t->x, t->y), itemSize, itemSize, t->angleDeg, t->texture);
+				AddActor(actor_item, t->type, pos, itemSize, itemSize, t->angleDeg, material);
 				break;
 		}
 
 	}
+	mgdl_assert_print(playerCreated, "No player created for Doom Map");
 }
 
 int DoomMap::GetActorAmount()

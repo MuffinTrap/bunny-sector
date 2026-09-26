@@ -499,7 +499,7 @@ void ProcessWallTopDown(Vector2 trans1, Vector2 trans2, float playerRadius, bool
 
 	color32 wallColor = Debug_White;
 	if (behind ) {
-		wallColor = Debug_DarkGray;
+		wallColor = Debug_Gray;
 	}
 	else if (clipped)
 	{
@@ -529,7 +529,7 @@ void ProcessWallTopDown(Vector2 trans1, Vector2 trans2, float playerRadius, bool
 		{
 
 			float distance = GetDistanceToWall(Vector2Zero(), trans1, trans2);
-			color32 distanceColor = Debug_DarkGray;
+			color32 distanceColor = Debug_Gray;
 			if (distance < playerRadius)
 			{
 				distanceColor = Debug_White;

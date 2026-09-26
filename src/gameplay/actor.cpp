@@ -5,57 +5,31 @@
 #include "../bunny-sector-math.h"
 #include "math.h"
 
-Actor Actor_CreatePlayer(int idNumber, float unitsToMeter)
+Actor Actor_Create(ActorType aType)
 {
 	Actor a;
-	a.idNumber = idNumber;
-	a.subSectorNumber = -1;
-	a.actorType = actor_player;
-	a.typeNumber = 1;
-
-	a.forwardDrive = 0.0f;
-	a.strafeDrive = 0.0f;
-	a.turnDrive = 0.0f;
-	a.verticalDrive = 0.0f;
-
-	a.position.vectorPosition = Vector2Zero();
-	a.elevation = 0;
-	a.prevPosition = Vector2Zero();
-
-	a.turnVelocity = 0.0f;
-	a.floorVelocity = Vector2Zero();
-	a.verticalVelocity = 0.0f;
-	//a.lookDirection = mgdl_GetGLWorldForward();
-	a.direction.vectorDirection = Vector2New(1, 0);
-
-	a.yawRad = 0.0f;
-	a.pitchRad = 0.0f;
-
-	a.turnAccelerationDegrees = 480.0f;
-	a.turnSpeedDegrees = 340.0f; // NOTE set
-
-	a.moveSpeed = 2.0f * unitsToMeter;
-	a.moveAcceleration = 2.0f * unitsToMeter;
-
-	a.verticalSpeedUp = 89.0f * unitsToMeter;
-	a.verticalSpeedDown = -80.2f * unitsToMeter; // DANGER
-	a.verticalAccelerationUp = 4.0f * unitsToMeter;
-	a.verticalAccelerationDown = 4.0f * unitsToMeter;
-
-	// Size
-	a.standingHeight = 1.5f * unitsToMeter;
-	a.climbHeight = a.standingHeight/2.0f;
-	a.eyeHeightNormalized = 1.00f;
-	a.radius = 0.5f * unitsToMeter;
-	a.noclip = false;
-
-	a.turnSpeedMultiplier = 1.0f;
-	a.walkSpeedMultiplier = 1.0f;
-
-	a.lastMoveResultFlags = 0;
-	a.actionFlags = 0;
-
+	Actor_Init(&a);
+	a.actorType = aType;
 	return a;
+}
+
+void Actor_Init(Actor* actor)
+{
+	actor->subSectorNumber = -1;
+	actor->typeNumber = -1;
+	actor->position.vectorPosition = Vector2Zero();
+	actor->elevation = 0;
+	actor->prevPosition = Vector2Zero();
+	actor->floorVelocity = 0.0f;
+	actor->verticalVelocity = 0.0f;
+	actor->lookDirection.vectorDirection = Vector2New(1, 0);
+	actor->moveDirection.vectorDirection = Vector2New(1, 0);
+	actor->yawRad = 0.0f;
+	actor->pitchRad = 0.0f;
+	actor->radius = 0.0f;
+	actor->noclip = false;
+	actor->lastMoveResultFlags = 0;
+	actor->actionFlags = 0;
 }
 
 Viewpoint Actor_GetViewpoint(Actor* actor)
@@ -68,71 +42,26 @@ Viewpoint Actor_GetViewpoint(Actor* actor)
 	return p;
 }
 
-static const float deadzone = 0.1f;
-
-Vector2 Actor_ApplyDrive(Actor* actor, float deltaTime)
+Vector2 Actor_MoveOnFloor(Actor* actor, float delta)
 {
-
-	// Apply turn drive
-	if (abs(actor->turnDrive) > deadzone)
-	{
-		float accRad = Deg2Rad(actor->turnAccelerationDegrees);
-		actor->turnVelocity += actor->turnDrive * actor->turnSpeedMultiplier * accRad * deltaTime;
-	}
-	else
-	{
-		actor->turnVelocity *= 0.9f;
-		if (abs(actor->turnVelocity) < deadzone)
-		{
-			actor->turnVelocity = 0.0f;
-		}
-	}
-
-	float tsd = Deg2Rad(actor->turnSpeedDegrees);
-	if (actor->turnVelocity > tsd)
-	{
-		actor->turnVelocity = tsd;
-	}
-	if (actor->turnVelocity < -tsd)
-	{
-		actor->turnVelocity = -tsd;
-	}
-
-	// Rotate
-	actor->yawRad += actor->turnVelocity * deltaTime;
-	// calculate current floor direction
-	Vector2 forward = FLOOR_FORWARD;
-	actor->direction.vectorDirection = Vector2Rotate(forward, actor->yawRad);
-
 	Vector2 floorDestination = Vector2Add(
 		actor->position.vectorPosition, Vector2Scale(
-				actor->direction.vectorDirection,
-				actor->forwardDrive * actor->walkSpeedMultiplier * actor->moveSpeed * deltaTime
+				actor->moveDirection.vectorDirection,
+				minF(actor->floorVelocity, actor->floorSpeedLimit) * delta
 				)
 		);
 
-	Vector2 destination = floorDestination;
-	return destination;
+	return floorDestination;
 }
 
-float Actor_ApplyVerticalMove(Actor* actor, float gravity, float deltaTime)
+float Actor_MoveVertically(Actor* actor, float gravity, float delta)
 {
-	float verticalAcceleration = -gravity;
-	if (actor->verticalDrive > deadzone)
-	{
-		verticalAcceleration += actor->verticalDrive * actor->verticalAccelerationUp;
-	}
-	if (actor->verticalDrive < -deadzone)
-	{
-		verticalAcceleration += actor->verticalDrive * actor->verticalAccelerationDown;
-	}
-
-	actor->verticalVelocity += verticalAcceleration * deltaTime;
+	actor->verticalVelocity += gravity * delta;
 
 	// Limit vertical speeds
-	if (actor->verticalVelocity > actor->verticalSpeedUp)
+	if (actor->verticalVelocity > actor->verticalSpeedLimitUp)
 	{
-		actor->verticalVelocity = actor->verticalSpeedUp;
+		actor->verticalVelocity = actor->verticalSpeedLimitUp;
 	}
 	else if (actor->verticalVelocity < 0)
 	{
@@ -141,14 +70,12 @@ float Actor_ApplyVerticalMove(Actor* actor, float gravity, float deltaTime)
 		{
 			actor->verticalVelocity = 0.0f;
 		}
-		else if (actor->verticalVelocity < actor->verticalSpeedDown)
+		else if (actor->verticalVelocity < actor->verticalSpeedLimitDown)
 		{
-			actor->verticalVelocity = actor->verticalSpeedDown;
+			actor->verticalVelocity = actor->verticalSpeedLimitDown;
 		}
 	}
-
-	// Move vertically
-	return actor->elevation + actor->verticalVelocity * deltaTime;
+	return actor->elevation + actor->verticalVelocity * delta;
 }
 
 /*
@@ -253,7 +180,7 @@ BunnyV2* Actor_GetPosition(Actor* actor)
 }
 BunnyV2 * Actor_GetFloorDirection(Actor* actor)
 {
-	return &actor->direction.bunnyDirection;
+	return &actor->moveDirection.bunnyDirection;
 }
 void Actor_SetPosition(Actor* actor, float x, float y)
 {

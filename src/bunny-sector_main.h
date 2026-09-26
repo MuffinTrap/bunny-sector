@@ -42,12 +42,12 @@ DoomMap* BunnySector_GetDoomMap(MapId mapId);
 DukeMap* BunnySector_GetDukeMap(MapId mapId);
 
 // Actor functions
-Actor* BunnySector_GetPlayer(int playerIndex);
-Actor* BunnySector_GetActor(int actorIndex);
+Actor* BunnySector_GetPlayerActor(int playerIndex);
+Actor* BunnySector_GetActorById(int actorId);
+Actor* BunnySector_GetActorByIndex(int actorIndex);
 void BunnySector_SetActorPosition(int actorIndex, float x, float z);
-void BunnySector_SetActorSpeeds(int actorIndex, float walkSpeedMultiplier, float turnSpeedMultiplier);
-void BunnySector_SetActorDriveInput(int actorIndex, float forward, float strafe, float vertical, float turnYaw, float turnPitch);
-void BunnySector_MoveActorFreely(int actorIndex, float deltatime)
+void BunnySector_SetPlayerSpeeds(int actorIndex, float walkSpeedMultiplier, float turnSpeedMultiplier);
+void BunnySector_SetPlayerDriveInput(int actorIndex, float forward, float strafe, float vertical, float turnYaw, float turnPitch);
 ;
 
 // Camera functions

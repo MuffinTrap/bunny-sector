@@ -44,6 +44,8 @@ float Math_DukeAngleToRad(s16 angleInt);
 Vector3 ScaleVector3ToOpenGL(Vector3 position, RenderSettingsOpenGL* settings3D);
 Vector2 ScaleVector2ToOpenGL(Vector2 position, RenderSettingsOpenGL* settings3D);
 
+bool IsPointInsideRect(RectF rect, Vector2 point);
+
 #ifdef __cplusplus
 }
 #endif

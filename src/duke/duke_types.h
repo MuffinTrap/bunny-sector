@@ -44,12 +44,3 @@ struct SectorRender
 };
 typedef struct SectorRender SectorRender;
 
-// TODO Use this instead of Player
-struct Viewpoint
-{
-    Vector3 position;
-    float yawRad;
-    float pitchRad;
-    s16 sector;
-};
-typedef struct Viewpoint Viewpoint;

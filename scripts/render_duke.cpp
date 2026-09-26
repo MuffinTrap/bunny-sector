@@ -212,7 +212,7 @@ glPushMatrix();
 	glTranslatef(screen_half_width, screen_half_height, 0);
 	
 
-	Actor@ player = BunnySector_GetActor(0);
+	Actor@ player = BunnySector_GetPlayerActor(0);
 	BunnyV2@ outPlayerPos = player.GetPosition();
 	BunnyV2@ outPlayerDir = player.GetFloorDirection();
 
@@ -255,7 +255,7 @@ void RenderTopDown(DukeMap@ map, float scale)
 glPushMatrix();
 
 
-	Actor@ player = BunnySector_GetActor(0);
+	Actor@ player = BunnySector_GetPlayerActor(0);
 	float playerAngle = player.yawRad;
 
 	BunnyV2@ outPlayerPos = player.GetPosition();
@@ -339,7 +339,7 @@ void RenderMuffin(DukeMap@ map)
 	// Set up player stuff
 	///////////////////////
 
-	Actor@ player = BunnySector_GetActor(0);
+	Actor@ player = BunnySector_GetPlayerActor(0);
 
 	BunnyV2@ bunnypos = player.GetPosition();
 	PLAYER_Y = player.elevation;

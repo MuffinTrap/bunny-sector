@@ -116,7 +116,7 @@ void movePlayer(float deltatime)
 	else
 	{
 		vertical = 0.0f;
-		Actor@ actor = BunnySector_GetPlayer(0);
+		Actor@ actor = BunnySector_GetPlayerActor(0);
 		actor.verticalVelocity = 0.0f;
 	}
 
@@ -124,7 +124,7 @@ void movePlayer(float deltatime)
 	forward = -wasd.y;
 	turn = wasd.x;
 
-	BunnySector_SetActorDriveInput(0, forward, strafe, vertical, turn, 0.0f);
+	BunnySector_SetPlayerDriveInput(0, forward, strafe, vertical, turn, 0.0f);
 
 }
 
@@ -156,12 +156,12 @@ void adjustFov(float deltatime)
 void angelscript_frame_doom(float deltatime)
 {
 	BunnySector_SetOpenGLUnitsToMeter(angel_unitstometer);
-	BunnySector_SetActorSpeeds(0, 1.0f, 1.0f);
+	BunnySector_SetPlayerSpeeds(0, 1.0f, 1.0f);
 	movePlayer(deltatime);
 
 	if (mgdl_IsButtonDown(0, ButtonZ))
 	{
-		BunnySector_MoveActorFreely(0, deltatime);
+		// TODO Set noclip
 	}
 	else
 	{
@@ -198,13 +198,13 @@ void angelscript_frame_doom(float deltatime)
 
 void angelscript_frame_duke(float deltatime)
 {
-	BunnySector_SetActorSpeeds(0, 1.0f, 0.7f);
+	BunnySector_SetPlayerSpeeds(0, 1.0f, 0.7f);
 	movePlayer(deltatime);
 	adjustFov(deltatime);
 
 	if (mgdl_IsButtonDown(0, ButtonZ))
 	{
-		BunnySector_MoveActorFreely(0, deltatime);
+		// TODO noclip
 	}
 	else
 	{

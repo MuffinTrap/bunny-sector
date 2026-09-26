@@ -70,6 +70,15 @@ struct WallInfo
 };
 typedef struct WallInfo WallInfo;
 
+struct Viewpoint
+{
+    Vector3 position;
+    float yawRad;
+    float pitchRad;
+    s16 sector;
+};
+typedef struct Viewpoint Viewpoint;
+
 struct BunnyV2
 {
 	float x;

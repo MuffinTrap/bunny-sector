@@ -184,10 +184,10 @@ void RegisterBunnySector(mgdl_AngelScript* angel)
 	as_engine->RegisterGlobalFunction("void BunnySector_DrawWall(Wall@ start, Wall@ end, s32 floory, s32 ceilingy, s16 picnum, s8 shade)", asFUNCTION(BunnySector_DrawWall), asCALL_CDECL);
 
 	// Register Camera functions
-as_engine->RegisterGlobalFunction("void BunnySector_DrawCameraInfo(float x, float y)", asFUNCTION(BunnySector_DrawCameraInfo), asCALL_CDECL);
+	as_engine->RegisterGlobalFunction("void BunnySector_DrawCameraInfo(float x, float y)", asFUNCTION(BunnySector_DrawCameraInfo), asCALL_CDECL);
 
-as_engine->RegisterGlobalFunction("float BunnySector_GetOpenGLCameraVerticalFOVDeg()", asFUNCTION(BunnySector_GetOpenGLCameraVerticalFOVDeg), asCALL_CDECL);
-as_engine->RegisterGlobalFunction("void BunnySector_SetOpenGLCameraVerticalFOVDeg(float degrees)",asFUNCTION(BunnySector_SetOpenGLCameraVerticalFOVDeg), asCALL_CDECL);
+	as_engine->RegisterGlobalFunction("float BunnySector_GetOpenGLCameraVerticalFOVDeg()", asFUNCTION(BunnySector_GetOpenGLCameraVerticalFOVDeg), asCALL_CDECL);
+	as_engine->RegisterGlobalFunction("void BunnySector_SetOpenGLCameraVerticalFOVDeg(float degrees)",asFUNCTION(BunnySector_SetOpenGLCameraVerticalFOVDeg), asCALL_CDECL);
 
 	as_engine->RegisterObjectType("BunnyV2", 0, asOBJ_REF|asOBJ_NOCOUNT);
 	as_engine->RegisterObjectProperty("BunnyV2", "float x", asOFFSET(BunnyV2, x));
@@ -200,7 +200,7 @@ as_engine->RegisterGlobalFunction("void BunnySector_SetOpenGLCameraVerticalFOVDe
 	as_engine->RegisterObjectProperty("Actor", "float yawRad", asOFFSET(Actor, yawRad));
 	as_engine->RegisterObjectProperty("Actor", "s16 sectorNumber", asOFFSET(Actor, subSectorNumber));
 	as_engine->RegisterObjectProperty("Actor", "float elevation", asOFFSET(Actor, elevation));
-	as_engine->RegisterObjectProperty("Actor", "bool noclip", asOFFSET(Actor, noclip)); // TODO Is this the same as BunnySector_MoveActorFreely?
+	as_engine->RegisterObjectProperty("Actor", "bool noclip", asOFFSET(Actor, noclip));
 	as_engine->RegisterObjectProperty("Actor", "float radius", asOFFSET(Actor, radius));
 	as_engine->RegisterObjectProperty("Actor", "float verticalVelocity", asOFFSET(Actor, verticalVelocity));
 	as_engine->RegisterObjectProperty("Actor", "int typeNumber", asOFFSET(Actor, typeNumber));
@@ -209,10 +209,9 @@ as_engine->RegisterGlobalFunction("void BunnySector_SetOpenGLCameraVerticalFOVDe
 	as_engine->RegisterObjectMethod("Actor", "void SetPosition(float x, float y)", asFUNCTION(Actor_SetPosition), asCALL_CDECL_OBJFIRST);
 
 	// ACTOR FUNCTIONS
-	as_engine->RegisterGlobalFunction("Actor@ BunnySector_GetActor(int actorIndex)", asFUNCTION(BunnySector_GetActor), asCALL_CDECL);
-	as_engine->RegisterGlobalFunction("Actor@ BunnySector_GetPlayer(int playerIndex)", asFUNCTION(BunnySector_GetPlayer), asCALL_CDECL);
-	as_engine->RegisterGlobalFunction("void BunnySector_SetActorSpeeds(int actorId, float walkSpeedMultiplier, float turnSPeedMultiplier)", asFUNCTION(BunnySector_SetActorSpeeds), asCALL_CDECL);
-	as_engine->RegisterGlobalFunction("void BunnySector_SetActorDriveInput(int actorId, float forward, float strafe, float vertical, float turnYaw, float turnPitch)", asFUNCTION(BunnySector_SetActorDriveInput), asCALL_CDECL);
-	as_engine->RegisterGlobalFunction("void BunnySector_MoveActorFreely(int actorId, float deltaTime)", asFUNCTION(BunnySector_MoveActorFreely), asCALL_CDECL);
-
+	as_engine->RegisterGlobalFunction("Actor@ BunnySector_GetActorByIndex(int actorIndex)", asFUNCTION(BunnySector_GetActorByIndex), asCALL_CDECL);
+	as_engine->RegisterGlobalFunction("Actor@ BunnySector_GetActorById(int actorIndex)", asFUNCTION(BunnySector_GetActorById), asCALL_CDECL);
+	as_engine->RegisterGlobalFunction("Actor@ BunnySector_GetPlayerActor(int playerIndex)", asFUNCTION(BunnySector_GetPlayerActor), asCALL_CDECL);
+	as_engine->RegisterGlobalFunction("void BunnySector_SetPlayerSpeeds(int playerIndex, float walkSpeedMultiplier, float turnSPeedMultiplier)", asFUNCTION(BunnySector_SetPlayerSpeeds), asCALL_CDECL);
+	as_engine->RegisterGlobalFunction("void BunnySector_SetPlayerDriveInput(int actorId, float forward, float strafe, float vertical, float turnYaw, float turnPitch)", asFUNCTION(BunnySector_SetPlayerDriveInput), asCALL_CDECL);
 }

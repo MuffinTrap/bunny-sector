@@ -263,6 +263,51 @@ bool IsWallSegmentFilled()
 	return false;
 }
 
+color32 GetDebugColor(int index)
+{
+	index = index % 16;
+	switch(index)
+	{
+		case 0: return Debug_Black;
+		case 1: return Debug_Red;
+		case 2: return Debug_Green;
+		case 3: return Debug_Blue;
+		case 4: return Debug_Cyan;
+		case 5: return Debug_Magenta;
+		case 6: return Debug_Yellow;
+		case 7: return Debug_White;
+
+		case 8: return Debug_Gray;
+		case 9: return Debug_LightRed;
+		case 10: return Debug_LightGreen;
+		case 11: return Debug_LightBlue;
+		case 12: return Debug_LightCyan;
+		case 13: return Debug_LightMagenta;
+		case 14: return Debug_LightYellow;
+		case 15: return Debug_LightGray;
+	}
+	return Debug_White;
+}
+
+void DrawWallSegmentDebug()
+{
+	int top = 0;
+	for (int i = 0; i < lastWallSegment; i++)
+	{
+		WallSegment seg = wallSegments[i];
+		float x= seg.start;
+		float y= top;
+		float w = seg.end-seg.start;
+		float h = 4;
+		mgdl_DrawRectangle(x, y, w,h, GetDebugColor(i));
+	}
+}
+
+
+
+
+// NODE FUNCTIONS
+
 
 bool ChildIsNode(ChildId childId)
 {
@@ -832,7 +877,7 @@ glPushMatrix();
 	glScalef(scale, scale, 1.0f);
 
 	// Draw Nodes and bounding boxes
-	Actor@ player = BunnySector_GetPlayer(0);
+	Actor@ player = BunnySector_GetPlayerActor(0);
 
 	DoomNode@ root = map.GetRootNode();
 	RENDER_TOPDOWN = true;
@@ -854,7 +899,7 @@ glPushMatrix();
 	// Draw all actors
 	for (int i = 0; i < map.actorAmount; i++)
 	{
-		Actor@ act = BunnySector_GetActor(i);
+		Actor@ act = BunnySector_GetActorByIndex(i);
 		BunnyV2@ ap = act.GetPosition();
 		Vector2 actorPos = Vector2New(ap.x, ap.y);
 		Vector2 actorCamera = WorldToCamera(actorPos, playerPos, playerAngle);
@@ -896,7 +941,7 @@ void RenderDoomMapLines(DoomMap@ map)
 		float screen_half_height = SCREEN_HEIGHT / 2.0f;
 		glTranslatef(screen_half_width, screen_half_height, 0);
 
-	Actor@ player = BunnySector_GetPlayer(0);
+	Actor@ player = BunnySector_GetPlayerActor(0);
 
 	// Draw Nodes and bounding boxes
 	DoomNode@ root = map.GetRootNode();
@@ -913,7 +958,7 @@ void RenderDoomMap(DoomMap@ map)
 	}
 	drawOrder = 0;
 
-	Actor@ player = BunnySector_GetPlayer(0);
+	Actor@ player = BunnySector_GetPlayerActor(0);
 
 	// Draw Nodes and bounding boxes
 	DoomNode@ root = map.GetRootNode();
