@@ -282,9 +282,9 @@ void OpenGLRender_EndDrawingPolygons()
 
 void OpenGLRender_DrawActors(BunnySector_Map* map, Vector2 cameraPosition)
 {
-    for (int i = 0; i < map->actorCount; i++)
+    for (int i = 0; i < map->GetActorAmount(); i++)
     {
-        Actor* actor = &map->actors[i];
+        Actor* actor = map->GetActorByIndex(i);
 
         // TODO Check if this actor is in sector that was drawn
 

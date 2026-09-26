@@ -896,14 +896,17 @@ glPushMatrix();
 	BunnyV2@ pp = player.GetPosition();
 	Vector2 playerPos = Vector2New(pp.x, pp.y);
 	float playerAngle = player.yawRad;
+
 	// Draw all actors
-	for (int i = 0; i < map.actorAmount; i++)
+	for (int i = 0; i < map.GetActorAmount(); i++)
 	{
+
 		Actor@ act = BunnySector_GetActorByIndex(i);
 		BunnyV2@ ap = act.GetPosition();
 		Vector2 actorPos = Vector2New(ap.x, ap.y);
+		float radius = act.radius;
 		Vector2 actorCamera = WorldToCamera(actorPos, playerPos, playerAngle);
-		DrawCross(actorCamera, Debug_White);
+		DrawBox(actorCamera, radius*2, radius*2, Debug_White);
 
 	}
 

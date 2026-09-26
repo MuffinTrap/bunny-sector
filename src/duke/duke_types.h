@@ -1,14 +1,5 @@
 #pragma once
 
-enum MoveResultBit
-{
-    Move_Ok = 0,
-    Move_HitWall = 1,
-    Move_HitPortal = 2,
-    Move_OnGround = 3, // Set when actor is standing on floor
-    Move_Cancel = 4
-};
-typedef enum MoveResultBit MoveResultBit;
 
 enum SpriteAlignment
 {

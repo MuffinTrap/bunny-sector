@@ -47,7 +47,7 @@ Vector2 Actor_MoveOnFloor(Actor* actor, float delta)
 	Vector2 floorDestination = Vector2Add(
 		actor->position.vectorPosition, Vector2Scale(
 				actor->moveDirection.vectorDirection,
-				minF(actor->floorVelocity, actor->floorSpeedLimit) * delta
+				actor->floorVelocity * delta
 				)
 		);
 
@@ -56,7 +56,7 @@ Vector2 Actor_MoveOnFloor(Actor* actor, float delta)
 
 float Actor_MoveVertically(Actor* actor, float gravity, float delta)
 {
-	actor->verticalVelocity += gravity * delta;
+	actor->verticalVelocity -= gravity * delta;
 
 	// Limit vertical speeds
 	if (actor->verticalVelocity > actor->verticalSpeedLimitUp)

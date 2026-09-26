@@ -23,6 +23,7 @@ struct Actor
 {
     int idNumber;
     s16 subSectorNumber;
+    s16 prevSubSectorNumber;
     ActorType actorType;
     int typeNumber; //< DOOM editor number
     MaterialId texture;

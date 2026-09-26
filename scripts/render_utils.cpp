@@ -737,6 +737,17 @@ int NextY()
 	return text_y;
 }
 
+void DrawBox(Vector2 center, float width, float height, color32 color)
+{
+	glBegin(GL_LINE_LOOP);
+	mgdl_glColor32(color);
+	glVertex2f(center.x-width/2.0f, center.y - height/2.0f);
+	glVertex2f(center.x+width/2.0f, center.y - height/2.0f);
+	glVertex2f(center.x+width/2.0f, center.y + height/2.0f);
+	glVertex2f(center.x-width/2.0f, center.y + height/2.0f);
+	glEnd();
+
+}
 
 void DrawCross(Vector2 point, color32 color)
 {

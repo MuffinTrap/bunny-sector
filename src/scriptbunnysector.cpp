@@ -109,7 +109,6 @@ void RegisterDoomMap(mgdl_AngelScript* angel)
 		as_engine->RegisterObjectProperty("DoomMap", "int segmentAmount", asOFFSET(DoomMap, segmentAmount));
 		as_engine->RegisterObjectProperty("DoomMap", "int nodeAmount", asOFFSET(DoomMap, nodeAmount));
 		as_engine->RegisterObjectProperty("DoomMap", "int subSectorAmount", asOFFSET(DoomMap, subSectorAmount));
-		as_engine->RegisterObjectProperty("DoomMap", "int actorAmount", asOFFSET(DoomMap, actorCount));
 
 		// Register DoomMap_GetX(DoomMap* map, ...) as methods of DoomMap
 		as_engine->RegisterObjectMethod("DoomMap", "DoomSegment@ get_segments(uint) property", asFUNCTION(DoomMap_GetSegment), asCALL_CDECL_OBJFIRST);
@@ -121,6 +120,7 @@ void RegisterDoomMap(mgdl_AngelScript* angel)
 		as_engine->RegisterObjectMethod("DoomMap", "DoomSidedef@ get_sidedefs(uint) property", asFUNCTION(DoomMap_GetSidedef), asCALL_CDECL_OBJFIRST);
 		as_engine->RegisterObjectMethod("DoomMap", "DoomVertex@ get_vertices(uint) property", asFUNCTION(DoomMap_GetVertex), asCALL_CDECL_OBJFIRST);
 
+		as_engine->RegisterObjectMethod("DoomMap", "int GetActorAmount()", asFUNCTION(DoomMap_GetActorAmount), asCALL_CDECL_OBJFIRST);
 		as_engine->RegisterObjectMethod("DoomMap", "DoomNode@ GetRootNode()", asFUNCTION(DoomMap_GetRootNode), asCALL_CDECL_OBJFIRST);
 		as_engine->RegisterObjectMethod("DoomMap", "DoomNode@ GetChildNode(ChildId id)", asFUNCTION(DoomMap_GetChildNode), asCALL_CDECL_OBJFIRST);
 		as_engine->RegisterObjectMethod("DoomMap", "DoomSubSector@ GetChildSubSector(ChildId id)", asFUNCTION(DoomMap_GetChildSubSector), asCALL_CDECL_OBJFIRST);

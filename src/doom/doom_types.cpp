@@ -161,3 +161,22 @@ float DoomSpeedToUnits(int doomSpeed)
 {
 	 return ((float)doomSpeed * DOOM_SPEED_TO_UNITS) / DOOM_TICK_DURATION_SECONDS;
 }
+
+static const char* DoomTypeNames[6] =
+{
+	"No type",
+	"Player 1 start",
+	"Player 2 start",
+	"Player 3 start",
+	"Player 4 start",
+	"Blue key card"
+};
+
+const char* DoomTypeToString(DOOM_EDITOR_NUMBER typeNumber)
+{
+	if (int(typeNumber)>= 0 && (int)typeNumber <= 5)
+	{
+		return DoomTypeNames[int(typeNumber)];
+	}
+	return nullptr;
+}

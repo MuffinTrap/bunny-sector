@@ -98,15 +98,6 @@ int DukeMap::GetSpriteAmount()
     return spriteAmount;
 }
 
-
-int DukeMap::GetActorAmount()
-{
-    return actorCount;
-}
-
-
-
-
 Sector* DukeMap_GetSector(DukeMap* map, s16 sectorNumber)
 {
     if (sectorNumber>= 0 && sectorNumber < map->sectorAmount)

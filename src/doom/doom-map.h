@@ -43,7 +43,6 @@ public:
 	DoomMapAction* actions;
 	int actionCount;
 
-	int GetActorAmount() override;
 	void SetActorToStart(Actor* actor) override;
 	int GetSectorAmount() override;
 	int GetWallVertexAmount() override;
@@ -112,6 +111,7 @@ DoomSegment* DoomMap_GetSegment(DoomMap* map, unsigned int index);
 
 DoomNode* DoomMap_GetRootNode(DoomMap* map);
 DoomNode* DoomMap_GetChildNode(DoomMap* map, ChildId id);
+int DoomMap_GetActorAmount(DoomMap* map);
 DoomSubSector* DoomMap_GetChildSubSector(DoomMap* map, ChildId id);
 
 // Interface BunnySector_Map

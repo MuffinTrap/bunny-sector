@@ -1,5 +1,6 @@
 #include "doom-map.h"
 #include "../gameplay/actor.h"
+#include "../gameplay/actorpool.h"
 #include "../bunny-sector-math.h"
 #include <mgdl.h>
 #include <mgdl/mgdl-util.h>
@@ -23,29 +24,24 @@
 
 }
 
-
 void DoomMap::AddActor(ActorType actorType, int typeNumber, Vector2 position, int width, int height, float angleDeg, MaterialId material)
 {
-	if (actorCount < MAP_ACTOR_AMOUNT)
-	{
+	Actor a;
+	Actor_Init(&a);
 
-		Actor* a = &actors[actorCount];
-		Actor_Init(a);
+	a.actorType = actorType;
+	a.position.vectorPosition = position;
+	a.yawRad = DEG2RAD * angleDeg;
+	a.texture = material;
+	a.subSectorNumber = FindSubSector(DoomMap_GetRootNode(this), position);
+	a.elevation = GetFloory(a.subSectorNumber);
+	a.typeNumber = typeNumber;
 
-		a->actorType = actorType;
-		a->position.vectorPosition = position;
-		a->yawRad = DEG2RAD * angleDeg;
-		a->texture = material;
-		a->subSectorNumber = FindSubSector(DoomMap_GetRootNode(this), position);
-		a->elevation = GetFloory(a->subSectorNumber);
-		a->typeNumber = typeNumber;
+	// These are needed for drawing
+	a.radius = width/2;
+	a.height = height;
 
-		// These are needed for drawing
-		a->radius = width/2;
-		a->height = height;
-
-		actorCount += 1;
-	}
+	actorPool->Insert(a);
 }
 
 
@@ -76,10 +72,6 @@ void DoomMap::CreateActors()
 	mgdl_assert_print(playerCreated, "No player created for Doom Map");
 }
 
-int DoomMap::GetActorAmount()
-{
-	return actorCount;
-}
 
 int DoomMap::GetNeighbourOfWall(int sectorIndex, int wallIndex)
 {
@@ -317,6 +309,7 @@ u32 DoomMap::MoveActorInMapImpl(Vector2 start, Vector2 end, float radius, s16 se
 
     // TODO Treat portals where elevation change is too much as walls
 
+	// TODO Optimize, remember previous DoomVertex
     for (s16 wi = 0; wi < sector->segmentAmount; wi++)
     {
         // Get wall start and end points
@@ -375,7 +368,7 @@ u32 DoomMap::MoveActorInMapImpl(Vector2 start, Vector2 end, float radius, s16 se
 
             // Check if player is too close to wall
             // NOTE: end was maybe modified above
-            if (CircleCollidesWithWall(end, radius, wstart, wend))
+            if (TestActorWallCollision(end, radius, wstart, wend))
             {
                 float distance = GetDistanceToWall(end, wstart, wend);
                 if (distance < radius)
@@ -726,3 +719,5 @@ DoomNode * DoomMap_GetRootNode(DoomMap* map) { return &map->nodes[map->nodeAmoun
 
 DoomNode* DoomMap_GetChildNode(DoomMap* map, ChildId id) {return &map->nodes[id];}
 DoomSubSector* DoomMap_GetChildSubSector(DoomMap* map, ChildId id) { return &map->subsectors[(id & 0x7fffffff)];}
+
+int DoomMap_GetActorAmount(DoomMap* map) { return map->actorPool->count; }

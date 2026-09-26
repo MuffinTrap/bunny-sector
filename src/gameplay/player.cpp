@@ -10,10 +10,10 @@ void Player::Init(int playerIndex, float moveSpeed, float moveAcceleration, floa
 	float unitsToMeter = DOOM_UNITS_TO_METER;
 	this->index = playerIndex;
 
-	turnAccelerationDegrees = 480.0f;
-	turnSpeedDegrees = 340.0f; // NOTE set
+	turnAccelerationDegrees = turnAccelerationDeg;
+	turnSpeedDegrees = turnSpeed;
 
-	moveSpeed = 2.0f * unitsToMeter;
+	this->moveSpeed = 2.0f * unitsToMeter;
 	moveAcceleration = 2.0f * unitsToMeter;
 
 	verticalSpeedUp = 89.0f * unitsToMeter;
@@ -23,7 +23,7 @@ void Player::Init(int playerIndex, float moveSpeed, float moveAcceleration, floa
 	turnVelocity = 0.0f;
 
 	// Size
-	standingHeight = 1.5f * unitsToMeter;
+	standingHeight = 1.0f * unitsToMeter;
 	climbHeight = standingHeight/2.0f;
 	eyeHeightNormalized = 1.00f;
 
@@ -35,7 +35,24 @@ void Player::Init(int playerIndex, float moveSpeed, float moveAcceleration, floa
 
 	turnSpeedMultiplier = 1.0f;
 	walkSpeedMultiplier = 1.0f;
+
+	for (int i = 0; i < 32; i++)
+	{
+		inventory[i] = editorNumber_none;
+	}
 }
+
+void Player::GiveItem(DOOM_EDITOR_NUMBER item)
+{
+	for (int i = 0; i < 32; i++)
+	{
+		if (inventory[i] == editorNumber_none)
+		{
+			inventory[i] = item;
+		}
+	}
+}
+
 
 static float deadzone = 0.01f;
 

@@ -9,6 +9,7 @@
 #include "render/opengl-render.h"
 #include "gameplay/actor.h"
 #include "gameplay/player.h"
+#include "gameplay/actorpool.h"
 #include "doom/doom-map-reader.h"
 #include "duke/dukemapreader.h"
 #include "duke/build-render.h"
@@ -24,6 +25,7 @@ static Viewpoint defaultView;
 static Camera* defaultCamera = nullptr;
 static Player player0;
 static Texture* defaultChecker = nullptr;
+static ActorPool actorPool; // All maps share the same actor pool
 
 // TODO Actor pool?
 // Map creates actors when it is loaded
@@ -87,6 +89,8 @@ bool BunnySector_Init()
 	defaultOpenGL = GetDefaultRenderSettingsOpenGL();
 	defaultView = GetDefaultCameraInfo();
 	defaultCamera = GetDefaultCamera();
+
+	actorPool.Init(MAP_ACTOR_AMOUNT);
 
 	return true;
 }
@@ -185,8 +189,12 @@ void BunnySector_StartMap(MapId mapId)
 				RenderSettingsOpenGL_SetUnitToMeter(&defaultOpenGL, DOOM_UNITS_TO_METER);
 				BunnySector_SetOpenGLUnitsToMeter(DOOM_UNITS_TO_METER);
 			}
+			actorPool.Clear();
+			map->SetActorPool(&actorPool);
 			map->CreateActors();
-			Actor* player0Actor = activeMap->GetActor(actor_player, 0);
+			map->AllocateActorCollisions(); // TODO Share with pool?
+			player0.Init(0, 2024,6000, 720, 1400);
+			Actor* player0Actor = activeMap->GetActorByTypeAndIndex(actor_player, 0);
 			printf("BunnySector startmap put actor to %.2f, %.2f, sector %d\n", player0Actor->position.vectorPosition.x, player0Actor->position.vectorPosition.y, player0Actor->subSectorNumber);
 			defaultView = player0.GetViewpoint(player0Actor);
 			s_AlignCameraToViewpoint(&defaultView, defaultCamera);
@@ -213,8 +221,19 @@ void BunnySector_UpdateMap(MapId mapId, float deltaTime)
 			while (deltaTime >= FIXED_STEP)
 			{
 				// Note: to prevent insane delta times when debugging this is done in fixed time
+				Actor* player0Actor = activeMap->GetActorByTypeAndIndex(actor_player, 0); // player0.lastActorSubSector); // Start search from where the actor was last time
+				player0.ApplyDrive(player0Actor, FIXED_STEP);
+				player0.ApplyVerticalMove(player0Actor, FIXED_STEP);
+
 				map->MoveActors(FIXED_STEP);
-				map->UpdateActions(FIXED_STEP);
+
+				player0.prevActorSubSectorNumber = player0Actor->subSectorNumber;
+
+				map->SortMovedActors();
+				map->DoActorToActorCollisions();
+				// NOTE TODO Call AngelScript function to tell it to process collision results
+				map->RemoveDeadActors();
+				map->UpdateActions(FIXED_STEP); // This can spawn new actors
 				deltaTime -= FIXED_STEP;
 			}
 			leftOverTime = deltaTime;
@@ -243,10 +262,9 @@ void BunnySector_AlignCameraToActor(int actorId)
 	// NOTE Must set GL_PROJECTION first then GL_MODELVIEW
 
 
-	Actor* player0Actor = activeMap->GetActor(actor_player, 0);
+	Actor* player0Actor = activeMap->GetActorByTypeAndIndex(actor_player, 0);
 	player0Actor->subSectorNumber = activeMap->FindSubSectorV2(player0Actor->subSectorNumber, player0Actor->position.vectorPosition);
 	defaultView = player0.GetViewpoint(player0Actor);
-
 	s_AlignCameraToViewpoint(&defaultView, defaultCamera);
 
 	float aspect =  s_aspectCamera;
@@ -357,7 +375,7 @@ Wall* BunnySector_GetWallEnd(Wall* wall)
 
 Actor* BunnySector_GetPlayerActor(int playerIndex)
 {
-	return activeMap->GetActor(actor_player, playerIndex);
+	return activeMap->GetActorByTypeAndIndex(actor_player, playerIndex);
 }
 
 Actor* BunnySector_GetActorById(int actorId)
@@ -366,11 +384,7 @@ Actor* BunnySector_GetActorById(int actorId)
 }
 Actor* BunnySector_GetActorByIndex(int actorIndex)
 {
-	if (actorIndex >= 0 && actorIndex < activeMap->GetActorAmount())
-	{
-		return &activeMap->actors[actorIndex];
-	}
-	return nullptr;
+	return activeMap->GetActorByIndex(actorIndex);
 }
 void BunnySector_StartMapDrawing()
 {

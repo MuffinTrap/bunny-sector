@@ -2,6 +2,7 @@
 #include <mgdl/mgdl-types.h>
 
 #include "build-render.h"
+#include "gameplay/actor.h"
 
 
 // RIGHT HANDED COORDINATE SYSTEM
@@ -68,4 +69,58 @@ Vector3 ScaleVector3ToOpenGL(Vector3 position, RenderSettingsOpenGL* settings3D)
 Vector2 ScaleVector2ToOpenGL(Vector2 position, RenderSettingsOpenGL* settings3D)
 {
 	return Vector2Scale(position, settings3D->scale);
+}
+
+bool IsPointInsideWall(Vector2 point, Vector2 wallStart, Vector2 wallEnd)
+{
+
+    Vector2 wallVector = Vector2Subtract(wallEnd, wallStart);
+    float crossY = Vector2CrossProduct(wallVector, Vector2Subtract(point, wallStart));
+    // DANGER Again, this code works differently TM
+    return crossY > 0.0f;
+}
+bool TestActorWallCollisionPtr(Actor* actor, Vector2 wallStart, Vector2 wallEnd)
+{
+	return TestActorWallCollision(actor->position.vectorPosition, actor->radius, wallStart, wallEnd);
+}
+
+bool TestActorWallCollision(Vector2 actorpos, float radius, Vector2 wallStart, Vector2 wallEnd)
+{
+	// Actor rectangle
+	float pxl = actorpos.x - radius;
+	float pxr = actorpos.x + radius;
+	float pyt = actorpos.y - radius;
+	float pyb = actorpos.y + radius;
+
+	bool over = IntersectBox(pxl, pyt, pxr, pyb, wallStart.x, wallStart.y, wallEnd.x, wallEnd.y);
+	if (over)
+	{
+		int status = 0;
+		// Check if any of the points is on the other side of the wall
+		if (IsPointInsideWall(Vector2New(pxl, pyt), wallStart, wallEnd)) status += 1;
+		if (IsPointInsideWall(Vector2New(pxr, pyt), wallStart, wallEnd)) status += 1;
+		if (IsPointInsideWall(Vector2New(pxl, pyb), wallStart, wallEnd)) status += 1;
+		if (IsPointInsideWall(Vector2New(pxr, pyb), wallStart, wallEnd)) status += 1;
+
+		return status > 0 && status < 4;
+	}
+	return false;
+}
+
+bool TestActorActorCollision(Actor* A, Actor* B)
+{
+	// Actor rectangle
+	Vector2 ap = A->position.vectorPosition;
+	float axl = ap.x - A->radius;
+	float axr = ap.x + A->radius;
+	float ayt = ap.y - A->radius;
+	float ayb = ap.y + A->radius;
+	Vector2 bp = B->position.vectorPosition;
+	float bxl = bp.x - B->radius;
+	float bxr = bp.x + B->radius;
+	float byt = bp.y - B->radius;
+	float byb = bp.y + B->radius;
+
+	return IntersectBox(axl, ayt, axr, ayb,
+						bxl, byt, bxr, byb);
 }

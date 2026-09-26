@@ -4,6 +4,7 @@
 
 // Abstract map file
 struct Actor;
+class ActorPool;
 
 struct Tesselator_BufferIndices;
 struct MapFloorVertexData
@@ -29,11 +30,18 @@ enum BunnyMapType
 };
 typedef enum BunnyMapType BunnyMapType;
 
+struct ActorCollisionEntry
+{
+	Actor* collider;
+	int collisionAmount;
+	int collisionStartIndex;
+};
+
 
 class BunnySector_Map
 {
 public:
-	virtual int GetActorAmount() = 0;
+	virtual int GetActorAmount();
 	virtual int GetSectorAmount() = 0;
 	virtual int GetWallVertexAmount() = 0;
 	virtual int GetWallAmountInSector(int sectorIndex) = 0;
@@ -71,7 +79,7 @@ public:
 	zstr* GetMapFile();
 	void MoveActors(float delta);
 	void MoveActorInMap(float delta,Actor* actor);
-	void AllocateActors();
+	void AllocateActorCollisions();
 	virtual void CreateActors() = 0;
 
     virtual bool IsPointInsideWall(Vector2 point, Vector2 wallStart, Vector2 wallEnd) = 0;
@@ -98,13 +106,24 @@ public:
     float lowY;
     float highY;
 
-	// All the actors in this map
-	// TODO Keep actors sorted by sector to make drawing and collision etc faster
-	Actor* actors;
-	int actorCount;
+	// Actor to Actor collisions record
+	ActorCollisionEntry* actorCollisionEntries = nullptr;
+	Actor** actorCollisionList = nullptr;
+	int actorCollisionEntryCount;
+	int actorCollisionListCount;
 
-	Actor* GetActor(ActorType aType, int index);
+	// All the actors in this map
+	void SetActorPool(ActorPool* pool);
+	ActorPool* actorPool;
+
+	Actor* GetActorByTypeAndIndex(ActorType aType, int index);
 	Actor* GetActorById(int actorId);
+	Actor* GetActorByIndex(int actorIndex);
+	void SortActorsBySubSector();
+	void SortMovedActors();
+	void DoActorToActorCollisions();
+	void RemoveDeadActors();
+
 
 	//
 	BunnyMapType m_type;

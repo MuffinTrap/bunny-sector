@@ -256,6 +256,12 @@ void angelscript_frame(float deltatime)
 		DEBUG_LOG = false;
 }
 
+void angelscript_after_collision()
+{
+	// This is called after all collisions are registered
+
+}
+
 #if USE_ANGEL_AS_CPP
 #	ifdef __cplusplus
 		}

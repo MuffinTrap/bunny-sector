@@ -20,6 +20,7 @@ extern const Vector2 FLOOR_FORWARD;
 #define IntersectBoxV(v0, v1, v2, v3) (Overlap(v0.x,v1.x,v2.x,v3.x) && Overlap(v0.y,v1.y,v2.y,v3.y))
 
 struct RenderSettingsOpenGL;
+struct Actor;
 
 #ifdef __cplusplus
 extern "C" {
@@ -43,6 +44,9 @@ float Math_DukeAngleToRad(s16 angleInt);
 
 Vector3 ScaleVector3ToOpenGL(Vector3 position, RenderSettingsOpenGL* settings3D);
 Vector2 ScaleVector2ToOpenGL(Vector2 position, RenderSettingsOpenGL* settings3D);
+bool TestActorWallCollisionPtr(Actor* actor, Vector2 wallStart, Vector2 wallEnd);
+bool TestActorWallCollision(Vector2 actorPos, float radius, Vector2 wallStart, Vector2 wallEnd);
+bool TestActorActorCollision(Actor* A, Actor* B);
 
 bool IsPointInsideRect(RectF rect, Vector2 point);
 

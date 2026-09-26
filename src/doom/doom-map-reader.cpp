@@ -739,11 +739,9 @@ static int FindDoorOpenHeight(DoomMap* map, int sectorIndex)
 				printf("Adding %d new vertices for nodes\n", NewVertes);
 
 				BunnyMap = new DoomMap();// (BunnySector_Map*)mgdl_AllocateGeneralMemory(sizeof(BunnySector_Map));
-				BunnyMap->AllocateActors();
 				map = (DoomMap*)BunnyMap;
 
 				DoomMap_Allocate(map, thingAmount, sectorAmount, sidedefAmount, linedefAmount, vertexAmount + NewVertes);
-
 
 				counting = false;
 			}

@@ -434,3 +434,5 @@ s16 DoomNode_GetBBox(DoomNode* node, unsigned int index); // Combined 0-7 index
 bool DoomNode_PointInsideBox(DoomNode* node, Vector2 point, int childIndex);
 
 float DoomSpeedToUnits(int doomSpeed);
+
+const char* DoomTypeToString(DOOM_EDITOR_NUMBER typeNumber);

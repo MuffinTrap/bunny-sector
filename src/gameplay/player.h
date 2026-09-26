@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../bunny-sector-types.h"
+#include "../doom/doom_types.h"
 
 struct Actor;
 
@@ -46,8 +47,13 @@ public:
     float walkSpeedMultiplier;
     float turnSpeedMultiplier;
 
+	int prevActorSubSectorNumber;
+
+	DOOM_EDITOR_NUMBER inventory[32];
+
 	void Init(int playerIndex, float moveSpeed, float moveAcceleration, float turnSpeed, float turnAccelerationDeg);
 	void ApplyDrive(Actor* actor, float delta);
 	void ApplyVerticalMove(Actor* actor, float delta);
 	Viewpoint GetViewpoint(Actor* actor);
+	void GiveItem(DOOM_EDITOR_NUMBER item);
 };

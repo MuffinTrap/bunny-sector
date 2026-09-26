@@ -3,6 +3,8 @@
 #define DUKE_UNITS_TO_METER 1024.0f
 #define DOOM_UNITS_TO_METER 32.0f
 #define MAP_ACTOR_AMOUNT 128
+#define MAP_ACTOR_COLLISION_LIST_SIZE 64
+#define MAP_ACTOR_COLLISION_ENTRY_AMOUNT 32
 
 #include <mgdl.h>
 
@@ -22,6 +24,18 @@ enum ACTOR_ACTION_FLAGS
 	action_shoot,
 	action_jump
 };
+
+enum MoveResultBit
+{
+    Move_Ok = 0,
+    Move_HitWall = 1,
+    Move_HitPortal = 2,
+    Move_OnGround = 3, // Set when actor is standing on floor
+    Move_Cancel = 4,
+	Move_Collision = 5, // Set when actor collided with other actor
+	Move_Dead = 6 // Set when actor should be removed
+};
+typedef enum MoveResultBit MoveResultBit;
 
 enum MapMaterialType
 {
@@ -78,6 +92,8 @@ struct Viewpoint
     s16 sector;
 };
 typedef struct Viewpoint Viewpoint;
+
+const char* ActorTypeToString(ActorType aType);
 
 struct BunnyV2
 {
