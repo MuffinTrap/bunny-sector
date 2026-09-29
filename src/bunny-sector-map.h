@@ -30,12 +30,6 @@ enum BunnyMapType
 };
 typedef enum BunnyMapType BunnyMapType;
 
-struct ActorCollisionEntry
-{
-	Actor* collider;
-	int collisionAmount;
-	int collisionStartIndex;
-};
 
 
 class BunnySector_Map
@@ -79,7 +73,6 @@ public:
 	zstr* GetMapFile();
 	void MoveActors(float delta);
 	void MoveActorInMap(float delta,Actor* actor);
-	void AllocateActorCollisions();
 	virtual void CreateActors() = 0;
 
     virtual bool IsPointInsideWall(Vector2 point, Vector2 wallStart, Vector2 wallEnd) = 0;
@@ -106,11 +99,6 @@ public:
     float lowY;
     float highY;
 
-	// Actor to Actor collisions record
-	ActorCollisionEntry* actorCollisionEntries = nullptr;
-	Actor** actorCollisionList = nullptr;
-	int actorCollisionEntryCount;
-	int actorCollisionListCount;
 
 	// All the actors in this map
 	void SetActorPool(ActorPool* pool);
@@ -121,9 +109,6 @@ public:
 	Actor* GetActorByIndex(int actorIndex);
 	void SortActorsBySubSector();
 	void SortMovedActors();
-	void DoActorToActorCollisions();
-	void RemoveDeadActors();
-
 
 	//
 	BunnyMapType m_type;

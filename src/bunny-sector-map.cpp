@@ -21,7 +21,11 @@ void BunnySector_Map::MoveActors(float delta)
 {
     for(int i = 0; i < actorPool->count; i++)
     {
-        MoveActorInMap(delta, actorPool->GetActorByIndex(i));
+        Actor* a = actorPool->GetActorByIndex(i);
+        if (a->actorType == actor_player || a->actorType == actor_monster || a->actorType == actor_projectile)
+        {
+            MoveActorInMap(delta, a);
+        }
     }
 }
 
@@ -232,98 +236,7 @@ void BunnySector_Map::SortMovedActors()
     }
     while(sortAgain);
 }
-
-void BunnySector_Map::AllocateActorCollisions()
-{
-    if (actorCollisionEntries == nullptr)
-    {
-        actorCollisionEntries = (ActorCollisionEntry*)mgdl_AllocateGeneralMemory(sizeof(ActorCollisionEntry) * MAP_ACTOR_COLLISION_ENTRY_AMOUNT);
-        actorCollisionEntryCount = 0;
-    }
-    if (actorCollisionList == nullptr)
-    {
-        actorCollisionList = (Actor**)mgdl_AllocateGeneralMemory(sizeof(Actor*) * MAP_ACTOR_COLLISION_LIST_SIZE);
-        actorCollisionListCount = 0;
-    }
-}
+// TODO Move this to ActorPool
 
 
-void BunnySector_Map::DoActorToActorCollisions()
-{
-    // Clear lists
-    actorCollisionEntryCount = 0;
-    actorCollisionListCount = 0;
-
-    // First pass:
-    // Player against everything
-    Actor* player0 = actorPool->GetActorByTypeAndIndex(actor_player, 0);
-
-    Actor* other = nullptr;
-    int sectorStartIndex = actorPool->FindSectorIndex(player0->subSectorNumber);
-    int playerCollisionCount = 0;
-    for(int index = 0; index < actorPool->count; index++ )
-    {
-        other = actorPool->GetActorInSectorByIndex(player0->subSectorNumber, index, sectorStartIndex);
-        if (other == nullptr)
-        {
-            break;
-        }
-        if (other != player0)
-        {
-            if (TestActorActorCollision(player0, other))
-            {
-                printf("Player hit actor of type %s:%s\n", ActorTypeToString(other->actorType), DoomTypeToString((DOOM_EDITOR_NUMBER)other->typeNumber));
-                // Compile collision list: who collided with this actor
-                if ( playerCollisionCount == 0)
-                {
-                    actorCollisionEntries[actorCollisionEntryCount].collider = player0;
-                    actorCollisionEntries[actorCollisionEntryCount].collisionStartIndex = actorCollisionListCount;
-                }
-                // Add to list
-                actorCollisionList[actorCollisionListCount] = other;
-                actorCollisionListCount += 1;
-
-                playerCollisionCount += 1;
-            }
-        }
-    }
-
-    // Player collided with something
-    if (playerCollisionCount > 0)
-    {
-        actorCollisionEntryCount += 1;
-        actorCollisionEntries[actorCollisionEntryCount].collisionAmount = playerCollisionCount;
-        player0->lastMoveResultFlags = Flag_SetBit(player0->lastMoveResultFlags, MoveResultBit::Move_Collision);
-    }
-
-    // Projectiles agains monsters
-
-    // NOTE only do for rendered sectors
-
-    // Get first actor from pool
-    // Get other actors on same subsector
-    // Check collisions
-    // Get next actor from same subsector
-}
-
-void BunnySector_Map::RemoveDeadActors()
-{
-    // Keep sorting until nobody moves
-    bool checkAgain = false;
-    do
-    {
-        checkAgain = false;
-        for(int i = 0; i < actorPool->count; i++)
-        {
-            Actor* actor = actorPool->GetActorByIndex(i);
-            if (Flag_IsBitSet(actor->lastMoveResultFlags, MoveResultBit::Move_Dead))
-            {
-                actorPool->RemoveAt(i);
-                checkAgain = true;
-                break;
-            }
-        }
-    }
-    while(checkAgain);
-}
 

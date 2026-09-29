@@ -1,5 +1,7 @@
 #include "actor.h"
 #include "actorpool.h"
+#include "actorcollision.h"
+#include "../bunny-sector-math.h"
 #include <mgdl.h>
 
 void ActorPool::Init(int poolCapacity)
@@ -9,14 +11,137 @@ void ActorPool::Init(int poolCapacity)
 	if (actors == nullptr)
 	{
 		actors = (Actor*)mgdl_AllocateGeneralMemory(sizeof(Actor)*poolCapacity);
+		AllocateActorCollisions();
 	}
 }
 
+// TODO Do map instead ?
+void ActorPool::AllocateActorCollisions()
+{
+    if (actorCollisionEntries == nullptr)
+    {
+        actorCollisionEntries = (ActorCollisionEntry*)mgdl_AllocateGeneralMemory(sizeof(ActorCollisionEntry) * MAP_ACTOR_COLLISION_ENTRY_AMOUNT);
+        actorCollisionEntryCount = 0;
+    }
+    if (actorCollisionList == nullptr)
+    {
+        actorCollisionList = (Actor**)mgdl_AllocateGeneralMemory(sizeof(Actor*) * MAP_ACTOR_COLLISION_LIST_SIZE);
+        actorCollisionListCount = 0;
+    }
+}
 void ActorPool::Clear()
 {
 	count = 0;
 }
 
+int ActorPool::GetCollisionAmountForActor(Actor* actor)
+{
+	for(int i = 0; actorCollisionEntryCount; i++)
+	{
+		ActorCollisionEntry e = actorCollisionEntries[i];
+		// TODO Should actors have a guid instead of pointer magic?
+		if (e.collider == actor)
+		{
+			return e.collisionAmount;
+		}
+	}
+	return 0;
+}
+
+Actor* ActorPool::GetCollisionForActor(Actor* actor, int collisionIndex)
+{
+	for(int i = 0; actorCollisionEntryCount; i++)
+	{
+		ActorCollisionEntry e = actorCollisionEntries[i];
+		// TODO Should actors have a guid instead of pointer magic?
+		if (e.collider == actor && collisionIndex < e.collisionAmount)
+		{
+			return actorCollisionList[e.collisionStartIndex + collisionIndex];
+		}
+	}
+	return nullptr;
+}
+
+void ActorPool::DoActorToActorCollisions()
+{
+    // Clear lists
+    actorCollisionEntryCount = 0;
+    actorCollisionListCount = 0;
+
+    // First pass:
+    // Player against everything
+    Actor* player0 = GetActorByTypeAndIndex(actor_player, 0);
+
+    Actor* other = nullptr;
+    int sectorStartIndex = FindSectorIndex(player0->subSectorNumber);
+    int playerCollisionCount = 0;
+    for(int index = 0; index < count; index++ )
+    {
+        other = GetActorInSectorByIndex(player0->subSectorNumber, index, sectorStartIndex);
+        if (other == nullptr)
+        {
+            break;
+        }
+        if (other != player0)
+        {
+            if (TestActorActorCollision(player0, other))
+            {
+				zstr otherTyper = ActorTypeToString(other->actorType);
+                printf("Player hit actor of type %s:%s\n", zstr_cstr(&otherTyper), DoomTypeToString((DOOM_EDITOR_NUMBER)other->typeNumber));
+                // Compile collision list: who collided with this actor
+                if ( playerCollisionCount == 0)
+                {
+                    actorCollisionEntries[actorCollisionEntryCount].collider = player0;
+                    actorCollisionEntries[actorCollisionEntryCount].collisionStartIndex = actorCollisionListCount;
+                }
+                // Add to list
+                actorCollisionList[actorCollisionListCount] = other;
+                actorCollisionListCount += 1;
+
+                playerCollisionCount += 1;
+            }
+        }
+    }
+
+    // Player collided with something
+    if (playerCollisionCount > 0)
+    {
+        actorCollisionEntries[actorCollisionEntryCount].collisionAmount = playerCollisionCount;
+        actorCollisionEntryCount += 1;
+
+        player0->lastMoveResultFlags = Flag_SetBit(player0->lastMoveResultFlags, MoveResultBit::Move_Collision);
+    }
+
+    // Projectiles agains monsters
+
+    // NOTE only do for rendered sectors
+
+    // Get first actor from pool
+    // Get other actors on same subsector
+    // Check collisions
+    // Get next actor from same subsector
+}
+
+void ActorPool::RemoveDeadActors()
+{
+    // Keep sorting until nobody moves
+    bool checkAgain = false;
+    do
+    {
+        checkAgain = false;
+        for(int i = 0; i < count; i++)
+        {
+            Actor* actor = GetActorByIndex(i);
+            if (Flag_IsBitSet(actor->lastMoveResultFlags, MoveResultBit::Move_Dead))
+            {
+                RemoveAt(i);
+                checkAgain = true;
+                break;
+            }
+        }
+    }
+    while(checkAgain);
+}
 
 void ActorPool::Insert(Actor actor)
 {
@@ -43,7 +168,7 @@ void ActorPool::Move(Actor* actor, int oldSubSector, int newSubSector)
 
 void ActorPool::MoveByIndex(int index, int oldSubSector, int newSubSector)
 {
-	if (index > 0 && index < count)
+	if (index >= 0 && index < count)
 	{
 		Actor copy = actors[index];
 		int place = FillFromRight(index, newSubSector);

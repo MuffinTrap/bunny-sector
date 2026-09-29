@@ -27,6 +27,10 @@ static Player player0;
 static Texture* defaultChecker = nullptr;
 static ActorPool actorPool; // All maps share the same actor pool
 
+static asIScriptFunction* AfterCollisionCallback;
+static asIScriptFunction* RenderingCallback;
+static mgdl_AngelScript* angelContenxt;
+
 // TODO Actor pool?
 // Map creates actors when it is loaded
 
@@ -45,8 +49,9 @@ static void s_AlignCameraToViewpoint(Viewpoint* info, Camera* camera)
 	Camera_SetDirection(camera, cameraDir);
 }
 
-bool BunnySector_Init()
+bool BunnySector_Init(mgdl_AngelScript* angel)
 {
+	angelContenxt = angel;
 	if (mapsArray == nullptr)
 	{
 		mapsArray = (BunnySector_Map**)mgdl_AllocateGeneralMemory(sizeof(BunnySector_Map*) * MAP_AMOUNT);
@@ -93,6 +98,21 @@ bool BunnySector_Init()
 	actorPool.Init(MAP_ACTOR_AMOUNT);
 
 	return true;
+}
+
+void BunnySector_SetRenderingCallback(asIScriptFunction* callbackFunction)
+{
+	RenderingCallback = callbackFunction;
+}
+
+void DoRenderCallback()
+{
+	// TODO hide here if calling angel or cpp
+}
+
+void BunnySector_SetAfterCollisionCallback(asIScriptFunction* callbackFunction)
+{
+	AfterCollisionCallback = callbackFunction;
 }
 
 int BunnySector_LoadMap(const char* mapfilename)
@@ -192,7 +212,6 @@ void BunnySector_StartMap(MapId mapId)
 			actorPool.Clear();
 			map->SetActorPool(&actorPool);
 			map->CreateActors();
-			map->AllocateActorCollisions(); // TODO Share with pool?
 			player0.Init(0, 2024,6000, 720, 1400);
 			Actor* player0Actor = activeMap->GetActorByTypeAndIndex(actor_player, 0);
 			printf("BunnySector startmap put actor to %.2f, %.2f, sector %d\n", player0Actor->position.vectorPosition.x, player0Actor->position.vectorPosition.y, player0Actor->subSectorNumber);
@@ -209,35 +228,61 @@ static float leftOverTime = 0.0f;
 bool s_aspectCamera = false;
 bool s_aspectView = false;
 
+void BunnySector_Update(float deltaTime)
+{
+	if (activeMap != nullptr)
+	{
+		BunnySector_UpdateActiveMap(deltaTime);
+	}
+#if defined(USE_ANGEL_AS_SCRIPT)
+	mgdl_RunAngelScriptFunction(angelContenxt, RenderingCallback);
+#else
+	angelscript_render();
+#endif
+}
+void BunnySector_UpdateActiveMap(float deltaTime)
+{
+	BunnySector_UpdateMapPtr(activeMap, deltaTime);
+
+}
 void BunnySector_UpdateMap(MapId mapId, float deltaTime)
 {
 	// Map move all actors and sprites etc...
 	if (mapId >=0 && mapId < MAP_AMOUNT)
 	{
 		BunnySector_Map* map = mapsArray[mapId];
-		if (map != nullptr)
+		BunnySector_UpdateMapPtr(map, deltaTime);
+	}
+}
+
+void BunnySector_UpdateMapPtr(BunnySector_Map* map, float deltaTime)
+{
+	if (map != nullptr)
+	{
+		deltaTime += leftOverTime;
+		while (deltaTime >= FIXED_STEP)
 		{
-			deltaTime += leftOverTime;
-			while (deltaTime >= FIXED_STEP)
-			{
-				// Note: to prevent insane delta times when debugging this is done in fixed time
-				Actor* player0Actor = activeMap->GetActorByTypeAndIndex(actor_player, 0); // player0.lastActorSubSector); // Start search from where the actor was last time
-				player0.ApplyDrive(player0Actor, FIXED_STEP);
-				player0.ApplyVerticalMove(player0Actor, FIXED_STEP);
+			// Note: to prevent insane delta times when debugging this is done in fixed time
+			Actor* player0Actor = activeMap->GetActorByTypeAndIndex(actor_player, 0); // player0.lastActorSubSector); // Start search from where the actor was last time
+			player0.ApplyDrive(player0Actor, FIXED_STEP);
+			player0.ApplyVerticalMove(player0Actor, FIXED_STEP);
 
-				map->MoveActors(FIXED_STEP);
+			map->MoveActors(FIXED_STEP);
 
-				player0.prevActorSubSectorNumber = player0Actor->subSectorNumber;
+			player0.prevActorSubSectorNumber = player0Actor->subSectorNumber;
 
-				map->SortMovedActors();
-				map->DoActorToActorCollisions();
-				// NOTE TODO Call AngelScript function to tell it to process collision results
-				map->RemoveDeadActors();
-				map->UpdateActions(FIXED_STEP); // This can spawn new actors
-				deltaTime -= FIXED_STEP;
-			}
-			leftOverTime = deltaTime;
+			map->SortMovedActors();
+			actorPool.DoActorToActorCollisions();
+#if defined(USE_ANGEL_AS_SCRIPT)
+			mgdl_RunAngelScriptFunction(angelContenxt, AfterCollisionCallback);
+#else
+			angelscript_after_collision();
+#endif
+			actorPool.RemoveDeadActors();
+			map->UpdateActions(FIXED_STEP); // This can spawn new actors
+			deltaTime -= FIXED_STEP;
 		}
+		leftOverTime = deltaTime;
 	}
 }
 
@@ -323,27 +368,6 @@ void BunnySector_Setup3D(float viewAspect, float cameraAspect)
 	};
 }
 
-void BunnySector_RenderMap(MapId mapId)
-{
-	if (mapId >=0 && mapId < MAP_AMOUNT)
-	{
-		BunnySector_Map* map = mapsArray[mapId];
-		if (map != nullptr)
-		{
-			// Set up OpenGL 3D state
-			glPushMatrix();
-
-			BunnySector_Setup3D(false, false);
-
-			BunnySector_AlignCameraToActor(0);
-
-			BuildRender_Draw3D(&defaultView, map, &defaultOpenGL);
-
-			glPopMatrix();
-		}
-	}
-}
-
 float BunnySector_GetOpenGLCameraVerticalFOVDeg()
 {
 	return defaultCamera->fovY;
@@ -378,6 +402,26 @@ Actor* BunnySector_GetPlayerActor(int playerIndex)
 	return activeMap->GetActorByTypeAndIndex(actor_player, playerIndex);
 }
 
+void BunnySector_DestroyActor(Actor* actor)
+{
+	actor->lastMoveResultFlags = Flag_SetBit(actor->lastMoveResultFlags, MoveResultBit::Move_Dead);
+}
+
+bool BunnySector_GivePlayerItem(int playerIndex, int itemType, int amount)
+{
+	return player0.GiveItem((DOOM_EDITOR_NUMBER)itemType, amount);
+}
+
+int BunnySector_GetPlayerItemCount(int playerIndex, int itemtype)
+{
+	return player0.GetItemCount((DOOM_EDITOR_NUMBER)itemtype);
+}
+
+Player* BunnySector_GetPlayer(int playerIndex)
+{
+	return &player0;
+}
+
 Actor* BunnySector_GetActorById(int actorId)
 {
 	return activeMap->GetActorById(actorId);
@@ -386,6 +430,17 @@ Actor* BunnySector_GetActorByIndex(int actorIndex)
 {
 	return activeMap->GetActorByIndex(actorIndex);
 }
+
+int BunnySector_GetActorCollisionAmount(Actor* actor)
+{
+	return actorPool.GetCollisionAmountForActor(actor);
+}
+
+Actor* BunnySector_GetActorCollisionAt(Actor* actor, int index)
+{
+	return actorPool.GetCollisionForActor(actor, index);
+}
+
 void BunnySector_StartMapDrawing()
 {
 	OpenGLRender_StartDrawingPolygons();

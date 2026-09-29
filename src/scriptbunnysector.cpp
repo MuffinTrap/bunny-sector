@@ -45,6 +45,9 @@ void RegisterDoomMap(mgdl_AngelScript* angel)
 {
 	asIScriptEngine* as_engine = angel->engine;
 
+	as_engine->RegisterEnum("DOOM_EDITOR_NUMBER");
+	as_engine->RegisterEnumValue("DOOM_EDITOR_NUMBER", "editorNumber_blue_card", (int)editorNumber_blue_card);
+
 	as_engine->RegisterObjectType("DoomVertex", 0, asOBJ_REF|asOBJ_NOCOUNT);
 		as_engine->RegisterObjectProperty("DoomVertex", "float x", asOFFSET(DoomVertex, x));
 		as_engine->RegisterObjectProperty("DoomVertex", "float y", asOFFSET(DoomVertex, y));
@@ -142,8 +145,6 @@ void RegisterBunnySector(mgdl_AngelScript* angel)
 	as_engine->RegisterGlobalFunction("bool BunnySector_Init()", asFUNCTION(BunnySector_Init), asCALL_CDECL);
 	as_engine->RegisterGlobalFunction("MapId BunnySector_LoadMap(const zstr &in mapfilename)", asFUNCTIONPR(BunnySector_LoadMap, (const zstr&), MapId), asCALL_CDECL);
 	as_engine->RegisterGlobalFunction("void BunnySector_StartMap(MapId mapId)", asFUNCTION(BunnySector_StartMap), asCALL_CDECL);
-	as_engine->RegisterGlobalFunction("void BunnySector_RenderMap(MapId mapId)", asFUNCTION(BunnySector_RenderMap), asCALL_CDECL);
-	as_engine->RegisterGlobalFunction("void BunnySector_UpdateMap(MapId mapId, float deltaTime)", asFUNCTION(BunnySector_UpdateMap), asCALL_CDECL);
 
 
 	as_engine->RegisterEnum("BunnyMapType");
@@ -151,8 +152,26 @@ void RegisterBunnySector(mgdl_AngelScript* angel)
 	as_engine->RegisterEnumValue("BunnyMapType", "Map_Doom", (int)Map_Doom);
 	as_engine->RegisterEnumValue("BunnyMapType", "Map_Invalid", (int)Map_Invalid);
 
+	as_engine->RegisterEnum("ActorType");
+	as_engine->RegisterEnumValue("ActorType", "actor_player", (int)actor_player);
+	as_engine->RegisterEnumValue("ActorType", "actor_item", (int)actor_item);
+	as_engine->RegisterEnumValue("ActorType", "actor_monster", (int)actor_monster);
+    	as_engine->RegisterEnumValue("ActorType", "actor_projectile",(int)actor_projectile);
+    	as_engine->RegisterEnumValue("ActorType", "actor_decoration",(int)actor_decoration);
+    	as_engine->RegisterEnumValue("ActorType", "actor_particle_emitter",(int)actor_particle_emitter);
+
+	as_engine->RegisterGlobalFunction("zstr ActorTypeToString(ActorType atype)", asFUNCTION(ActorTypeToString), asCALL_CDECL);
+
+
 	as_engine->RegisterGlobalFunction("BunnyMapType BunnySector_GetMapType(MapId mapid)", asFUNCTION(BunnySector_GetMapType), asCALL_CDECL);
 
+
+	// Register callback hooks that script can connect to
+
+	// Find custom anglescript function
+	as_engine->RegisterFuncdef("void Callback()");
+	as_engine->RegisterGlobalFunction("void BunnySector_SetAfterCollisionCallback(Callback @cb)", asFUNCTION(BunnySector_SetAfterCollisionCallback), asCALL_CDECL);
+	as_engine->RegisterGlobalFunction("void BunnySector_SetRenderingCallback(Callback @cb)", asFUNCTION(BunnySector_SetRenderingCallback), asCALL_CDECL);
 
 	// Register other types
 
@@ -204,6 +223,7 @@ void RegisterBunnySector(mgdl_AngelScript* angel)
 	as_engine->RegisterObjectProperty("Actor", "float radius", asOFFSET(Actor, radius));
 	as_engine->RegisterObjectProperty("Actor", "float verticalVelocity", asOFFSET(Actor, verticalVelocity));
 	as_engine->RegisterObjectProperty("Actor", "int typeNumber", asOFFSET(Actor, typeNumber));
+	as_engine->RegisterObjectProperty("Actor", "ActorType actorType", asOFFSET(Actor, actorType));
 	as_engine->RegisterObjectMethod("Actor", "BunnyV2@ GetPosition()", asFUNCTION(Actor_GetPosition), asCALL_CDECL_OBJFIRST);
 	as_engine->RegisterObjectMethod("Actor", "BunnyV2@ GetFloorDirection()", asFUNCTION(Actor_GetFloorDirection), asCALL_CDECL_OBJFIRST);
 	as_engine->RegisterObjectMethod("Actor", "void SetPosition(float x, float y)", asFUNCTION(Actor_SetPosition), asCALL_CDECL_OBJFIRST);
@@ -214,4 +234,11 @@ void RegisterBunnySector(mgdl_AngelScript* angel)
 	as_engine->RegisterGlobalFunction("Actor@ BunnySector_GetPlayerActor(int playerIndex)", asFUNCTION(BunnySector_GetPlayerActor), asCALL_CDECL);
 	as_engine->RegisterGlobalFunction("void BunnySector_SetPlayerSpeeds(int playerIndex, float walkSpeedMultiplier, float turnSPeedMultiplier)", asFUNCTION(BunnySector_SetPlayerSpeeds), asCALL_CDECL);
 	as_engine->RegisterGlobalFunction("void BunnySector_SetPlayerDriveInput(int actorId, float forward, float strafe, float vertical, float turnYaw, float turnPitch)", asFUNCTION(BunnySector_SetPlayerDriveInput), asCALL_CDECL);
+	as_engine->RegisterGlobalFunction("int BunnySector_GetActorCollisionAmount(Actor@ actor)", asFUNCTION(BunnySector_GetActorCollisionAmount), asCALL_CDECL);
+	as_engine->RegisterGlobalFunction("Actor@ BunnySector_GetActorCollisionAt(Actor@ actor, int index)", asFUNCTION(BunnySector_GetActorCollisionAt), asCALL_CDECL);
+	as_engine->RegisterGlobalFunction("void BunnySector_DestroyActor(Actor@ actor)", asFUNCTION(BunnySector_DestroyActor), asCALL_CDECL);
+
+	// Player functions
+	as_engine->RegisterGlobalFunction("bool BunnySector_GivePlayerItem(int playerIndex, int itemType, int amount)", asFUNCTION(BunnySector_GivePlayerItem), asCALL_CDECL);
+	as_engine->RegisterGlobalFunction("int BunnySector_GetPlayerItemCount(int playerIndex, int itemType)", asFUNCTION(BunnySector_GetPlayerItemCount), asCALL_CDECL);
 }

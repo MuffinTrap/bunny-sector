@@ -227,14 +227,30 @@ enum DOOM_EDITOR_NUMBER
 	editorNumber_water_zone = 9045, //<< Makes sector underwater
 };
 
-enum LINEDEF_SPECIAL_ACTION
+enum LINEDEF_SPECIAL_ACTION    // Arguments
 {
 	special_none = 0,
 	// 1-8 polyobj
 	// 9 line horizon
 	special_door_close = 10, // Door sector, speed
 	special_door_open = 11, // Door sector, speed
-	special_door_raise = 12 // Door sector, speed, delay (ticks)
+	special_door_raise = 12, // 0: Door sector, 1: speed, 2: delay (ticks)
+	special_door_locked_raise = 13 // Door sector, speed, delay (ticks), 3: Lock( see DOOM_LOCK_VALID_KEY
+};
+
+enum DOOM_LOCK_VALID_KEY
+{
+	Lock_none = 0,
+	Lock_red_key_card = 1,
+	Lock_blue_key_card = 2,
+	Lock_yellow_key_card = 3,
+
+	Lock_red_skull_key = 4,
+	Lock_blue_skull_key = 5,
+	Lock_yellow_skull_key = 6,
+
+	Lock_any_key = 100,
+	Lock_all_keys = 101,
 };
 
 enum LINEDEF_FLAG // Value is the bit index

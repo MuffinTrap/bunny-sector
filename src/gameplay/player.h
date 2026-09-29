@@ -5,6 +5,12 @@
 
 struct Actor;
 
+struct InventoryEntry
+{
+    DOOM_EDITOR_NUMBER itemType;
+    int amount;
+};
+
 /**
  * @brief Player is controlled with gamepad and moves in the map
  * @details Player is linked to an actor in the active map
@@ -49,11 +55,12 @@ public:
 
 	int prevActorSubSectorNumber;
 
-	DOOM_EDITOR_NUMBER inventory[32];
+	InventoryEntry inventory[32];
 
 	void Init(int playerIndex, float moveSpeed, float moveAcceleration, float turnSpeed, float turnAccelerationDeg);
 	void ApplyDrive(Actor* actor, float delta);
 	void ApplyVerticalMove(Actor* actor, float delta);
 	Viewpoint GetViewpoint(Actor* actor);
-	void GiveItem(DOOM_EDITOR_NUMBER item);
+	bool GiveItem(DOOM_EDITOR_NUMBER item, int amount);
+    bool GetItemCount(DOOM_EDITOR_NUMBER item);
 };

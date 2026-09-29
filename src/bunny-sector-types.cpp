@@ -1,14 +1,14 @@
 #include "bunny-sector-types.h"
 
 
-static const char* ActorTypeNames[4] {
-	"Player",
-	"Monster",
-	"Item",
-	"Projectile"
+static zstr ActorTypeNames[4] {
+	zstr_from("Player"),
+	zstr_from("Monster"),
+	zstr_from("Item"),
+	zstr_from("Projectile"),
 };
 
-const char* ActorTypeToString(ActorType aType)
+zstr ActorTypeToString(ActorType aType)
 {
 	return ActorTypeNames[(int)aType];
 }

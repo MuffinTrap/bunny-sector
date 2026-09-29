@@ -6,6 +6,8 @@
 #include "bunny-sector-map.h"
 #include "bunny-sector-types.h"
 
+class Player;
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -14,11 +16,17 @@ extern "C" {
 
 typedef int MapId;
 
-bool BunnySector_Init();
+bool BunnySector_Init(mgdl_AngelScript* angel);
+void BunnySector_Update(float deltaTime);
+
 void BunnySector_StartMap(MapId mapId);
+void BunnySector_UpdateActiveMap(float deltaTime);
 void BunnySector_UpdateMap(MapId mapId, float deltaTime);
-void BunnySector_RenderMap(MapId mapId);
+void BunnySector_UpdateMapPtr(BunnySector_Map* map, float deltaTime);
 BunnyMapType BunnySector_GetMapType(MapId mapid);
+
+void BunnySector_SetRenderingCallback(asIScriptFunction* callbackFunction);
+void BunnySector_SetAfterCollisionCallback(asIScriptFunction* callbackFunction);
 
 
 MaterialId BunnySector_GetMaterialId(zstr* doomTextureFilename);
@@ -48,7 +56,17 @@ Actor* BunnySector_GetActorByIndex(int actorIndex);
 void BunnySector_SetActorPosition(int actorIndex, float x, float z);
 void BunnySector_SetPlayerSpeeds(int actorIndex, float walkSpeedMultiplier, float turnSpeedMultiplier);
 void BunnySector_SetPlayerDriveInput(int actorIndex, float forward, float strafe, float vertical, float turnYaw, float turnPitch);
-;
+int BunnySector_GetActorCollisionAmount(Actor* actor);
+Actor* BunnySector_GetActorCollisionAt(Actor* actor, int index);
+void BunnySector_DestroyActor(Actor* actor);
+
+// Player functions
+/**
+ * @brief Gives an item to actor, returns bool if success
+ */
+bool BunnySector_GivePlayerItem(int playerIndex, int itemtype, int amount);
+int BunnySector_GetPlayerItemCount(int playerIndex, int itemtype);
+Player* BunnySector_GetPlayer(int playerIndex);
 
 // Camera functions
 float BunnySector_GetOpenGLCameraVerticalFOVDeg();

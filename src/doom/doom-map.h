@@ -75,6 +75,8 @@ public:
 	float elevationEnd, float maxElevationChange, float height, Actor* actor,
 	Vector2* positionOut, s16* subSectorOut) override;
 
+	void StartLinedefAction(DoomLinedef* line, Actor* actor, bool crossed);
+
 	bool IsPointInsideWall(Vector2 point, Vector2 wallStart, Vector2 wallEnd) override;
 	float GetSectorCeilingy(int sectorIndex);
 	float GetSectorFloory(int sectorIndex);

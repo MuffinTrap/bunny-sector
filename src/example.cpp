@@ -27,8 +27,13 @@ void Example::AngelInit()
     if (angelContext != nullptr)
     {
         RegisterBunnySector(angelContext);
+
         if (mgdl_LoadAngelScriptFiles(angelContext, "scripts/angel.cpp", "scripts", "example"))
         {
+            // This must be after loading the files, because the function is in there
+            // TODO The script could also set a callback
+            BunnySector_Init(angelContext);
+            // This will call bunnysector functions
             mgdl_RunAngelScriptInit(angelContext);
         }
     }
@@ -42,7 +47,10 @@ void Example::AngelInit()
 
 void Example::AngelFrame()
 {
+    // First AngelScript does something
     mgdl_RunAngelScriptFrame(angelContext, mgdl_GetDeltaTime());
+    // Then we update and call after collision callback and rendering callback
+    BunnySector_Update(mgdl_GetDeltaTime());
 }
 
 

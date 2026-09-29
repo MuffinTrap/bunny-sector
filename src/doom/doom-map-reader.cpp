@@ -1026,7 +1026,10 @@ static int FindDoorOpenHeight(DoomMap* map, int sectorIndex)
 			DoomLinedef* line = &map->linedefs[li];
 			if (line->special >= 0)
 			{
-				if (line->special == special_door_close || line->special == special_door_open || line->special == special_door_raise)
+				if (line->special == special_door_close
+					|| line->special == special_door_open
+					|| line->special == special_door_raise
+					|| line->special == special_door_locked_raise)
 				{
 					int doorSectorTag = line->arg0;
 

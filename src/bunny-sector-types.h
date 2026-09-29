@@ -15,7 +15,7 @@ enum ActorType
 	actor_item,
     actor_projectile,
     actor_decoration,
-    actor_particle
+    actor_particle_emitter
 };
 
 enum ACTOR_ACTION_FLAGS
@@ -93,7 +93,7 @@ struct Viewpoint
 };
 typedef struct Viewpoint Viewpoint;
 
-const char* ActorTypeToString(ActorType aType);
+zstr ActorTypeToString(ActorType aType);
 
 struct BunnyV2
 {

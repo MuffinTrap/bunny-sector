@@ -4,6 +4,8 @@
 #include "render_duke.cpp"
 #include "render_doom.cpp"
 
+//TODO Name this file main_angel.cpp
+
 float angel_unitstometer = 32.0f;
 
 // NOTE Uncomment for KDevelop intellisense to work
@@ -29,7 +31,9 @@ void angelscript_init()
 	int screenWidth = mgdl_GetScreenWidth();
 	int screenHeight = mgdl_GetScreenHeight();
 
-	BunnySector_Init();
+	BunnySector_SetAfterCollisionCallback(angelscript_after_collision);
+	BunnySector_SetRenderingCallback(angelscript_render);
+
 	doomMapId = BunnySector_LoadMap("assets/slade_test.wad");
 	//dukeMapId = BunnySector_LoadMap("assets/doome1m1.map");
 	BunnySector_StartMap(doomMapId);
@@ -94,6 +98,14 @@ void DrawDebugs()
 	int screenWidth = mgdl_GetScreenWidth();
 	int screenHeight = mgdl_GetScreenHeight();
 
+glPushMatrix();
+
+	float screen_half_width = screenWidth / 2.0f;
+	float screen_half_height = screenHeight / 2.0f;
+	glTranslatef(screen_half_width, screen_half_height, 0);
+	int bluecards = BunnySector_GetPlayerItemCount(0, editorNumber_blue_card);
+	mgdl_DrawTextInt("Blue cards", bluecards, text_x, NextY(), 8, Debug_LightBlue);
+glPopMatrix();
 }
 
 void movePlayer(float deltatime)
@@ -158,16 +170,29 @@ void angelscript_frame_doom(float deltatime)
 	BunnySector_SetOpenGLUnitsToMeter(angel_unitstometer);
 	BunnySector_SetPlayerSpeeds(0, 1.0f, 1.0f);
 	movePlayer(deltatime);
+}
 
-	if (mgdl_IsButtonDown(0, ButtonZ))
+void angelscript_after_collision()
+{
+	// This is called after all collisions are registered
+	Actor@ player0 = BunnySector_GetPlayerActor(0);
+	int collisions = BunnySector_GetActorCollisionAmount(player0);
+	if (collisions > 0)
 	{
-		// TODO Set noclip
+		mgdl_LogTextInt("Player hit this many other actors ", collisions);
 	}
-	else
+	for (int i = 0; i < collisions; i++)
 	{
-		BunnySector_UpdateMap(doomMapId, deltatime);
+		Actor@ other = BunnySector_GetActorCollisionAt(player0, i);
+		mgdl_LogText("Player collision with ");
+		mgdl_LogText(ActorTypeToString(other.actorType));
+		BunnySector_GivePlayerItem(0, editorNumber_blue_card, 1);
+		BunnySector_DestroyActor(other);
 	}
+}
 
+void angelscript_render()
+{
 	float aspect = mgdl_GetScreenWidth()/mgdl_GetScreenHeight();
 	glClearColor(0.3f, 0.2f, 0.3f, 1.0f);
 
@@ -194,6 +219,10 @@ void angelscript_frame_doom(float deltatime)
 	RenderMiniMapDoom(BunnySector_GetDoomMap(doomMapId));
 
 	DrawDebugs();
+
+	RENDER_2D_WALLS = false;
+	DEBUG_DRAW = false;
+		DEBUG_LOG = false;
 }
 
 void angelscript_frame_duke(float deltatime)
@@ -202,14 +231,6 @@ void angelscript_frame_duke(float deltatime)
 	movePlayer(deltatime);
 	adjustFov(deltatime);
 
-	if (mgdl_IsButtonDown(0, ButtonZ))
-	{
-		// TODO noclip
-	}
-	else
-	{
-		BunnySector_UpdateMap(dukeMapId, deltatime);
-	}
 
 
 	glClearColor(0.3f, 0.2f, 0.3f, 1.0f);
@@ -251,16 +272,9 @@ void angelscript_frame(float deltatime)
 		angelscript_frame_doom(deltatime);
 		//angelscript_frame_duke(deltatime);
 
-	RENDER_2D_WALLS = false;
-	DEBUG_DRAW = false;
-		DEBUG_LOG = false;
 }
+bool actest = true;
 
-void angelscript_after_collision()
-{
-	// This is called after all collisions are registered
-
-}
 
 #if USE_ANGEL_AS_CPP
 #	ifdef __cplusplus

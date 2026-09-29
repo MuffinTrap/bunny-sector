@@ -1,7 +1,9 @@
 #include "doom-map.h"
 #include "../gameplay/actor.h"
 #include "../gameplay/actorpool.h"
+#include "../gameplay/player.h"
 #include "../bunny-sector-math.h"
+#include "../bunny-sector_main.h"
 #include <mgdl.h>
 #include <mgdl/mgdl-util.h>
 
@@ -383,18 +385,7 @@ u32 DoomMap::MoveActorInMapImpl(Vector2 start, Vector2 end, float radius, s16 se
 					DoomLinedef* linedef = &linedefs[wall->linedef];
 					if (linedef->special > 0)
 					{
-						// Check if triggered by player hit or use
-						if (actor->actorType == actor_player)
-						{
-							if (Flag_IsBitSet(linedef->linedef_flags, linedef_activate_player_push))
-							{
-								StartAction(linedef);
-							}
-							else if (Flag_IsBitSet(linedef->linedef_flags, linedef_activate_player_use) && Actor_IsDoing(actor, action_use))
-							{
-								StartAction(linedef);
-							}
-						}
+						StartLinedefAction(linedef, actor, false);
 					}
                 }
             }
@@ -449,23 +440,7 @@ u32 DoomMap::MoveActorInMapImpl(Vector2 start, Vector2 end, float radius, s16 se
 				DoomLinedef* linedef = &linedefs[wall->linedef];
 				if (linedef->special > 0)
 				{
-					// Check if triggered by player
-					if (actor->actorType == actor_player)
-					{
-						if (Flag_IsBitSet(linedef->linedef_flags, linedef_activate_player_cross))
-						{
-							StartAction(linedef);
-						}
-						// Check if triggered by player hit or use
-						else if (Flag_IsBitSet(linedef->linedef_flags, linedef_activate_player_push))
-						{
-							StartAction(linedef);
-						}
-						else if (Flag_IsBitSet(linedef->linedef_flags, linedef_activate_player_use) && Actor_IsDoing(actor, action_use))
-						{
-							StartAction(linedef);
-						}
-					}
+					StartLinedefAction(linedef, actor, true);
 				}
             }
         } // if is portal
@@ -474,6 +449,39 @@ u32 DoomMap::MoveActorInMapImpl(Vector2 start, Vector2 end, float radius, s16 se
     *positionOut = end;
     return moveResultBitfield;
 }
+
+void DoomMap::StartLinedefAction(DoomLinedef* linedef, Actor* actor, bool crossed)
+{
+	// Check if triggered by player
+	if (actor->actorType == actor_player)
+	{
+		if (
+			(crossed && Flag_IsBitSet(linedef->linedef_flags, linedef_activate_player_cross))
+		|| (Flag_IsBitSet(linedef->linedef_flags, linedef_activate_player_push))
+		|| (Flag_IsBitSet(linedef->linedef_flags, linedef_activate_player_use) && Actor_IsDoing(actor, action_use)))
+		{
+			// Does the door need a key?
+			int lockArg = linedef->arg3;
+			int playerIndex = actor->idNumber;
+			// Does player have this key or is key needed at all?
+			if (
+				(lockArg == Lock_none)
+				|| (lockArg == Lock_blue_key_card && BunnySector_GetPlayerItemCount(playerIndex, editorNumber_blue_card))
+				|| (lockArg == Lock_red_key_card && BunnySector_GetPlayerItemCount(playerIndex, editorNumber_red_card))
+				|| (lockArg == Lock_yellow_key_card && BunnySector_GetPlayerItemCount(playerIndex, editorNumber_yellow_card)))
+				// TODO Skull keys
+			{
+				StartAction(linedef);
+			}
+			else
+			{
+				// TODO Store to player or actor that they did not have a key
+				Log_Info("Player does not have the correct key");
+			}
+		}
+	}
+}
+
 void DoomMap::StartAction(DoomLinedef* trigger)
 {
 	if (actionCount < DOOM_MAP_ACTION_AMOUNT)
@@ -622,7 +630,8 @@ void DoomMap::UpdateActions(float delta)
 				actionDone = DoCloseDoorAction(act, delta);
 			}
 				break;
-			case special_door_raise:
+			case special_door_raise: // NOTE These do the same thing. Key checked earlier
+			case special_door_locked_raise:
 			{
 				// First open the door and then wait and then close
 				switch(act->state)

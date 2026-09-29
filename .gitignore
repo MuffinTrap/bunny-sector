@@ -1,6 +1,10 @@
 # Example gitignore file for your project
 # Rename this to .gitignore
 
+# Slade backup files
+
+*.wad.bak
+
 # Prerequisites
 *.d
 

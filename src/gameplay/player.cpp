@@ -38,19 +38,44 @@ void Player::Init(int playerIndex, float moveSpeed, float moveAcceleration, floa
 
 	for (int i = 0; i < 32; i++)
 	{
-		inventory[i] = editorNumber_none;
+		inventory[i].itemType = editorNumber_none;
 	}
 }
 
-void Player::GiveItem(DOOM_EDITOR_NUMBER item)
+bool Player::GiveItem(DOOM_EDITOR_NUMBER item, int amount)
 {
+	int firstEmpty = -1;
 	for (int i = 0; i < 32; i++)
 	{
-		if (inventory[i] == editorNumber_none)
+		if (inventory[i].itemType == editorNumber_none && firstEmpty < 0)
 		{
-			inventory[i] = item;
+			firstEmpty = i;
+		}
+		else if (inventory[i].itemType == item)
+		{
+			inventory[i].amount += amount;
+			return true;
 		}
 	}
+	if (firstEmpty >= 0)
+	{
+		inventory[firstEmpty].amount = amount;
+		inventory[firstEmpty].itemType = item;
+		return true;
+	}
+	return false;
+}
+bool Player::GetItemCount(DOOM_EDITOR_NUMBER item)
+{
+
+	for (int i = 0; i < 32; i++)
+	{
+		if (inventory[i].itemType == item)
+		{
+			return inventory[i].amount;
+		}
+	}
+	return 0;
 }
 
 
