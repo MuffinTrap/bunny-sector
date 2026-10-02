@@ -19,11 +19,13 @@ typedef int MapId;
 bool BunnySector_Init(mgdl_AngelScript* angel);
 void BunnySector_Update(float deltaTime);
 
-void BunnySector_StartMap(MapId mapId);
+void BunnySector_StartMap(MapId mapId, int playerAmount);
 void BunnySector_UpdateActiveMap(float deltaTime);
 void BunnySector_UpdateMap(MapId mapId, float deltaTime);
 void BunnySector_UpdateMapPtr(BunnySector_Map* map, float deltaTime);
 BunnyMapType BunnySector_GetMapType(MapId mapid);
+GameStatus BunnySector_GetGameStatus();
+void BunnySector_SetGameStatus(GameStatus status);
 
 void BunnySector_SetRenderingCallback(asIScriptFunction* callbackFunction);
 void BunnySector_SetAfterCollisionCallback(asIScriptFunction* callbackFunction);
@@ -54,8 +56,8 @@ Actor* BunnySector_GetPlayerActor(int playerIndex);
 Actor* BunnySector_GetActorById(int actorId);
 Actor* BunnySector_GetActorByIndex(int actorIndex);
 void BunnySector_SetActorPosition(int actorIndex, float x, float z);
-void BunnySector_SetPlayerSpeeds(int actorIndex, float walkSpeedMultiplier, float turnSpeedMultiplier);
-void BunnySector_SetPlayerDriveInput(int actorIndex, float forward, float strafe, float vertical, float turnYaw, float turnPitch);
+void BunnySector_SetPlayerSpeeds(int playerIndex, float walkSpeedMultiplier, float turnSpeedMultiplier);
+void BunnySector_SetPlayerDriveInput(int playerIndex, float forward, float strafe, float vertical, float turnYaw, float turnPitch);
 int BunnySector_GetActorCollisionAmount(Actor* actor);
 Actor* BunnySector_GetActorCollisionAt(Actor* actor, int index);
 void BunnySector_DestroyActor(Actor* actor);
@@ -74,7 +76,7 @@ void BunnySector_SetOpenGLCameraVerticalFOVDeg(float degrees);
 
 // Drawing
 void BunnySector_Setup3D(float viewAspect, float cameraAspect);
-void BunnySector_AlignCameraToActor(int actorId);
+void BunnySector_AlignCameraToPlayer(int playerIndex);
 
 void BunnySector_StartMapDrawing();
 void BunnySector_DrawWallF(float startx, float startz, float endx, float endz, float normalx, float normalz, s32 floory, s32 ceilingy, s16 picnum, s8 shade);
@@ -83,7 +85,7 @@ void BunnySector_DrawWall(Wall* start , Wall* end, s32 floory, s32 ceilingy, s16
 void BunnySector_StartFloorCeilingDrawing();
 void BunnySector_DrawSectorFloorOrCeiling(s16 sectorNumber, bool floor);
 
-void BunnySector_DrawMapActors();
+void BunnySector_DrawMapActorsForPlayer(int playerIndex);
 
 void BunnySector_EndMapDrawing();
 
@@ -109,6 +111,13 @@ MapId BunnySector_LoadMap(const zstr& mapfilename);
  * @returns Map id. Negative number indicates failed load and is an error code?
  */
 MapId BunnySector_LoadMap(const char* mapfilename);
+
+/**
+ * @brief Loads item properties from an xml file
+ * @param propertiesfile Filename of the properties
+ * @returns True if the file was loaded correctly
+ */
+bool BunnySector_LoadItemProperties(const zstr& propertiesfile);
 
 void BunnySector_DrawCameraInfo(float x, float y);
 

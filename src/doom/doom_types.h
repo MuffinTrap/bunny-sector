@@ -235,7 +235,10 @@ enum LINEDEF_SPECIAL_ACTION    // Arguments
 	special_door_close = 10, // Door sector, speed
 	special_door_open = 11, // Door sector, speed
 	special_door_raise = 12, // 0: Door sector, 1: speed, 2: delay (ticks)
-	special_door_locked_raise = 13 // Door sector, speed, delay (ticks), 3: Lock( see DOOM_LOCK_VALID_KEY
+	special_door_locked_raise = 13, // Door sector, speed, delay (ticks), 3: Lock( see DOOM_LOCK_VALID_KEY
+
+	special_exit_normal = 243 // Map exit, 0: start position index for next map
+
 };
 
 enum DOOM_LOCK_VALID_KEY

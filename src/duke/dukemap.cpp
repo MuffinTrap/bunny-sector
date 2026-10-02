@@ -655,8 +655,9 @@ s16 Map_FindSectorV2(DukeMap* map, s16 startingSector, Vector2 position2D)
     return -1;
 }
 
-void DukeMap::UpdateActions(float delta)
+MapUpdateResult DukeMap::UpdateActions(float delta)
 {
     // NOP
+    return mapupdate_continue;
 }
 

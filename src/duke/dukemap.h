@@ -120,7 +120,7 @@ public:
     int GetNeighbourOfWall(int sectorIndex, int wallIndex) override;
     u8 GetSectorShade(int sectorIndex, bool floor) override;
     void PrintInfo() override;
-    void UpdateActions(float delta) override;
+    MapUpdateResult UpdateActions(float delta) override;
 
 
     u32 MoveActorInMapImpl(Vector2 start, Vector2 end, float radius, s16 sectorNumber, float elevationEnd, float maxElevationChange, float height, Actor* actor,

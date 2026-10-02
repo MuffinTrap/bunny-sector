@@ -36,7 +36,7 @@ void angelscript_init()
 
 	doomMapId = BunnySector_LoadMap("assets/slade_test.wad");
 	//dukeMapId = BunnySector_LoadMap("assets/doome1m1.map");
-	BunnySector_StartMap(doomMapId);
+	BunnySector_StartMap(doomMapId, 1);
 
 	// Match 2D render to OpenGL render
 	RenderInit(BunnySector_GetOpenGLCameraVerticalFOVDeg());
@@ -200,23 +200,33 @@ void angelscript_render()
 	{
 		DEBUG_LOG = true;
 	}
-	StartFrame();
-	StartFrame_Doom();
-	if (RENDER_2D_WALLS)
-	{
-		RenderDoomMapLines(BunnySector_GetDoomMap(doomMapId));
-	}
-	else
-	{
-		BunnySector_Setup3D(aspect, aspect);
-		BunnySector_AlignCameraToActor(0);
-		BunnySector_StartMapDrawing();
-			RenderDoomMap(BunnySector_GetDoomMap(doomMapId));
-			BunnySector_DrawMapActors();
-		BunnySector_EndMapDrawing();
-	}
 
-	RenderMiniMapDoom(BunnySector_GetDoomMap(doomMapId));
+	GameStatus status = BunnySector_GetGameStatus();
+	if (status == status_player_alive)
+	{
+
+		StartFrame();
+		StartFrame_Doom();
+		if (RENDER_2D_WALLS)
+		{
+			RenderDoomMapLines(BunnySector_GetDoomMap(doomMapId));
+		}
+		else
+		{
+			BunnySector_Setup3D(aspect, aspect);
+			BunnySector_AlignCameraToPlayer(0);
+			BunnySector_StartMapDrawing();
+			RenderDoomMap(BunnySector_GetDoomMap(doomMapId));
+			BunnySector_DrawMapActorsForPlayer(0);
+			BunnySector_EndMapDrawing();
+		}
+
+		RenderMiniMapDoom(BunnySector_GetDoomMap(doomMapId));
+	}
+	else if (status == status_exit_normal)
+	{
+		// Map is over
+	}
 
 	DrawDebugs();
 
@@ -248,7 +258,7 @@ void angelscript_frame_duke(float deltatime)
 	{
 		//BunnySector_RenderMap(dukeMapId); // This calls the old build render stuff
 		BunnySector_Setup3D(aspect, aspect);
-		BunnySector_AlignCameraToActor(0);
+		BunnySector_AlignCameraToPlayer(0);
 		BunnySector_StartMapDrawing();
 			RenderMap(map, deltatime);
 		BunnySector_EndMapDrawing();
@@ -269,8 +279,15 @@ void angelscript_frame(float deltatime)
 	{
 		DEBUG_DRAW = true;
 	}
-		angelscript_frame_doom(deltatime);
+
+		GameStatus status = BunnySector_GetGameStatus();
+		if (status == status_player_alive)
+		{
+			angelscript_frame_doom(deltatime);
+		}
 		//angelscript_frame_duke(deltatime);
+
+	// Check game state
 
 }
 bool actest = true;

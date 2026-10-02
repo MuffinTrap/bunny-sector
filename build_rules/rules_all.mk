@@ -4,6 +4,9 @@ CXXFLAGS += -Wall -Wextra -Wpedantic -std=c++11
 # Don't complain about zstr
 CXXFLAGS += -Wno-c99-extensions -Wno-c++20-designator
 
+# Use pipes instead of temp files. Eats more memory
+CXXFLAGS += -pipe
+
 # Options for ufbx
 CXXFLAGS += -DUFBX_REAL_IS_FLOAT
 

@@ -37,6 +37,30 @@ enum MoveResultBit
 };
 typedef enum MoveResultBit MoveResultBit;
 
+
+/**
+ * @brief When map is updated it will use one of these to tell the
+ * engine what happened
+ */
+enum MapUpdateResult
+{
+	mapupdate_continue,
+	mapupdate_exit_normal
+};
+typedef enum MapUpdateResult MapUpdateResult;
+
+/**
+ * @brief Status of the game. What is going on.
+ */
+enum GameStatus
+{
+	status_menu,
+	status_player_alive,
+	status_player_dead,
+	status_exit_normal
+};
+typedef enum GameStatus GameStatus;
+
 enum MapMaterialType
 {
 	Material_Texture = 0, // Normal texture material

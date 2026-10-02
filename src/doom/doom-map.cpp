@@ -476,7 +476,7 @@ void DoomMap::StartLinedefAction(DoomLinedef* linedef, Actor* actor, bool crosse
 			else
 			{
 				// TODO Store to player or actor that they did not have a key
-				Log_Info("Player does not have the correct key");
+				Log_Info("Player does not have the correct key\n");
 			}
 		}
 	}
@@ -614,8 +614,9 @@ bool DoomMap::DoCloseDoorAction(DoomMapAction* act, float delta)
 
 
 
-void DoomMap::UpdateActions(float delta)
+MapUpdateResult DoomMap::UpdateActions(float delta)
 {
+	MapUpdateResult result = mapupdate_continue;
 	for (int i = actionCount -1; i >= 0; i-- )
 	{
 		DoomMapAction* act = &actions[i];
@@ -657,6 +658,10 @@ void DoomMap::UpdateActions(float delta)
 				}
 			}
 			break;
+					case special_exit_normal:
+						// The game should exit the map at next tick
+						result = mapupdate_exit_normal;
+						break;
 		}
 
 		if (actionDone)
@@ -669,6 +674,7 @@ void DoomMap::UpdateActions(float delta)
 			actionCount -= 1;
 		}
 	}
+	return result;
 }
 
 

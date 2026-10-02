@@ -144,8 +144,13 @@ void RegisterBunnySector(mgdl_AngelScript* angel)
 
 	as_engine->RegisterGlobalFunction("bool BunnySector_Init()", asFUNCTION(BunnySector_Init), asCALL_CDECL);
 	as_engine->RegisterGlobalFunction("MapId BunnySector_LoadMap(const zstr &in mapfilename)", asFUNCTIONPR(BunnySector_LoadMap, (const zstr&), MapId), asCALL_CDECL);
-	as_engine->RegisterGlobalFunction("void BunnySector_StartMap(MapId mapId)", asFUNCTION(BunnySector_StartMap), asCALL_CDECL);
+	as_engine->RegisterGlobalFunction("void BunnySector_StartMap(MapId mapId, int playerAmount)", asFUNCTION(BunnySector_StartMap), asCALL_CDECL);
 
+	as_engine->RegisterEnum("GameStatus");
+	as_engine->RegisterEnumValue("GameStatus", "status_menu",(int)status_menu);
+	as_engine->RegisterEnumValue("GameStatus", "status_player_alive",(int)status_player_alive);
+	as_engine->RegisterEnumValue("GameStatus", "status_player_dead", (int)status_player_dead);
+	as_engine->RegisterEnumValue("GameStatus", "status_exit_normal", (int)status_exit_normal);
 
 	as_engine->RegisterEnum("BunnyMapType");
 	as_engine->RegisterEnumValue("BunnyMapType", "Map_Duke", (int)Map_Duke);
@@ -173,6 +178,11 @@ void RegisterBunnySector(mgdl_AngelScript* angel)
 	as_engine->RegisterGlobalFunction("void BunnySector_SetAfterCollisionCallback(Callback @cb)", asFUNCTION(BunnySector_SetAfterCollisionCallback), asCALL_CDECL);
 	as_engine->RegisterGlobalFunction("void BunnySector_SetRenderingCallback(Callback @cb)", asFUNCTION(BunnySector_SetRenderingCallback), asCALL_CDECL);
 
+
+	// Register getting and setting the game state
+	as_engine->RegisterGlobalFunction("GameStatus BunnySector_GetGameStatus()", asFUNCTION(BunnySector_GetGameStatus), asCALL_CDECL);
+	as_engine->RegisterGlobalFunction("void BunnySector_SetGameStatus(GameStatus status)", asFUNCTION(BunnySector_SetGameStatus), asCALL_CDECL);
+
 	// Register other types
 
 
@@ -190,13 +200,13 @@ void RegisterBunnySector(mgdl_AngelScript* angel)
 	as_engine->RegisterGlobalFunction("void BunnySector_DrawSectorFloorOrCeiling(s16 sectorNumber, bool floor )", asFUNCTION(BunnySector_DrawSectorFloorOrCeiling), asCALL_CDECL);
 
 	as_engine->RegisterGlobalFunction("void BunnySector_StartMapDrawing()", asFUNCTION(BunnySector_StartMapDrawing), asCALL_CDECL);
-	as_engine->RegisterGlobalFunction("void BunnySector_DrawMapActors()", asFUNCTION(BunnySector_DrawMapActors), asCALL_CDECL);
+	as_engine->RegisterGlobalFunction("void BunnySector_DrawMapActorsForPlayer(int playerIndex)", asFUNCTION(BunnySector_DrawMapActorsForPlayer), asCALL_CDECL);
 
 	as_engine->RegisterGlobalFunction("void BunnySector_EndMapDrawing()", asFUNCTION(BunnySector_EndMapDrawing), asCALL_CDECL);
 
 	as_engine->RegisterGlobalFunction("void BunnySector_Setup3D(float aspectView, float aspectCamera)", asFUNCTION(BunnySector_Setup3D), asCALL_CDECL);
 
-	as_engine->RegisterGlobalFunction("void BunnySector_AlignCameraToActor(int actorId)", asFUNCTION(BunnySector_AlignCameraToActor), asCALL_CDECL);
+	as_engine->RegisterGlobalFunction("void BunnySector_AlignCameraToPlayer(int playerIndex)", asFUNCTION(BunnySector_AlignCameraToPlayer), asCALL_CDECL);
 	as_engine->RegisterGlobalFunction("void BunnySector_DrawWallF(float startx, float starty, float endx, float endy, float normalx, float normalz, s32 floory, s32 ceilingy, s16 picnum, s8 shade)", asFUNCTION(BunnySector_DrawWallF), asCALL_CDECL);
 
 	// NOTE These are handles = pointers, not references to value objects

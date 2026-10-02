@@ -11,6 +11,8 @@ public:
 	void Init(int poolCapacity);
 	void Clear();
 
+	// Actors are : players, monsters, items, particle emitters
+
 	void Insert(Actor actor);
 	void Remove(Actor* actor);
 	void RemoveAt(int index);
@@ -24,8 +26,13 @@ public:
 	int GetCollisionAmountForActor(Actor* actor);
 	Actor* GetCollisionForActor(Actor* actor, int collisionIndex);
 	void DoActorToActorCollisions();
-
 	void RemoveDeadActors();
+
+	// Projectiles kept separately since they are very short lived and local
+	void InsertProjectile(Actor actor);
+	void DoActorToProjectileCollisions();
+	void RemoveDeadProjectiles();
+
 
 	int FindSectorIndex(int subSectorNumber);
 private:
