@@ -960,6 +960,11 @@ void DrawWall2DFill(float ax, float ayt, float ayb, float az,
 
 void DrawWall3D(Vector2 left, Vector2 right, s16 picnumMiddle, s16 picnumBottom, s16 picnumTop, s8 shade)
 {
+	if (DEBUG_LOG)
+	{
+		mgdl_LogTextInt("DrawWall3D left", int(left.x));
+		mgdl_LogTextInt("DrawWall3D right", int(right.x));
+	}
 	Vector2 wallNormal = Vector2RightNormal(left, right);
 	if (SECTOR_NEIGHBOR_ID >= 0)
 	{

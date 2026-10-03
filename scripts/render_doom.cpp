@@ -7,6 +7,33 @@ const int DOOM_SIDE_BACK = 0;
 int[] DrawnSubSectors(128);
 int drawnIndex = 0;
 
+class SegmentPush
+{
+	int start;
+	int end;
+	int drawOrder;
+	bool isPortal;
+
+	SegmentPush()
+	{
+		start = 0;
+		end = 0;
+		drawOrder = 0;
+
+	}
+	SegmentPush(int startx, int endx, int number, bool portal)
+	{
+		start = startx;
+		end = endx;
+		drawOrder = number;
+		isPortal = portal;
+	}
+}
+
+const int PushAmount = 12;
+SegmentPush[] PushedSegments(PushAmount);
+int pushCount = 0;
+
 // Keeping track which ares of the screen have been drawn
 class WallSegment
 {
@@ -15,6 +42,7 @@ class WallSegment
 	int nextIndex;
 	int prevIndex;
 	int myIndex;
+	bool isPortal;
 	WallSegment()
 	{
 		start = 0;
@@ -22,15 +50,17 @@ class WallSegment
 		nextIndex = -1;
 		prevIndex = -1;
 		myIndex = -1;
+		isPortal = false;
 	}
 
-	WallSegment(int left, int right, int prev, int next, int index)
+	WallSegment(int left, int right, int prev, int next, int index, bool portal)
 	{
 		start = left;
 		end = right;
 		prevIndex = prev;
 		nextIndex = next;
 		myIndex = index;
+		isPortal = portal;
 	}
 
 	bool OverlapsWith(WallSegment@ other)
@@ -97,22 +127,35 @@ void InitWallSegments()
 
 void ResetWallSegments()
 {
-	wallSegments[0] = WallSegment(-MAX_16, -SCREEN_WIDTH/2, -1, 1, 0);
-	wallSegments[1] = WallSegment(SCREEN_WIDTH/2, MAX_16, 0, -1, 1);
+	wallSegments[0] = WallSegment(-MAX_16, -SCREEN_WIDTH/2, -1, 1, 0, false);
+	wallSegments[1] = WallSegment(SCREEN_WIDTH/2, MAX_16, 0, -1, 1, false);
 	lastWallSegment = 2;
+	pushCount = 0;
 }
 
 // This is complicated, do later
-void PushWallSegment(int startx, int endx)
+void PushWallSegment(int startx, int endx, bool isPortal)
 {
 	if (DEBUG_LOG)
 	{
 		mgdl_LogTextInt("Push segment start ", startx);
 		mgdl_LogTextInt("Push segment end ", endx);
 	}
+	if (pushCount < PushAmount)
+	{
+
+		if (DEBUG_LOG)
+		{
+			mgdl_LogTextInt("Push debug ", pushCount);
+		}
+		PushedSegments[pushCount] = SegmentPush(startx, endx, drawnIndex, isPortal);
+	}
+	pushCount += 1;
+
 	WallSegment@ drawn = @wallSegments[lastWallSegment];
 	drawn.start = startx;
 	drawn.end = endx;
+	drawn.isPortal = isPortal;
 	InsertNewSegment(drawn, 0);
 }
 
@@ -133,11 +176,20 @@ void PushWallSegment(int startx, int endx)
 void InsertNewSegment(WallSegment@ drawn, int recursion)
 {
 	bool merged = false;
-	int prevTargetIndex = -1;
+
+	// Remember what was the previous target
+	int previousTargetIndex = -1;
+
+	// Start with targeting the first
 	int targetIndex = 0;
-	while(true)
+	while(targetIndex >= 0 && targetIndex < WALL_SEGMENT_AMOUNT)
 	{
 		WallSegment@ target = @wallSegments[targetIndex];
+
+		if (DEBUG_LOG)
+		{
+			mgdl_LogTextInt("Target segment is ", targetIndex);
+		}
 		// 1. Try merge
 		if (drawn.OverlapsWith(target))
 		{
@@ -155,15 +207,26 @@ void InsertNewSegment(WallSegment@ drawn, int recursion)
 		} // 2. Insert?
 		else if (drawn.end < target.start)
 		{
-			drawn.myIndex = lastWallSegment;
-			drawn.prevIndex = prevTargetIndex;
-			if (prevTargetIndex >= 0)
+			if (DEBUG_LOG)
 			{
-				WallSegment@ previous = @wallSegments[prevTargetIndex];
-				previous.nextIndex = lastWallSegment;
+				mgdl_LogText("  is before target, insert");
+			}
+			// Get my index in list
+			drawn.myIndex = lastWallSegment;
+			// Set the previous target as my previous segment
+			drawn.prevIndex = previousTargetIndex;
+
+			// If the previous one was not -1
+			if (previousTargetIndex >= 0)
+			{
+				WallSegment@ previous = @wallSegments[previousTargetIndex];
+				// Make me the next one of previous target
+				previous.nextIndex = drawn.myIndex;
 			}
 			WallSegment@ next = @wallSegments[targetIndex];
-			next.prevIndex = lastWallSegment;
+			// Make me the previous of the target
+			next.prevIndex = drawn.myIndex;
+			// Make target my next segment
 			drawn.nextIndex = targetIndex;
 
 			wallSegments[lastWallSegment] = drawn;
@@ -179,10 +242,17 @@ void InsertNewSegment(WallSegment@ drawn, int recursion)
 		{
 			if (DEBUG_LOG)
 			{
-				mgdl_LogText("  try next segment");
+				mgdl_LogText("  is after target, try next segment");
 			}
-			prevTargetIndex += 1;
-			targetIndex += 1;
+			previousTargetIndex = targetIndex;
+			// Take the index of the next segment
+			targetIndex = target.nextIndex;
+			//
+			if (targetIndex < 0)
+			{
+				// This was the last one
+				break;
+			}
 			continue;
 		}
 	}
@@ -203,8 +273,8 @@ void InsertNewSegment(WallSegment@ drawn, int recursion)
 				{
 					mgdl_LogText("    touches next");
 					// merge next one into this
-					nextSegment.MergeInto(target);
 				}
+				nextSegment.MergeInto(target);
 				// 5.
 				nextSegment.Drop();
 				nextIndex = nextSegment.nextIndex;
@@ -245,8 +315,10 @@ bool IsWallSegmentOccluded(int startx, int endx)
 	while(nextIndex >= 0)
 	{
 		WallSegment@ seg = @wallSegments[nextIndex];
+		if (DEBUG_LOG) { mgdl_LogTextInt("Occlusion test against segment ", nextIndex); }
 		if (startx >= seg.start && endx <= seg.end)
 		{
+			if (DEBUG_LOG) { mgdl_LogText("	is occluded"); }
 			return true;
 		}
 		nextIndex = seg.nextIndex;
@@ -291,15 +363,37 @@ color32 GetDebugColor(int index)
 
 void DrawWallSegmentDebug()
 {
-	int top = 0;
-	for (int i = 0; i < lastWallSegment; i++)
+	color32 sc = GetDebugColor(drawnIndex + 1);
+	for (int i = 0; i < pushCount; i++)
 	{
-		WallSegment seg = wallSegments[i];
+		SegmentPush seg = PushedSegments[i];
 		float x= seg.start;
-		float y= top;
+		float y= seg.drawOrder * 8;
 		float w = seg.end-seg.start;
-		float h = 4;
-		mgdl_DrawRectangle(x, y, w,h, GetDebugColor(i));
+		float h = 8;
+		mgdl_DrawTextInt("Segment start", x, text_x, NextY(), 8, sc);
+		mgdl_DrawTextInt("Segment width ", w, text_x, NextY(), 8, sc);
+		if (seg.isPortal)
+		{
+			glBegin(GL_LINE_LOOP);
+			mgdl_glColor32(sc);
+			glVertex2f(x, y);
+			glVertex2f(x, y+h);
+			glVertex2f(x+w, y+h);
+			glVertex2f(x+w, y);
+
+			glEnd();
+		}
+		else
+		{
+			glBegin(GL_QUADS);
+			mgdl_glColor32(sc);
+			glVertex2f(x, y);
+			glVertex2f(x, y+h);
+			glVertex2f(x+w, y+h);
+			glVertex2f(x+w, y);
+			glEnd();
+		}
 	}
 }
 
@@ -706,13 +800,10 @@ void DrawSubSector(DoomMap@ map, Actor@ player, DoomSubSector@ sub, int sectorIn
 					SECTOR_NEIGHBOR_CEILINGY = back_sector.heightceiling;
 					SECTOR_NEIGHBOR_FLOORY = back_sector.heightfloor;
 				}
-				if (RENDER_2D_WALLS)
+
+
+				// Occlusion test and book keeping
 				{
-					DrawWall2D(false);
-				}
-				else
-				{
-					// Occlusion test and book keeping
 					if (IsWallSegmentOccluded(CANVAS_AX, CANVAS_BX))
 					{
 						if (DEBUG_LOG)
@@ -726,27 +817,36 @@ void DrawSubSector(DoomMap@ map, Actor@ player, DoomSubSector@ sub, int sectorIn
 						if (SECTOR_NEIGHBOR_FLOORY >= SECTOR_NEIGHBOR_CEILINGY) // Check if a door is closed
 						{
 							if (DEBUG_LOG) { mgdl_LogText("Closed door ");}
-							PushWallSegment(CANVAS_AX, CANVAS_BX);
+							PushWallSegment(CANVAS_AX, CANVAS_BX, isPortal);
 						}
 					}
 					else
 					{
-						PushWallSegment(CANVAS_AX, CANVAS_BX);
+						PushWallSegment(CANVAS_AX, CANVAS_BX, isPortal);
 					}
 
-					// NOTE FLIP_THE_Y affets this call
-					if (DEBUG_LOG) { mgdl_LogText("Draw 3D wall");}
-					DrawWall3D(wall2, wall1, sidedef.texturemiddle, sidedef.texturebottom, sidedef.texturetop, sector.lightlevel);
+					if (RENDER_2D_WALLS)
+					{
+						DrawWall2D(false);
+					}
+					else
+					{
+						// NOTE FLIP_THE_Y affets this call
+						if (DEBUG_LOG) { mgdl_LogText("Draw 3D wall");}
+						DrawWall3D(wall2, wall1, sidedef.texturemiddle, sidedef.texturebottom, sidedef.texturetop, sector.lightlevel);
+					}
 				}
 			}
 		}
 	}
+
 	drawOrder += 1;
 }
 
 void DrawNodeChild(DoomMap@ map, Actor@ player, ChildId id)
 {
-	if(RENDER_TOPDOWN == false && RENDER_2D_WALLS == false)
+	// Only do occlusion test in first person view
+	if(RENDER_TOPDOWN == false)
 	{
 		if (IsWallSegmentFilled())
 		{
@@ -779,7 +879,6 @@ void DrawNodeChild(DoomMap@ map, Actor@ player, ChildId id)
 					mgdl_LogTextInt(">> Drawing SubSector: ", sectorId);
 				}
 			}
-
 		}
 	}
 
@@ -937,6 +1036,10 @@ void StartFrame_Doom()
 
 void RenderDoomMapLines(DoomMap@ map)
 {
+	if (DEBUG_LOG)
+	{
+		mgdl_LogText("----------- DOOM FRAME START --------------");
+	}
 	Init2D_YDown();
 	glPushMatrix();
 
@@ -950,7 +1053,17 @@ void RenderDoomMapLines(DoomMap@ map)
 	DoomNode@ root = map.GetRootNode();
 	DrawNode(map, player, root);
 
+
+	if (RENDER_2D_WALLS)
+	{
+		DrawWallSegmentDebug();
+	}
 	glPopMatrix();
+
+	if (DEBUG_LOG)
+	{
+		mgdl_LogText("----------- DOOM FRAME END --------------");
+	}
 }
 
 void RenderDoomMap(DoomMap@ map)
@@ -968,9 +1081,15 @@ void RenderDoomMap(DoomMap@ map)
 	DrawNode(map, player, root);
 
 	// Draw all floors and ceilings
+
+	if (DEBUG_LOG)
+	{
+		mgdl_LogTextInt("Drawing subsector floor and ceilings ", drawnIndex);
+	}
 	BunnySector_StartFloorCeilingDrawing();
 	for (int i = 0; i < drawnIndex; i++)
 	{
+		if (DEBUG_LOG) { mgdl_LogTextInt("    for subsector", DrawnSubSectors[i]); }
 		BunnySector_DrawSectorFloorOrCeiling(DrawnSubSectors[i], true);
 		BunnySector_DrawSectorFloorOrCeiling(DrawnSubSectors[i], false);
 	}
