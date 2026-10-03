@@ -229,6 +229,7 @@ void BunnySector_StartMap(MapId mapId, int playerAmount)
 			actorPool.Clear();
 			map->SetActorPool(&actorPool);
 			map->CreateActors();
+			map->ClearActions();
 			for (int i = 0; i < activePlayerAmount; i++)
 			{
 				players[i].Init(0, 2024,6000, 720, 1400);

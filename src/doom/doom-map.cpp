@@ -515,6 +515,11 @@ void DoomMap::StartAction(DoomLinedef* trigger)
 		actionCount += 1;
 	}
 }
+void DoomMap::ClearActions()
+{
+	actionCount = 0;
+}
+
 
 /*
  * Return true when done
@@ -673,6 +678,7 @@ MapUpdateResult DoomMap::UpdateActions(float delta)
 					case special_exit_normal:
 						// The game should exit the map at next tick
 						result = mapupdate_exit_normal;
+						actionDone = true;
 						break;
 		}
 

@@ -731,10 +731,11 @@ void ResetTextY()
 {
 	text_y = -SCREEN_HEIGHT/2 + 8;
 }
-int NextY()
+int NextY(int textSize = 8)
 {
-	text_y += 8;
-	return text_y;
+	int prev = text_y;
+	text_y += textSize;
+	return prev;
 }
 
 void DrawBox(Vector2 center, float width, float height, color32 color)

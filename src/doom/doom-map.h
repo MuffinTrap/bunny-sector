@@ -86,6 +86,7 @@ public:
 	int FindSubSector(DoomNode* node, Vector2 point);
 
 	void StartAction(DoomLinedef* trigger);
+	void ClearActions() override;
 
 	bool OpenDoorSector(int sectorIndex, DoomSector* sector, int heightChange);
 	bool CloseDoorSector(DoomSector* sector, int heightChange);

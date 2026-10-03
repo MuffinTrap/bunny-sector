@@ -920,7 +920,7 @@ glPushMatrix();
 
 	mgdl_DrawTextInt("Player subsec", FindSubSectorRec(map, root, playerPos), text_x, NextY(), 8, Debug_Red);
 	//mgdl_DrawTextFloat("Units to meter ", angel_unitstometer, text_x, NextY(), 16, Debug_Red);
-	BunnySector_DrawCameraInfo(text_x, NextY());
+	//BunnySector_DrawCameraInfo(text_x, NextY());
 glPopMatrix();
 }
 

@@ -36,7 +36,6 @@ void angelscript_init()
 
 	doomMapId = BunnySector_LoadMap("assets/slade_test.wad");
 	//dukeMapId = BunnySector_LoadMap("assets/doome1m1.map");
-	BunnySector_StartMap(doomMapId, 1);
 
 	// Match 2D render to OpenGL render
 	RenderInit(BunnySector_GetOpenGLCameraVerticalFOVDeg());
@@ -93,7 +92,7 @@ void DrawDrive(int x, int y, float amount)
 	mgdl_DrawRectangle(x,y, amount * 100, 8, Debug_Yellow);
 }
 
-void DrawDebugs()
+void Start2D()
 {
 	int screenWidth = mgdl_GetScreenWidth();
 	int screenHeight = mgdl_GetScreenHeight();
@@ -104,33 +103,18 @@ glPushMatrix();
 	float screen_half_height = screenHeight / 2.0f;
 	glTranslatef(screen_half_width, screen_half_height, 0);
 
-	GameStatus status = BunnySector_GetGameStatus();
-	if (status == status_player_alive)
-	{
-		int bluecards = BunnySector_GetPlayerItemCount(0, editorNumber_blue_card);
-		mgdl_DrawTextInt("Blue cards", bluecards, text_x, NextY(), 8, Debug_LightBlue);
-		Actor@ player0 = BunnySector_GetPlayerActor(0);
-		if (player0.IsDoing(action_use))
-		{
-			mgdl_DrawText("Player is using", text_x, NextY(), 32, Debug_LightBlue);
-		}
-	}
-	else if (status == status_player_dead)
-	{
-		mgdl_DrawText("Player is dead ", text_x, NextY(), 32, Debug_Red);
+}
+void End2D()
+{
+	glPopMatrix();
 
-	}
-	else if (status == status_menu)
-	{
-		mgdl_DrawText("In menu", text_x, NextY(), 32, Debug_LightBlue);
-		// Map is over
-	}
-	else if (status == status_exit_normal)
-	{
-		// Map is over
-		mgdl_DrawText("Exit map", text_x, NextY(), 32, Debug_LightYellow);
-	}
-glPopMatrix();
+}
+
+void DrawDebugs()
+{
+	Start2D();
+
+	End2D();
 }
 
 void movePlayer(int playerIndex, float deltatime)
@@ -244,6 +228,48 @@ void angelscript_after_collision()
 	}
 }
 
+void angelscript_render_menu()
+{
+	Start2D();
+	mgdl_DrawText("Menu", text_x, NextY(32), 32, Debug_LightYellow);
+	mgdl_DrawText("Press (A) to start", text_x, NextY(), 16, Debug_LightBlue);
+	End2D();
+	if (mgdl_IsButtonPressed(0, ButtonA))
+	{
+		BunnySector_StartMap(doomMapId, 1);
+		BunnySector_SetGameStatus(status_player_alive);
+	}
+}
+
+void angelscript_render_exit_menu()
+{
+	Start2D();
+		// Map is over
+		mgdl_DrawText("Exit map", text_x, NextY(32), 32, Debug_LightYellow);
+		mgdl_DrawText("Press (A) and (B) together to restart", text_x, NextY(), 8, Debug_LightBlue);
+
+	End2D();
+
+	if (mgdl_IsButtonDown(0, ButtonA) && mgdl_IsButtonDown(0, ButtonB))
+	{
+		BunnySector_StartMap(doomMapId, 1);
+		BunnySector_SetGameStatus(status_player_alive);
+	}
+}
+
+void angelscript_render_player_info()
+{
+	Start2D();
+		int bluecards = BunnySector_GetPlayerItemCount(0, editorNumber_blue_card);
+		mgdl_DrawTextInt("Blue cards", bluecards, text_x, NextY(), 8, Debug_LightBlue);
+		Actor@ player0 = BunnySector_GetPlayerActor(0);
+		if (player0.IsDoing(action_use))
+		{
+			mgdl_DrawText("Player is using", text_x, NextY(16), 16, Debug_LightBlue);
+		}
+	End2D();
+}
+
 void angelscript_render()
 {
 	float aspect = mgdl_GetScreenWidth()/mgdl_GetScreenHeight();
@@ -275,6 +301,15 @@ void angelscript_render()
 		}
 
 		RenderMiniMapDoom(BunnySector_GetDoomMap(doomMapId));
+		angelscript_render_player_info();
+	}
+	else if (status == status_menu)
+	{
+		angelscript_render_menu();
+	}
+	else if (status == status_exit_normal)
+	{
+		angelscript_render_exit_menu();
 	}
 
 	DrawDebugs();

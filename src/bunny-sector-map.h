@@ -69,6 +69,7 @@ public:
 
 	virtual WallInfo GetWallInfo(int sectorIndex, int wallIndex);
 	virtual MapUpdateResult UpdateActions(float delta) = 0;
+	virtual void ClearActions() = 0;
 
 	zstr* GetMapFile();
 	void MoveActors(float delta);
