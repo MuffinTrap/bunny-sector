@@ -26,12 +26,13 @@
 
 }
 
-void DoomMap::AddActor(ActorType actorType, int typeNumber, Vector2 position, int width, int height, float angleDeg, MaterialId material)
+void DoomMap::AddActor(ActorType actorType, int typeNumber, int id, Vector2 position, int width, int height, float angleDeg, MaterialId material)
 {
 	Actor a;
 	Actor_Init(&a);
 
 	a.actorType = actorType;
+	a.idNumber = id;
 	a.position.vectorPosition = position;
 	a.yawRad = DEG2RAD * angleDeg;
 	a.texture = material;
@@ -61,12 +62,12 @@ void DoomMap::CreateActors()
 		switch(t->type)
 		{
 			case editorNumber_player_start_1:
-				AddActor(actor_player, t->type, pos, itemSize, itemSize, t->angleDeg, material);
+				AddActor(actor_player, t->type, 0, pos, itemSize, itemSize, t->angleDeg, material);
 				playerCreated = true;
 				break;
 
 			case editorNumber_blue_card:
-				AddActor(actor_item, t->type, pos, itemSize, itemSize, t->angleDeg, material);
+				AddActor(actor_item, t->type, 0, pos, itemSize, itemSize, t->angleDeg, material);
 				break;
 		}
 
@@ -317,6 +318,14 @@ u32 DoomMap::MoveActorInMapImpl(Vector2 start, Vector2 end, float radius, s16 se
         // Get wall start and end points
         // TODO make a function that gets the Start and Endpoint Vectors
         DoomSegment* wall = &segments[sector->firstSegment + wi];
+
+		// NOTE Doom walls that don't have linedef are created just to
+		// build subsectors. They can be ignored
+		if (wall->linedef == DOOM_INVALID_LINEDEF)
+		{
+			continue;
+		}
+
         bool treatAsWall = (wall->neighbourSector < 0);
 
         // Check if could change elevation
@@ -382,12 +391,15 @@ u32 DoomMap::MoveActorInMapImpl(Vector2 start, Vector2 end, float radius, s16 se
                     moveResultBitfield = Flag_SetBit(moveResultBitfield, Move_HitWall);
 
 					// Check if this triggers something
-					DoomLinedef* linedef = &linedefs[wall->linedef];
-					if (linedef->special > 0)
+					if (wall->linedef != DOOM_INVALID_LINEDEF)
 					{
-						StartLinedefAction(linedef, actor, false);
+						DoomLinedef* linedef = &linedefs[wall->linedef];
+						if (linedef->special > 0)
+						{
+							StartLinedefAction(linedef, actor, false);
+						}
 					}
-                }
+               }
             }
         } // if is wall
     } // Wall loop

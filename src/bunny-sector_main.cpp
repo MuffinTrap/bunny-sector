@@ -316,6 +316,7 @@ void BunnySector_UpdateMapPtr(BunnySector_Map* map, float deltaTime)
 				Actor* player0Actor = activeMap->GetActorByTypeAndIndex(actor_player, pi); // player0.lastActorSubSector); // Start search from where the actor was last time
 				players[pi].ApplyDrive(player0Actor, FIXED_STEP);
 				players[pi].ApplyVerticalMove(player0Actor, FIXED_STEP);
+				player0Actor->actionFlags = players[pi].actionFlags;
 
 				map->MoveActors(FIXED_STEP);
 
@@ -445,6 +446,19 @@ void BunnySector_SetPlayerSpeeds(int playerIndex, float walkSpeedMultiplier, flo
 {
 	players[playerIndex].walkSpeedMultiplier = walkSpeedMultiplier;
 	players[playerIndex].turnSpeedMultiplier = turnSpeedMultiplier;
+}
+
+void BunnySector_StartPlayerAction(int playerIndex, ActorActionBit action)
+{
+	players[playerIndex].actionFlags = Flag_SetBit(players[playerIndex].actionFlags, action);
+
+}
+
+void BunnySector_StopPlayerAction(int playerIndex, ActorActionBit action)
+{
+
+	players[playerIndex].actionFlags = Flag_UnsetBit(players[playerIndex].actionFlags, action);
+
 }
 
 Wall* BunnySector_GetWallEnd(Wall* wall)

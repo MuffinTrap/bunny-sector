@@ -146,6 +146,12 @@ void RegisterBunnySector(mgdl_AngelScript* angel)
 	as_engine->RegisterGlobalFunction("MapId BunnySector_LoadMap(const zstr &in mapfilename)", asFUNCTIONPR(BunnySector_LoadMap, (const zstr&), MapId), asCALL_CDECL);
 	as_engine->RegisterGlobalFunction("void BunnySector_StartMap(MapId mapId, int playerAmount)", asFUNCTION(BunnySector_StartMap), asCALL_CDECL);
 
+	as_engine->RegisterEnum("ActorActionBit");
+	as_engine->RegisterEnumValue("ActorActionBit", "action_use",(int)action_use);
+	as_engine->RegisterEnumValue("ActorActionBit", "action_shoot",(int)action_shoot);
+	as_engine->RegisterEnumValue("ActorActionBit", "action_jump", (int)action_jump);
+
+
 	as_engine->RegisterEnum("GameStatus");
 	as_engine->RegisterEnumValue("GameStatus", "status_menu",(int)status_menu);
 	as_engine->RegisterEnumValue("GameStatus", "status_player_alive",(int)status_player_alive);
@@ -237,6 +243,7 @@ void RegisterBunnySector(mgdl_AngelScript* angel)
 	as_engine->RegisterObjectMethod("Actor", "BunnyV2@ GetPosition()", asFUNCTION(Actor_GetPosition), asCALL_CDECL_OBJFIRST);
 	as_engine->RegisterObjectMethod("Actor", "BunnyV2@ GetFloorDirection()", asFUNCTION(Actor_GetFloorDirection), asCALL_CDECL_OBJFIRST);
 	as_engine->RegisterObjectMethod("Actor", "void SetPosition(float x, float y)", asFUNCTION(Actor_SetPosition), asCALL_CDECL_OBJFIRST);
+	as_engine->RegisterObjectMethod("Actor", "bool IsDoing(ActorActionBit actionBit)", asFUNCTION(Actor_IsDoing), asCALL_CDECL_OBJFIRST);
 
 	// ACTOR FUNCTIONS
 	as_engine->RegisterGlobalFunction("Actor@ BunnySector_GetActorByIndex(int actorIndex)", asFUNCTION(BunnySector_GetActorByIndex), asCALL_CDECL);
@@ -251,4 +258,6 @@ void RegisterBunnySector(mgdl_AngelScript* angel)
 	// Player functions
 	as_engine->RegisterGlobalFunction("bool BunnySector_GivePlayerItem(int playerIndex, int itemType, int amount)", asFUNCTION(BunnySector_GivePlayerItem), asCALL_CDECL);
 	as_engine->RegisterGlobalFunction("int BunnySector_GetPlayerItemCount(int playerIndex, int itemType)", asFUNCTION(BunnySector_GetPlayerItemCount), asCALL_CDECL);
+	as_engine->RegisterGlobalFunction("void BunnySector_StartPlayerAction(int playerIndex, ActorActionBit actionBit)", asFUNCTION(BunnySector_StartPlayerAction), asCALL_CDECL);
+	as_engine->RegisterGlobalFunction("void BunnySector_StopPlayerAction(int playerIndex, ActorActionBit actionBit)", asFUNCTION(BunnySector_StopPlayerAction), asCALL_CDECL);
 }

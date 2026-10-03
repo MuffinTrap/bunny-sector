@@ -53,6 +53,9 @@ public:
     float walkSpeedMultiplier;
     float turnSpeedMultiplier;
 
+    // What the actor should be doing
+    u32 actionFlags;
+
 	int prevActorSubSectorNumber;
 
 	InventoryEntry inventory[32];

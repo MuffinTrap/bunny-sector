@@ -103,12 +103,37 @@ glPushMatrix();
 	float screen_half_width = screenWidth / 2.0f;
 	float screen_half_height = screenHeight / 2.0f;
 	glTranslatef(screen_half_width, screen_half_height, 0);
-	int bluecards = BunnySector_GetPlayerItemCount(0, editorNumber_blue_card);
-	mgdl_DrawTextInt("Blue cards", bluecards, text_x, NextY(), 8, Debug_LightBlue);
+
+	GameStatus status = BunnySector_GetGameStatus();
+	if (status == status_player_alive)
+	{
+		int bluecards = BunnySector_GetPlayerItemCount(0, editorNumber_blue_card);
+		mgdl_DrawTextInt("Blue cards", bluecards, text_x, NextY(), 8, Debug_LightBlue);
+		Actor@ player0 = BunnySector_GetPlayerActor(0);
+		if (player0.IsDoing(action_use))
+		{
+			mgdl_DrawText("Player is using", text_x, NextY(), 32, Debug_LightBlue);
+		}
+	}
+	else if (status == status_player_dead)
+	{
+		mgdl_DrawText("Player is dead ", text_x, NextY(), 32, Debug_Red);
+
+	}
+	else if (status == status_menu)
+	{
+		mgdl_DrawText("In menu", text_x, NextY(), 32, Debug_LightBlue);
+		// Map is over
+	}
+	else if (status == status_exit_normal)
+	{
+		// Map is over
+		mgdl_DrawText("Exit map", text_x, NextY(), 32, Debug_LightYellow);
+	}
 glPopMatrix();
 }
 
-void movePlayer(float deltatime)
+void movePlayer(int playerIndex, float deltatime)
 {
 
 	float forward = 0;
@@ -117,26 +142,54 @@ void movePlayer(float deltatime)
 	float vertical = 0.0f;
 
 
-	if (mgdl_IsButtonDown(0, ButtonUp))
+	if (mgdl_IsButtonDown(playerIndex, ButtonUp))
 	{
 		vertical = 1.0f;
 	}
-	else if (mgdl_IsButtonDown(0, ButtonDown))
+	else if (mgdl_IsButtonDown(playerIndex, ButtonDown))
 	{
 		vertical = -1.0f;
 	}
 	else
 	{
 		vertical = 0.0f;
-		Actor@ actor = BunnySector_GetPlayerActor(0);
+		Actor@ actor = BunnySector_GetPlayerActor(playerIndex);
 		actor.verticalVelocity = 0.0f;
 	}
 
-	Vector2 wasd = mgdl_GetJoystick(0, Joystick_Nunchuk);
+	Vector2 wasd = mgdl_GetJoystick(playerIndex, Joystick_Nunchuk);
 	forward = -wasd.y;
 	turn = wasd.x;
 
-	BunnySector_SetPlayerDriveInput(0, forward, strafe, vertical, turn, 0.0f);
+	BunnySector_SetPlayerDriveInput(playerIndex, forward, strafe, vertical, turn, 0.0f);
+
+	// Use button is A for now
+	if (mgdl_IsButtonDown(playerIndex, ButtonA))
+	{
+		BunnySector_StartPlayerAction(playerIndex, action_use);
+	}
+	else if (mgdl_IsButtonReleased(playerIndex, ButtonA))
+	{
+		BunnySector_StopPlayerAction(playerIndex, action_use);
+	}
+
+	if (mgdl_IsButtonDown(playerIndex, ButtonB))
+	{
+		BunnySector_StartPlayerAction(playerIndex, action_shoot);
+	}
+	else if (mgdl_IsButtonReleased(playerIndex, ButtonB))
+	{
+		BunnySector_StopPlayerAction(playerIndex, action_shoot);
+	}
+
+	if (mgdl_IsButtonDown(playerIndex, ButtonC))
+	{
+		BunnySector_StartPlayerAction(playerIndex, action_jump);
+	}
+	else if (mgdl_IsButtonReleased(playerIndex, ButtonC))
+	{
+		BunnySector_StopPlayerAction(playerIndex, action_jump);
+	}
 
 }
 
@@ -169,7 +222,7 @@ void angelscript_frame_doom(float deltatime)
 {
 	BunnySector_SetOpenGLUnitsToMeter(angel_unitstometer);
 	BunnySector_SetPlayerSpeeds(0, 1.0f, 1.0f);
-	movePlayer(deltatime);
+	movePlayer(0, deltatime);
 }
 
 void angelscript_after_collision()
@@ -201,11 +254,11 @@ void angelscript_render()
 		DEBUG_LOG = true;
 	}
 
+	StartFrame();
+
 	GameStatus status = BunnySector_GetGameStatus();
 	if (status == status_player_alive)
 	{
-
-		StartFrame();
 		StartFrame_Doom();
 		if (RENDER_2D_WALLS)
 		{
@@ -223,10 +276,6 @@ void angelscript_render()
 
 		RenderMiniMapDoom(BunnySector_GetDoomMap(doomMapId));
 	}
-	else if (status == status_exit_normal)
-	{
-		// Map is over
-	}
 
 	DrawDebugs();
 
@@ -238,7 +287,7 @@ void angelscript_render()
 void angelscript_frame_duke(float deltatime)
 {
 	BunnySector_SetPlayerSpeeds(0, 1.0f, 0.7f);
-	movePlayer(deltatime);
+	movePlayer(0, deltatime);
 	adjustFov(deltatime);
 
 

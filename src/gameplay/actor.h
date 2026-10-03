@@ -80,9 +80,9 @@ Actor Actor_Create(int idNumber, s16 sector, Vector3 position, float yawRad, flo
 BunnyV2* Actor_GetPosition(Actor* actor);
 BunnyV2* Actor_GetFloorDirection(Actor* actor);
 void Actor_SetPosition(Actor* actor, float x, float y);
-void Actor_StartAction(Actor* actor, ACTOR_ACTION_FLAGS flags);
-void Actor_EndAction(Actor* actor, ACTOR_ACTION_FLAGS flags);
-bool Actor_IsDoing(Actor* actor, ACTOR_ACTION_FLAGS flags);
+void Actor_StartAction(Actor* actor, ActorActionBit flags);
+void Actor_EndAction(Actor* actor, ActorActionBit flags);
+bool Actor_IsDoing(Actor* actor, ActorActionBit flags);
 
 Viewpoint Actor_GetViewpoint(Actor* actor);
 

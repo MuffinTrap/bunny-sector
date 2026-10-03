@@ -61,6 +61,8 @@ static DoomMap* map;
 #define DONTDRAW "dontdraw"
 #define MAPPED "mapped"
 #define PLAYERCROSS "playercross"
+#define PLAYERPUSH "playerpush"
+#define PLAYERUSE "playeruse"
 
 // Thing flags
 #define SKILL1 "skill1"
@@ -496,6 +498,20 @@ static void read_linedef() {
 				if (readBool())
 				{
 					t->linedef_flags = Flag_SetBit(t->linedef_flags, linedef_activate_player_cross);
+				}
+			}
+			else if (line_startswith(PLAYERPUSH))
+			{
+				if (readBool())
+				{
+					t->linedef_flags = Flag_SetBit(t->linedef_flags, linedef_activate_player_push);
+				}
+			}
+			else if (line_startswith(PLAYERUSE))
+			{
+				if (readBool())
+				{
+					t->linedef_flags = Flag_SetBit(t->linedef_flags, linedef_activate_player_use);
 				}
 			}
 			else if (line_has("}"))

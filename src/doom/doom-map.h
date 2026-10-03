@@ -81,7 +81,7 @@ public:
 	float GetSectorCeilingy(int sectorIndex);
 	float GetSectorFloory(int sectorIndex);
 
-	void AddActor(ActorType actorType, int typeNumber, Vector2 position, int width, int height, float angleDeg, MaterialId material);
+	void AddActor(ActorType actorType, int typeNumber, int id, Vector2 position, int width, int height, float angleDeg, MaterialId material);
 
 	int FindSubSector(DoomNode* node, Vector2 point);
 

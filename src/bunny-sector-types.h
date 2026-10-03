@@ -18,7 +18,7 @@ enum ActorType
     actor_particle_emitter
 };
 
-enum ACTOR_ACTION_FLAGS
+enum ActorActionBit
 {
 	action_use = 0,
 	action_shoot,

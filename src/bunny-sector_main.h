@@ -69,6 +69,8 @@ void BunnySector_DestroyActor(Actor* actor);
 bool BunnySector_GivePlayerItem(int playerIndex, int itemtype, int amount);
 int BunnySector_GetPlayerItemCount(int playerIndex, int itemtype);
 Player* BunnySector_GetPlayer(int playerIndex);
+void BunnySector_StartPlayerAction(int playerIndex, ActorActionBit action);
+void BunnySector_StopPlayerAction(int playerIndex, ActorActionBit action);
 
 // Camera functions
 float BunnySector_GetOpenGLCameraVerticalFOVDeg();

@@ -188,15 +188,15 @@ void Actor_SetPosition(Actor* actor, float x, float y)
 	actor->position.vectorPosition.y = y;
 }
 
-void Actor_StartAction(Actor* actor, ACTOR_ACTION_FLAGS flags)
+void Actor_StartAction(Actor* actor, ActorActionBit flags)
 {
 	actor->actionFlags = Flag_SetAll(actor->actionFlags, flags);
 }
-void Actor_EndAction(Actor* actor, ACTOR_ACTION_FLAGS flags)
+void Actor_EndAction(Actor* actor, ActorActionBit flags)
 {
 	actor->actionFlags = Flag_UnsetBit(actor->actionFlags, flags);
 }
-bool Actor_IsDoing(Actor* actor, ACTOR_ACTION_FLAGS flags)
+bool Actor_IsDoing(Actor* actor, ActorActionBit flags)
 {
 	return Flag_IsBitSet(actor->actionFlags, flags);
 }
