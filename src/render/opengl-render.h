@@ -2,7 +2,6 @@
 #include <mgdl/mgdl-types.h>
 #include <mgdl/mgdl-material.h>
 #include <mgdl/mgdl-color.h>
-#include "dukemap.h"
 #include "shell-grass.h"
 struct RenderSettingsOpenGL;
 struct Wall;
@@ -46,7 +45,6 @@ void OpenGLRender_StartDrawingPolygons();
 
 	void OpenGLRender_DrawWallV(Vector2 start, Vector2 end, Vector2 normalXZ, s32 floorY, s32 ceilingY, s16 picnum, s8 shade);
 
-	void OpenGLRender_DrawWall(DukeMap* map, Wall* w, float floorY, float ceilingY, RenderSettingsOpenGL* settings);
 	void OpenGLRender_DrawActors(BunnySector_Map* map, Vector2 cameraPosition);
 	void OpenGLRender_DrawSprite(Vector3 position, float width, float height, float spriteAngle, Vector2 playerPosition, SpriteAlignment alignment, SpritePivot pivot, s16 picnum, s8 brightnessOffset)
 ;
@@ -81,7 +79,6 @@ void OpenGLRender_BufferWalls(BunnySector_Map* map);
  * @brief Sets up rendering state to draw floors and ceilings from a buffer
  */
 void OpenGLRender_StartDrawingFloorsFromBuffer(BunnySector_Map* map);
-void OpenGLRender_DrawFloorOrCeilingDuke(DukeMap* map, s16 sectorIndex, bool floor);
 void OpenGLRender_DrawFloorOrCeiling(BunnySector_Map* map, int sectorIndex, u8 shade, float ycoord, MaterialId materialId, bool floor);
 
 void OpenGLRender_Line2(int x1, int z1, int x2, int z2);

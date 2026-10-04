@@ -899,12 +899,7 @@ void DrawWall2DFill(float ax, float ayt, float ayb, float az,
 	glBegin(GL_LINES);
 	for (int x = sx; x < ex; x++)
 	{
-		int bufferIndex = zBufferIndexOffset + x;
-		if (isPortal == false)
-		{
-			// When drawing walls, care about Z buffer
-			drawStrip = az < ZBuffer[bufferIndex];
-		}
+		int bufferIndex = SCREEN_WIDTH/2 + x;
 		if (drawStrip)
 		{
 			// Ceiling
@@ -943,10 +938,6 @@ void DrawWall2DFill(float ax, float ayt, float ayb, float az,
 			glVertex2f(x, ayb+1);
 			glVertex2f(x, BOTTOM_LIMITS[bufferIndex]);
 			*/
-
-			if (isPortal == false){
-				ZBuffer[bufferIndex]=az;
-			}
 		}
 
 		// Advance to next strip
