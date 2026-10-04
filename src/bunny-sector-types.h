@@ -149,3 +149,18 @@ struct Tesselator_BufferIndices
 	u16 vertexCount;
 };
 typedef struct Tesselator_BufferIndices Tesselator_BufferIndices;
+
+enum SpriteAlignment
+{
+    Sprite_FACE, ///< Billboard
+    Sprite_WALL, ///< Not billboard, drawn like wall
+    Sprite_FLOOR ///< Flat on floor or ceiling
+};
+typedef enum SpriteAlignment SpriteAlignment;
+
+enum SpritePivot
+{
+    Sprite_PivotCenter, // Center is position
+    Sprite_PivotFoot    // center is position + height/2
+};
+typedef enum SpritePivot SpritePivot;
