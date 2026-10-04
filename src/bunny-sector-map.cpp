@@ -239,4 +239,15 @@ void BunnySector_Map::SortMovedActors()
 // TODO Move this to ActorPool
 
 
+void MapFloorVertexData_AddPolygon(MapFloorVertexData* floorData, int sectorIndex, Tesselator_BufferIndices indicesBefore, Tesselator_BufferIndices indicesAfter)
+{
+    floorData->floorStartIndices[sectorIndex].indexIndex = indicesBefore.indexIndex;
+    u16 count = (indicesAfter.indexIndex - indicesBefore.indexIndex);
+    floorData->floorStartIndices[sectorIndex].indexCount = count;
+    //Log_InfoF("Sector %d: before %d After %d Count: %d\n", sectorIndex, indicesBefore.indexIndex, indicesAfter.indexIndex, count);
+    // Set indices in our buffers
+    floorData->floorStartIndices[sectorIndex].vertexIndex = indicesBefore.vertexIndex;
+    u16 vertexCount = (indicesAfter.vertexIndex - indicesBefore.vertexIndex);
+    floorData->floorStartIndices[sectorIndex].vertexCount = vertexCount;
+}
 

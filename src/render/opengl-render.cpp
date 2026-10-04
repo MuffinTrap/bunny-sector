@@ -6,11 +6,13 @@
 #include "../duke/dukemap.h"
 #include "../duke/build-render.h"
 #include "../bunny-sector-math.h"
-#include "../map/tesselator.h"
-#include "../map/obj-export.h"
 #include "../tinyxml2/tinyxml2.h"
 #include "../bunny-sector_main.h"
 #include "../bunny-sector-map.h"
+#include "../map/tesselatorbuffer.h"
+#include "../map/polytesselator.h"
+#include "../map/obj-export.h"
+#include "../map/tesselator.h"
 
 
 // Used when drawing grass materials
@@ -62,6 +64,11 @@ static RectF zeroOffset;
 // What OpenGL settings are active
 
 static float unitsPerMeter = 1.0f;
+
+// NOTE New way to tesselate
+PolyTesselator* polytess;
+static bool USE_POLY_TESS = true;
+ // #define TESS_DEBUG
 
 void OpenGLRender_SetUnitsToMeter(float unitsToMeter)
 {
@@ -300,20 +307,6 @@ void OpenGLRender_DrawActors(BunnySector_Map* map, Vector2 cameraPosition)
 }
 
 
-/**
- * @brief Calculate the uv coordinates of a floor or ceiling vertex in a sector
- */
-static Vector2 CalculateFloorOrCeilingUV(Vector2 size, Vector2 minPoint, Vector2 maxTexCoord, Vector2 vertex, float unitsPerMeterForUV)
-{
-    float xrange = size.x;
-    float zrange = size.y;
-    float xdiff = vertex.x - minPoint.x;
-    float zdiff = vertex.y - minPoint.y;
-    // NOTE The texture will repeat like crazy because these are duke units
-    float tx = xdiff/xrange * maxTexCoord.x;
-    float tz = zdiff/zrange * maxTexCoord.y;
-    return Vector2New(tx/unitsPerMeterForUV, tz/unitsPerMeterForUV);
-}
 
 void SetWrap(GLuint textureName)
 {
@@ -547,10 +540,14 @@ void OpenGLRender_DrawFloorOrCeiling(BunnySector_Map* map, int sectorIndex, u8 s
         glColor3f(color, color, color);
     }
 
-    if (!floor)
+    if (floor)
     {
         // Cull the ceiling faces the other way around
         glCullFace(GL_FRONT);
+    }
+    else
+    {
+        glCullFace(GL_BACK);
     }
         MapFloorVertexData* floorData = &map->floorVertexData;
         Tesselator_BufferIndices indices = floorData->floorStartIndices[sectorIndex];
@@ -561,7 +558,7 @@ void OpenGLRender_DrawFloorOrCeiling(BunnySector_Map* map, int sectorIndex, u8 s
         DrawFloorBufferWithMaterial(material, normal, floorData, indices);
 
         // Reset face culling
-        if (!floor)
+        if (floor)
         {
             glCullFace(GL_BACK);
         }
@@ -726,8 +723,15 @@ static void StartCountingFloorBufferSize(BunnySector_Map* map)
 
     // Start tesselator and send buffer adresses
 
-    Tesselator_Init();
-    Tesselator_SetBuffers(floorData->floorBuffer, floorData->floorBufferSizeVertices, floorData->floorIndexBuffer, floorData->floorIndexBufferSize);
+    if (USE_POLY_TESS)
+    {
+        polytess = new PolyTesselator(floorData->floorBuffer, floorData->floorBufferSizeVertices, floorData->floorIndexBuffer, floorData->floorIndexBufferSize);
+    }
+    else
+    {
+        Tesselator_Init();
+        Tesselator_SetBuffers(floorData->floorBuffer, floorData->floorBufferSizeVertices, floorData->floorIndexBuffer, floorData->floorIndexBufferSize);
+    }
 }
 
 static void TesselateFloor(BunnySector_Map* map, u16 sectorIndex, float unitsPerMeterForUV)
@@ -740,14 +744,27 @@ static void TesselateFloor(BunnySector_Map* map, u16 sectorIndex, float unitsPer
     // Set translation offset, normal and color for the whole polygon
     RectF uvOffset = zeroOffset;
     Tesselator_BufferIndices indicesBefore;
-    indicesBefore = Tesselator_BeginPolygon(floorNormal, uvOffset);
+    if (USE_POLY_TESS)
+    {
+        indicesBefore = polytess->BeginPolygon(floorNormal, uvOffset, sectorWallNum);
+    }
+    else{
+        indicesBefore = Tesselator_BeginPolygon(floorNormal, uvOffset);
+    }
 
     GLfloat vertex[3];
     Vector2 calculatedUV;
     GLfloat uv[2];
 
 
-        Tesselator_BeginContour();
+    if (USE_POLY_TESS)
+    {
+        polytess->BeginContour(contour_outline);
+    }
+    else
+    {
+        Tesselator_BeginContour(contour_outline);
+    }
 
     if (map->m_type == BunnyMapType::Map_Doom)
     {
@@ -762,14 +779,28 @@ static void TesselateFloor(BunnySector_Map* map, u16 sectorIndex, float unitsPer
             vertex[1] = 0.0f;
             vertex[2] = w.y;
             // TODO The parameters are always same except for w
-            calculatedUV = CalculateFloorOrCeilingUV(sectorSize, sectorMinPoint, sectorMaxTexCoord, w, unitsPerMeterForUV);
+            calculatedUV = TesselatorBuffer::CalculateFloorOrCeilingUV(sectorSize, sectorMinPoint, sectorMaxTexCoord, w, unitsPerMeterForUV);
             uv[0] = calculatedUV.x;
             uv[1] = calculatedUV.y;
 
-            Tesselator_AddVertexToPoly(vertex, uv);
+            if (USE_POLY_TESS)
+            {
+                polytess->AddVertexToPoly(vertex, uv);
+            }
+            else
+            {
+                Tesselator_AddVertexToPoly(vertex, uv);
+            }
         }
 
-        Tesselator_EndContour();
+        if (USE_POLY_TESS)
+        {
+            polytess->EndContour();
+        }
+        else
+        {
+            Tesselator_EndContour();
+        }
     }
     else
     {
@@ -800,9 +831,12 @@ static void TesselateFloor(BunnySector_Map* map, u16 sectorIndex, float unitsPer
         If the contourEndPoint is greater than sector's wallptr, we know that the sector is complete and
         this was the last contour.
         */
-        //Log_InfoF("Tesselating sector %d start %d/%d\n", sector->lotag, startingWall, sector->wallnum);
+#ifdef TESS_DEBUG
+        Log_InfoF("Tesselating sector %d start %d/%d\n", sectorIndex, sectorFirstWallIndex, sectorWallNum);
+#endif
 
         // Keep track of global wall index
+        Tesselator_ContourType currentContour = contour_outline;
         int pointIndex = contourStartPoint;
         for (s16 wi = sectorWallNum-1; wi >= 0; wi--)
         {
@@ -811,19 +845,40 @@ static void TesselateFloor(BunnySector_Map* map, u16 sectorIndex, float unitsPer
             vertex[0] = w.x;
             vertex[1] = 0.0f;
             vertex[2] = w.y;
-            calculatedUV = CalculateFloorOrCeilingUV(sectorSize, sectorMinPoint, sectorMaxTexCoord, w, unitsPerMeterForUV);
+            calculatedUV = TesselatorBuffer::CalculateFloorOrCeilingUV(sectorSize, sectorMinPoint, sectorMaxTexCoord, w, unitsPerMeterForUV);
             uv[0] = calculatedUV.x;
             uv[1] = calculatedUV.y;
 
+            if(USE_POLY_TESS)
+            {
+            polytess->AddVertexToPoly(vertex, uv);
+            }
+            else
+            {
             Tesselator_AddVertexToPoly(vertex, uv);
+            }
 
             if (pointIndex == contourEndPoint)
             {
-                Tesselator_EndContour();
+                if(USE_POLY_TESS)
+                {
+                    polytess->EndContour();
+                }
+                else
+                {
+                    Tesselator_EndContour();
+                }
                 if (wi > 0 && contourEndPoint > sectorFirstWallIndex)
                 {
-                    Tesselator_BeginContour();
+                    if(USE_POLY_TESS)
+                    {
+                        polytess->BeginContour(contour_hole);
+                    }
+                    else {
+                        Tesselator_BeginContour(contour_hole);
+                    }
                     contourEndPoint = map->GetNextWallVertexIndexInSector(sectorIndex, (wi-1));
+                    currentContour = contour_hole;
                 }
 
             }
@@ -831,17 +886,19 @@ static void TesselateFloor(BunnySector_Map* map, u16 sectorIndex, float unitsPer
         }
     }
 
-    Tesselator_BufferIndices indicesAfter = Tesselator_EndPolygon();
+    Tesselator_BufferIndices indicesAfter;
+    if (USE_POLY_TESS)
+    {
+        indicesAfter = polytess->EndPolygon(sectorSize, sectorMinPoint, sectorMaxTexCoord, unitsPerMeterForUV);
+    }
+    else {
+        indicesAfter= Tesselator_EndPolygon();
+    }
+
 
     MapFloorVertexData* floorData = &map->floorVertexData;
-    floorData->floorStartIndices[sectorIndex].indexIndex = indicesBefore.indexIndex;
-    u16 count = (indicesAfter.indexIndex - indicesBefore.indexIndex);
-    floorData->floorStartIndices[sectorIndex].indexCount = count;
-    //Log_InfoF("Sector %d: before %d After %d Count: %d\n", sectorIndex, indicesBefore.indexIndex, indicesAfter.indexIndex, count);
-    // Set indices in our buffers
-    floorData->floorStartIndices[sectorIndex].vertexIndex = indicesBefore.vertexIndex;
-    u16 vertexCount = (indicesAfter.vertexIndex - indicesBefore.vertexIndex);
-    floorData->floorStartIndices[sectorIndex].vertexCount = vertexCount;
+    MapFloorVertexData_AddPolygon(floorData, sectorIndex, indicesBefore, indicesAfter);
+
 }
 
 static void StopCountingFloorBufferSize(BunnySector_Map* map)
@@ -855,23 +912,34 @@ static void StopCountingFloorBufferSize(BunnySector_Map* map)
         floorData->floorIndexBuffer = (GLushort*)realloc(floorData->floorIndexBuffer, lastIndex * sizeof(GLushort));
         floorData->floorIndexBufferSize = lastIndex;
     }
-    //Log_InfoF("Tesselator created %d indices in total\n", floorIndexBufferSize);
-    Tesselator_Deinit();
 
-    /* DEBUG LOGGING
-    Log_Info("Floor Vertex buffer:\n");
-    for (u32 v = 0; v < floorBufferSizeVertices; v++)
+#ifdef TESS_DEBUG
+    Log_InfoF("Tesselator created %d indices in total\n", floorData->floorIndexBufferSize);
+#endif
+    if (USE_POLY_TESS)
     {
-        int i = v * FLOOR_BUFFER_VERTEX_SIZE;
-        Log_InfoF("V %d: (%.1f, %.1f, %.1f)\n", v, floorBuffer[i+0], floorBuffer[i+1], floorBuffer[i+2]);
+        delete polytess;
+        polytess = nullptr;
+    }
+    else
+    {
+        Tesselator_Deinit();
+    }
+
+#ifdef TESS_DEBUG
+    Log_Info("Floor Vertex buffer:\n");
+    for (u32 v = 0; v < floorData->floorBufferSizeVertices; v++)
+    {
+        int i = v * MapFloorVertexData::FLOOR_BUFFER_VERTEX_SIZE;
+        Log_InfoF("V %d: (%.1f, %.1f, %.1f)\n", v, floorData->floorBuffer[i+0], floorData->floorBuffer[i+1], floorData->floorBuffer[i+2]);
     }
     Log_Info("Floor Index buffer to triangles:\n");
-    for (u32 v = 0; v < floorIndexBufferSize; v += 3)
+    for (u32 v = 0; v < floorData->floorIndexBufferSize; v += 3)
     {
-        Log_InfoF("F %d: (%d, %d, %d)\n", v/3, floorIndexBuffer[v+0], floorIndexBuffer[v+1], floorIndexBuffer[v+2]);
+        Log_InfoF("F %d: (%d, %d, %d)\n", v/3, floorData->floorIndexBuffer[v+0], floorData->floorIndexBuffer[v+1], floorData->floorIndexBuffer[v+2]);
         Log_InfoF("       %d, %d, %d )\n",v+0, v+1, v+2);
     }
-    */
+#endif
 }
 
 void OpenGLRender_CreateFloorBuffers(BunnySector_Map* map, float unitsPerMeterForUV)

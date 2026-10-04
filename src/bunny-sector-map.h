@@ -22,6 +22,8 @@ struct MapFloorVertexData
 };
 typedef struct MapFloorVertexData MapFloorVertexData;
 
+void MapFloorVertexData_AddPolygon(MapFloorVertexData* floorData, int sectorIndex, Tesselator_BufferIndices indicesBefore, Tesselator_BufferIndices indicesAfter);
+
 enum BunnyMapType
 {
 	Map_Duke,

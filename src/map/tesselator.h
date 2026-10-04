@@ -5,16 +5,8 @@
     extern "C" {
 #endif
 
-    struct Tesselator_BufferIndices
-    {
-        u16 indexIndex;
-        u16 indexCount;
+#include "../bunny-sector-types.h"
 
-        // Needed for obj export
-        u16 vertexIndex;
-        u16 vertexCount;
-    };
-    typedef struct Tesselator_BufferIndices Tesselator_BufferIndices;
 
 void Tesselator_Init();
 
@@ -23,8 +15,9 @@ void Tesselator_SetBuffers(GLfloat* vertices, u32 verticeSize, GLushort* indices
  * @brief Returns the indices before polygon
  */
 Tesselator_BufferIndices Tesselator_BeginPolygon(GLfloat normal[3], RectF uvLimits);
+Tesselator_BufferIndices Tesselator_BeginKnownPolygon(GLfloat normal[3], RectF uvLimits, int vertexAmount);
 void Tesselator_AddVertexToPoly(GLfloat vertex[3], GLfloat uv[2]);
-void Tesselator_BeginContour();
+void Tesselator_BeginContour(Tesselator_ContourType ctype);
 void Tesselator_EndContour();
 /**
  * @brief Returns the indices after polygon

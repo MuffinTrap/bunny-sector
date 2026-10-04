@@ -130,3 +130,22 @@ typedef struct BunnyV2 BunnyV2;
 // NOTE Should we do typedef BunnyV2 Vector2 ?
 
 #endif
+
+enum Tesselator_ContourType
+{
+	contour_outline,
+	contour_hole
+};
+typedef enum Tesselator_ContourType Tesselator_ContourType;
+
+// Map tesselation
+struct Tesselator_BufferIndices
+{
+	u16 indexIndex; //<< Where the indices start
+	u16 indexCount; //<< How many of them
+
+	// Needed for obj export
+	u16 vertexIndex;
+	u16 vertexCount;
+};
+typedef struct Tesselator_BufferIndices Tesselator_BufferIndices;

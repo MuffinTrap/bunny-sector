@@ -1,19 +1,10 @@
 #include "tesselator.h"
+#include "tesselatorbuffer.h"
 
 // TODO Use some other tesselation library with more memory management options
 
 GLUtesselator* tesselator = nullptr;
-#define VERTEX_BUFFER_VERTEX_SIZE 5
-
-// These are given as parameters
-static GLfloat* vertexBuffer = nullptr;
-static GLushort* indexBuffer = nullptr;
-static u32 vertexBufferSize = 0;
-static u32 indexBufferSize = 0;
-
-// Tesselation counting
-static u32 vertexBufferVertexIndex = 0;
-static u32 indexBufferIndex = 0;
+static TesselatorBuffer tessBuffer;
 static RectF activeUVLimits;
 
 #ifdef MGDL_PLATFORM_WINDOWS
@@ -38,79 +29,6 @@ static int tesselationBufferIndexDoubles = 0;
 static GLdouble* combineRingBuffer = nullptr;
 static int CombineBufferIndexDoubles = 0;
 
-/**
- * @brief Put a vertex in the output buffer and set the indice of it in index buffer
- */
-static void BufferVertex(const float x, const float y, const float z, const float u, const float v)
-{
-    // Log_InfoF("Buffer vertex got C(%.2f %.2f, %.2f), TX(%.2f, %.2f)\n", x, y, z, u, v);
-    static const float tolerance = 0.9f; // Duke units are integers, so this can be quite large
-    static const float uvTolerance = 0.001f; // This is way smaller because values usually are under 10
-    // Is this vertex already in the buffer?
-    bool found = false;
-    GLushort index = 0;
-    // Incoming vertex
-    Vector2 V = Vector2New(x,z);
-    Vector2 TX = Vector2New(u,v);
-    for (int i = 0; i < vertexBufferVertexIndex; i++)
-    {
-        GLfloat* vertex = &vertexBuffer[i * VERTEX_BUFFER_VERTEX_SIZE];
-
-        // Existing vertex
-        Vector2 ex = Vector2New(vertex[0], vertex[2]);
-        float d = Vector2Length( Vector2Subtract(ex, V));
-        if (d < tolerance)
-        {
-            Vector2 exTx = Vector2New(vertex[3], vertex[4]);
-            float dtx = Vector2Length( Vector2Subtract(exTx, TX));
-            if (dtx < uvTolerance)
-            {
-                //Log_InfoF("Found at index %d\n", i);
-                found = true;
-                index = i;
-                break;
-            }
-        }
-    }
-    if (found)
-    {
-        if (indexBufferIndex < indexBufferSize)
-        {
-            indexBuffer[indexBufferIndex] = index;
-            indexBufferIndex++;
-        }
-        else
-        {
-            indexBufferIndex++;
-            Log_ErrorF("Tesselator ran out of space in the index buffer, needs at least %d indices\n", indexBufferIndex);
-        }
-    }
-    else
-    {
-        //Log_InfoF("New vertex to index %d\n", vertexBufferVertexIndex);
-        mgdl_assert_print(vertexBufferSize > vertexBufferVertexIndex, "Tesselator ran out of space in vertex buffer");
-        GLfloat* vertex = &vertexBuffer[vertexBufferVertexIndex * VERTEX_BUFFER_VERTEX_SIZE];
-        vertex[0] = x;
-        vertex[1] = y;
-        vertex[2] = z;
-
-        vertex[3] = activeUVLimits.x + u * activeUVLimits.w;
-        vertex[4] = activeUVLimits.y + v * activeUVLimits.h;
-
-
-        if (indexBufferIndex < indexBufferSize)
-        {
-            indexBuffer[indexBufferIndex] = vertexBufferVertexIndex;
-            indexBufferIndex++;
-        }
-        else
-        {
-            indexBufferIndex++;
-            Log_ErrorF("Tesselator ran out of space in the index buffer, needs at least %d indices\n", indexBufferIndex);
-        }
-        vertexBufferVertexIndex += 1;
-    }
-}
 
 
 #ifndef CALLBACK
@@ -128,7 +46,7 @@ void CALLBACK tessVertex(GLvoid* vertex)
 
     const GLdouble* coordinates = (GLdouble*)vertex;
     // Log_InfoF("Tesselation vertex C(%.2f %.2f, %.2f), TX(%.2f, %.2f, %.2f)\n", coordinates[0], coordinates[1], coordinates[2], coordinates[3], coordinates[4], coordinates[5]);
-    BufferVertex(
+    tessBuffer.BufferVertex(
         (GLfloat)coordinates[0], (GLfloat)coordinates[1], (GLfloat)coordinates[2],
         (GLfloat)coordinates[3], (GLfloat)coordinates[4]);
 }
@@ -208,21 +126,14 @@ void Tesselator_Init()
 
 void Tesselator_SetBuffers(GLfloat* vertices, u32 verticesSize, GLushort* indices, u32 indicesSize)
 {
-    vertexBuffer = vertices;
-    vertexBufferSize = verticesSize;
-    indexBuffer = indices;
-    indexBufferSize = indicesSize;
-
-    vertexBufferVertexIndex = 0;
-    indexBufferIndex = 0;
-    mgdl_assert_print(indexBuffer != nullptr && vertexBuffer != nullptr, "Tesselator received null pointers for buffer addresses");
+    tessBuffer.Init(vertices, verticesSize, indices, indicesSize, activeUVLimits);
 }
 /**
  * @brief Returns the starting index in vertices buffer
  */
 Tesselator_BufferIndices Tesselator_BeginPolygon(GLfloat normal[3], RectF uvLimits)
 {
-    mgdl_assert_print(indexBuffer != nullptr && vertexBuffer != nullptr, "Tesselator has no buffers set, cannot start polygon");
+    mgdl_assert_test (tessBuffer.IsValid());
 
     activeUVLimits = uvLimits;
     gluTessNormal(tesselator, normal[0], normal[1], normal[2]);
@@ -232,12 +143,12 @@ Tesselator_BufferIndices Tesselator_BeginPolygon(GLfloat normal[3], RectF uvLimi
 
     Tesselator_BufferIndices indices;
     indices.indexCount = 0;
-    indices.indexIndex = indexBufferIndex;
+    indices.indexIndex = tessBuffer.GetIndexIndex();
     indices.vertexCount = 0;
-    indices.vertexIndex = vertexBufferVertexIndex;
+    indices.vertexIndex = tessBuffer.GetVertexIndex();
     return indices;
 }
-void Tesselator_BeginContour()
+void Tesselator_BeginContour(Tesselator_ContourType ctype)
 {
     gluTessBeginContour(tesselator);
 
@@ -285,8 +196,8 @@ Tesselator_BufferIndices Tesselator_EndPolygon()
     mgdl_CacheFlushRange(tesselationBuffer, TESSELATION_BUFFER_SIZE_BYTES);
     gluTessEndPolygon(tesselator);
     Tesselator_BufferIndices indices;
-    indices.indexIndex = indexBufferIndex;
-    indices.vertexIndex = vertexBufferVertexIndex;
+    indices.indexIndex = tessBuffer.GetIndexIndex();
+    indices.vertexIndex = tessBuffer.GetVertexIndex();
     // Log_InfoF("Tesselator end polygon to vertex %d, index %d\n", vertexBufferVertexIndex, indexBufferIndex);
     return indices;
 }
