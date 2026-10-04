@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <mgdl.h>
-#include "../tinyxml2/tinyxml2.h"
+#include "tinyxml2/tinyxml2.h"
 #include "render/opengl-render.h"
 
 #define NAME int_int_map
@@ -8,7 +8,7 @@
 #define VAL_TY int
 #define HASH_FN vt_hash_integer
 #define CMPR_FN vt_cmpr_integer
-#include "../verstable/verstable.h"
+#include "verstable/verstable.h"
 
 #include "bunny-sector-materials.h"
 

@@ -2,44 +2,9 @@
 #include "bunny-sector_main.h"
 #include "bunny-sector-map.h"
 #include <mgdl/mgdl-angelscript.h>
-#include "duke/dukemap.h"
 #include "gameplay/actor.h"
 #include "doom/doom_types.h"
 #include <mgdl.h>
-
-void RegisterDukeMap(mgdl_AngelScript* angel)
-{
-
-	asIScriptEngine* as_engine = angel->engine;
-	// Register Duke Map types as uninstantiable reference types
-
-	// WALL
-	as_engine->RegisterObjectType("Wall", 0, asOBJ_REF|asOBJ_NOCOUNT);
-	as_engine->RegisterObjectProperty("Wall", "s32 x", asOFFSET(Wall, x));
-	as_engine->RegisterObjectProperty("Wall", "s32 z", asOFFSET(Wall, z));
-	as_engine->RegisterObjectProperty("Wall", "s16 nextsector", asOFFSET(Wall, nextsector));
-	as_engine->RegisterObjectProperty("Wall", "s16 picnum", asOFFSET(Wall, picnum));
-	as_engine->RegisterObjectProperty("Wall", "s16 nextwall", asOFFSET(Wall, nextwall));
-	as_engine->RegisterObjectProperty("Wall", "s8 shade", asOFFSET(Wall, shade));
-
-	// SECTOR
-	as_engine->RegisterObjectType("Sector", 0, asOBJ_REF|asOBJ_NOCOUNT);
-	as_engine->RegisterObjectProperty("Sector", "s16 wallptr", asOFFSET(Sector, wallptr));
-	as_engine->RegisterObjectProperty("Sector", "s16 wallnum", asOFFSET(Sector, wallnum));
-	as_engine->RegisterObjectProperty("Sector", "s32 ceilingy", asOFFSET(Sector, ceilingy));
-	as_engine->RegisterObjectProperty("Sector", "s32 floory", asOFFSET(Sector, floory));
-
-	as_engine->RegisterGlobalFunction("Wall@ BunnySector_GetWallEnd(Wall@ wall)", asFUNCTION(BunnySector_GetWallEnd), asCALL_CDECL);
-
-	as_engine->RegisterObjectType("DukeMap", 0, asOBJ_REF|asOBJ_NOCOUNT);
-	as_engine->RegisterObjectMethod("DukeMap", "Wall@ get_walls(uint index) property", asFUNCTION(DukeMap_GetWall), asCALL_CDECL_OBJFIRST);
-	as_engine->RegisterObjectMethod("DukeMap", "Sector@ get_sectors(uint index) property", asFUNCTION(DukeMap_GetSector), asCALL_CDECL_OBJFIRST);
-	as_engine->RegisterObjectMethod("DukeMap", "Wall@ GetWallEnd(Wall@ start)", asFUNCTION(DukeMap_GetWallEnd), asCALL_CDECL_OBJFIRST);
-	as_engine->RegisterObjectProperty("DukeMap", "s16 sectorAmount", asOFFSET(DukeMap, sectorAmount));
-
-	as_engine->RegisterGlobalFunction("DukeMap@ BunnySector_GetDukeMap(MapId mapId)", asFUNCTION(BunnySector_GetDukeMap), asCALL_CDECL);
-}
-
 
 void RegisterDoomMap(mgdl_AngelScript* angel)
 {
@@ -159,7 +124,6 @@ void RegisterBunnySector(mgdl_AngelScript* angel)
 	as_engine->RegisterEnumValue("GameStatus", "status_exit_normal", (int)status_exit_normal);
 
 	as_engine->RegisterEnum("BunnyMapType");
-	as_engine->RegisterEnumValue("BunnyMapType", "Map_Duke", (int)Map_Duke);
 	as_engine->RegisterEnumValue("BunnyMapType", "Map_Doom", (int)Map_Doom);
 	as_engine->RegisterEnumValue("BunnyMapType", "Map_Invalid", (int)Map_Invalid);
 
@@ -193,7 +157,6 @@ void RegisterBunnySector(mgdl_AngelScript* angel)
 
 
 	RegisterDoomMap(angel);
-	RegisterDukeMap(angel);
 
 
 	// Register functions to access map data
@@ -216,7 +179,6 @@ void RegisterBunnySector(mgdl_AngelScript* angel)
 	as_engine->RegisterGlobalFunction("void BunnySector_DrawWallF(float startx, float starty, float endx, float endy, float normalx, float normalz, s32 floory, s32 ceilingy, s16 picnum, s8 shade)", asFUNCTION(BunnySector_DrawWallF), asCALL_CDECL);
 
 	// NOTE These are handles = pointers, not references to value objects
-	as_engine->RegisterGlobalFunction("void BunnySector_DrawWall(Wall@ start, Wall@ end, s32 floory, s32 ceilingy, s16 picnum, s8 shade)", asFUNCTION(BunnySector_DrawWall), asCALL_CDECL);
 
 	// Register Camera functions
 	as_engine->RegisterGlobalFunction("void BunnySector_DrawCameraInfo(float x, float y)", asFUNCTION(BunnySector_DrawCameraInfo), asCALL_CDECL);

@@ -7,12 +7,11 @@
 #include "bunny-sector-math.h"
 #include "bunny-sector-materials.h"
 #include "render/opengl-render.h"
+#include "render/render-settings.h"
 #include "gameplay/actor.h"
 #include "gameplay/player.h"
 #include "gameplay/actorpool.h"
 #include "doom/doom-map-reader.h"
-#include "duke/dukemapreader.h"
-#include "duke/build-render.h"
 
 static BunnySector::Materials* materialManager;
 
@@ -98,7 +97,6 @@ bool BunnySector_Init(mgdl_AngelScript* angel)
 	materialManager = new BunnySector::Materials();
 	materialManager->ReadXML("assets/materials.xml");
 
-	BuildRender_Init();
 	defaultOpenGL = GetDefaultRenderSettingsOpenGL();
 	defaultView = GetDefaultCameraInfo();
 	defaultCamera = GetDefaultCamera();
@@ -162,12 +160,7 @@ int BunnySector_LoadMap(const zstr& mapfilename)
 
 
 	BunnyMapType maptype = Map_Invalid;
-	if (zstr_contains(&mapfilename, ".map"))
-	{
-		maptype = Map_Duke;
-
-	}
-	else if (zstr_contains(&mapfilename, ".wad"))
+	if (zstr_contains(&mapfilename, ".wad"))
 	{
 		maptype = Map_Doom;
 	}
@@ -177,12 +170,7 @@ int BunnySector_LoadMap(const zstr& mapfilename)
 		return -1;
 	}
 	BunnySector_Map* loaded = nullptr;
-	if (maptype == Map_Duke)
-	{
-		loaded = Duke_ReadMapFromFile(mapfilename);
-		loaded->m_type = maptype;
-	}
-	else if (maptype == Map_Doom)
+	if (maptype == Map_Doom)
 	{
 		loaded = Doom_ReadMapFromFile(mapfilename);
 		loaded->m_type = maptype;
@@ -191,7 +179,7 @@ int BunnySector_LoadMap(const zstr& mapfilename)
 	if (loaded != nullptr)
 	{
 		// Buffer the floor and ceiling vertices: The uvs need to be calculated first
-		float unitsToMeter = maptype == Map_Doom ? DOOM_UNITS_TO_METER : DUKE_UNITS_TO_METER;
+		float unitsToMeter = DOOM_UNITS_TO_METER;
 		OpenGLRender_CreateFloorBuffers(loaded, unitsToMeter);
 
 		mapsArray[firstFree] = loaded;
@@ -216,16 +204,8 @@ void BunnySector_StartMap(MapId mapId, int playerAmount)
 			activeMap = map;
 			activePlayerAmount = playerAmount;
 
-			if (map->m_type == Map_Duke)
-			{
-				RenderSettingsOpenGL_SetUnitToMeter(&defaultOpenGL, DUKE_UNITS_TO_METER);
-				BunnySector_SetOpenGLUnitsToMeter(DUKE_UNITS_TO_METER);
-			}
-			else
-			{
-				RenderSettingsOpenGL_SetUnitToMeter(&defaultOpenGL, DOOM_UNITS_TO_METER);
-				BunnySector_SetOpenGLUnitsToMeter(DOOM_UNITS_TO_METER);
-			}
+			RenderSettingsOpenGL_SetUnitToMeter(&defaultOpenGL, DOOM_UNITS_TO_METER);
+			BunnySector_SetOpenGLUnitsToMeter(DOOM_UNITS_TO_METER);
 			actorPool.Clear();
 			map->SetActorPool(&actorPool);
 			map->CreateActors();
@@ -414,10 +394,6 @@ void BunnySector_Setup3D(float viewAspect, float cameraAspect)
 	{
 		case Map_Invalid:
 			break;
-		case Map_Duke:
-			RenderSettingsOpenGL_SetUnitToMeter(&defaultOpenGL, bunny_UnitsToMeter);
-			OpenGLRender_SetUnitsToMeter(bunny_UnitsToMeter);
-			break;
 		case Map_Doom:
 			RenderSettingsOpenGL_SetUnitToMeter(&defaultOpenGL, bunny_UnitsToMeter);
 			OpenGLRender_SetUnitsToMeter(bunny_UnitsToMeter);
@@ -460,11 +436,6 @@ void BunnySector_StopPlayerAction(int playerIndex, ActorActionBit action)
 
 	players[playerIndex].actionFlags = Flag_UnsetBit(players[playerIndex].actionFlags, action);
 
-}
-
-Wall* BunnySector_GetWallEnd(Wall* wall)
-{
-	return DukeMap_GetWallEnd((DukeMap*)activeMap, wall);
 }
 
 Actor* BunnySector_GetPlayerActor(int playerIndex)
@@ -529,11 +500,6 @@ void BunnySector_DrawWallF(float startx, float startz, float endx, float endz, f
 {
 	OpenGLRender_DrawWallV(Vector2New(startx, startz), Vector2New(endx, endz), Vector2New(normalx, normalz), floory, ceilingy, picnum, shade);
 }
-void BunnySector_DrawWall(Wall* start, Wall* end, s32 floory, s32 ceilingy, s16 picnum, s8 shade)
-{
-	//printf("BunnySector_DrawWall gets %d, %d \n", start->x, start->z);
-	OpenGLRender_DrawWallV(Vector2New(start->x, start->z), Vector2New(end->x, end->z), DukeMap_GetWallNormal((DukeMap*)activeMap, start), floory, ceilingy, picnum, shade);
-}
 
 void BunnySector_StartFloorCeilingDrawing()
 {
@@ -580,9 +546,4 @@ DoomMap* BunnySector_GetDoomMap(MapId mapId)
 {
 	BunnySector_Map* map = mapsArray[mapId];
 	return (DoomMap*)map;
-}
-DukeMap* BunnySector_GetDukeMap(MapId mapId)
-{
-	BunnySector_Map* map = mapsArray[mapId];
-	return (DukeMap*)map;
 }

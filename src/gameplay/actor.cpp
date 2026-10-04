@@ -1,7 +1,5 @@
 #include "actor.h"
-#include "build-render.h"
 
-#include "dukemap.h"
 #include "../bunny-sector-math.h"
 #include "math.h"
 

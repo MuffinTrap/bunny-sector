@@ -26,7 +26,6 @@ void MapFloorVertexData_AddPolygon(MapFloorVertexData* floorData, int sectorInde
 
 enum BunnyMapType
 {
-	Map_Duke,
 	Map_Doom,
 	Map_Invalid
 };

@@ -112,67 +112,6 @@ bool BunnySector_Map::FindIntersectionWithWallUT(
     }
     return false;
 }
-// Copied from raylib
-// raylib.com
-/**********************************************************************************************
-*   LICENSE: zlib/libpng
-*
-*   Copyright (c) 2013-2026 Ramon Santamaria (@raysan5)
-*
-*   This software is provided "as-is", without any express or implied warranty. In no event
-*   will the authors be held liable for any damages arising from the use of this software.
-*
-*   Permission is granted to anyone to use this software for any purpose, including commercial
-*   applications, and to alter it and redistribute it freely, subject to the following restrictions:
-*
-*     1. The origin of this software must not be misrepresented; you must not claim that you
-*     wrote the original software. If you use this software in a product, an acknowledgment
-*     in the product documentation would be appreciated but is not required.
-*
-*     2. Altered source versions must be plainly marked as such, and must not be misrepresented
-*     as being the original software.
-*
-*     3. This notice may not be removed or altered from any source distribution.
-*
-**********************************************************************************************/
-bool BunnySector_Map::CircleCollidesWithWall(Vector2 center, float radius, Vector2 p1, Vector2 p2)
-{
-    bool collision = false;
-
-    float dx = p1.x - p2.x;
-    float dy = p1.y - p2.y;
-
-    if ((fabsf(dx) + fabsf(dy)) <= EPSILON)
-    {
-        float dx = center.x - p1.x;      // X distance between centers
-        float dy = center.y - p1.y;      // Y distance between centers
-
-        float distanceSquared = dx*dx + dy*dy; // Distance between centers squared
-        float radiusSum = radius;
-
-        collision = (distanceSquared <= (radiusSum*radiusSum));
-
-        return collision;
-    }
-    else
-    {
-        float lengthSQ = ((dx*dx) + (dy*dy));
-        float dotProduct = (((center.x - p1.x)*(p2.x - p1.x)) + ((center.y - p1.y)*(p2.y - p1.y)))/(lengthSQ);
-
-        if (dotProduct > 1.0f) dotProduct = 1.0f;
-        else if (dotProduct < 0.0f) dotProduct = 0.0f;
-
-        float dx2 = (p1.x - (dotProduct*(dx))) - center.x;
-        float dy2 = (p1.y - (dotProduct*(dy))) - center.y;
-        float distanceSQ = ((dx2*dx2) + (dy2*dy2));
-
-        if (distanceSQ <= radius*radius) collision = true;
-    }
-
-    return collision;
-}
-
-// Copied from raylib ends
 
 float BunnySector_Map::GetDistanceToWall(Vector2 wallStart, Vector2 wallEnd, Vector2 point)
 {
@@ -237,7 +176,77 @@ void BunnySector_Map::SortMovedActors()
     while(sortAgain);
 }
 // TODO Move this to ActorPool
+/*
+ * NOTE Stuff moved here from dukemap
+void DukeMap_FindIslandSectors(DukeMap* map)
+{
+    if (map == nullptr)
+    {
+        Log_ErrorF("Map_FindIslandSectors got null pointer for map\n");
+        return;
+    }
+    for (int i = 0; i < map->sectorAmount; i++)
+    {
+        Sector* S = &map->sectors[i];
+        //Log_InfoF("Sector n: %d Walls: %d first wall %d FloorZ %d CeilingZ %d\n", i, S->wallnum, S->wallptr, S->floory, S->ceilingy);
+        for (int wi = 0; wi < S->wallnum; wi++)
+        {
+            Wall* w = &map->walls[S->wallptr + wi];
 
+            Log_InfoF("\tWall n: %d:(%d,%d) - %d:(%d,%d)\n",
+                      S->wallptr+wi, w->x, w->z,
+                      w->point2,    w2->x, w2->z);
+
+
+            if (w->point2 == S->wallptr && wi < S->wallnum-1)
+            {
+                Log_InfoF("Sector %d has island\n", i);
+                Log_InfoF("Wall loop: %d - %d\n", S->wallptr+wi, w->point2);
+                S->extra = wi;
+            }
+        }
+    }
+}
+
+// Point inside sector code by:
+// https://stackoverflow.com/users/2608744/timepp
+#define BETWEEN(p,a,b) (p >= a && p <= b || p <= a && p >= b)
+bool Map_IsPointInsideSectorOG(DukeMap* map, Vector2 P, int sectorNumber)
+{
+    if (sectorNumber < 0)
+    {
+        return false;
+    }
+    Sector* sector = DukeMap_GetSector(map, sectorNumber);
+    if (sector == nullptr)
+    {
+        return false;
+    }
+    bool inside = false;
+
+    for (s16 wi = 0; wi < sector->wallnum; wi++)
+    {
+        Wall* wstart = DukeMap_GetWallInSector(map, sectorNumber, wi);
+        Wall* wend = DukeMap_GetWallEnd(map, wstart);
+
+        Vector2 A = Vector2New(wstart->x, wstart->z);
+        Vector2 B = Vector2New(wend->x, wend->z);
+        if ((P.x == A.x && P.y == A.y) || (P.x == B.x && P.y == B.y)) {return false;}
+        if (A.y == B.y && P.y == A.y && BETWEEN(P.x, A.x, B.x)) {return false;}
+
+        if (BETWEEN(P.y, A.y, B.y)) { // if P inside the vertical range
+            // filter out "ray pass vertex" problem by treating the line a little lower
+            if ((P.y == A.y && B.y >= A.y) || (P.y == B.y && A.y >= B.y)) { continue;}
+            // calc cross product `PA X PB`, P lays on left side of AB if c > 0
+            const float c = (A.x - P.x) * (B.y - P.y) - (B.x - P.x) * (A.y - P.y);
+            if (c == 0) return false;
+            if ((A.y < B.y) == (c > 0)) inside = !inside;
+        }
+
+    }
+    return inside;
+}
+*/
 
 void MapFloorVertexData_AddPolygon(MapFloorVertexData* floorData, int sectorIndex, Tesselator_BufferIndices indicesBefore, Tesselator_BufferIndices indicesAfter)
 {

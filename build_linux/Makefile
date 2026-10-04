@@ -28,7 +28,7 @@ TARGET	:= $(notdir $(PROJDIR))$(TARGET_POSTFIX)
 VERBOSE = TRUE
 
 # Create the list of directories
-DIRS = src src/duke src/doom src/tinyxml2 src/verstable src/gameplay src/map src/render src/polypartition
+DIRS = src src/doom src/tinyxml2 src/verstable src/gameplay src/map src/render src/polypartition
 ifeq ($(ANGEL), cpp)
 DIRS += scripts
 endif

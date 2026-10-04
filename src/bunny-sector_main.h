@@ -1,7 +1,6 @@
 #pragma once
 
 #include <mgdl.h>
-#include "duke/dukemap.h"
 #include "doom/doom-map.h"
 #include "bunny-sector-map.h"
 #include "bunny-sector-types.h"
@@ -45,11 +44,9 @@ bool buns_Intersect(float a1x, float a1y,
 // Get data from active map
 
 // DUKE
-Wall* BunnySector_GetWallEnd(Wall* wall);
 
 // DOOM
 DoomMap* BunnySector_GetDoomMap(MapId mapId);
-DukeMap* BunnySector_GetDukeMap(MapId mapId);
 
 // Actor functions
 Actor* BunnySector_GetPlayerActor(int playerIndex);
@@ -82,7 +79,6 @@ void BunnySector_AlignCameraToPlayer(int playerIndex);
 
 void BunnySector_StartMapDrawing();
 void BunnySector_DrawWallF(float startx, float startz, float endx, float endz, float normalx, float normalz, s32 floory, s32 ceilingy, s16 picnum, s8 shade);
-void BunnySector_DrawWall(Wall* start , Wall* end, s32 floory, s32 ceilingy, s16 picnum, s8 shade);
 
 void BunnySector_StartFloorCeilingDrawing();
 void BunnySector_DrawSectorFloorOrCeiling(s16 sectorNumber, bool floor);

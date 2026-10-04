@@ -1,7 +1,6 @@
 #include "mgdl.angel"
 #include "raymath.angel"
 #include "render_utils.cpp"
-#include "render_duke.cpp"
 #include "render_doom.cpp"
 
 //TODO Name this file main_angel.cpp
@@ -23,7 +22,6 @@ float angel_unitstometer = 32.0f;
 #	endif
 #endif
 
-MapId dukeMapId;
 MapId doomMapId;
 
 void angelscript_init()
@@ -35,7 +33,6 @@ void angelscript_init()
 	BunnySector_SetRenderingCallback(angelscript_render);
 
 	doomMapId = BunnySector_LoadMap("assets/slade_test.wad");
-	//dukeMapId = BunnySector_LoadMap("assets/doome1m1.map");
 
 	// Match 2D render to OpenGL render
 	RenderInit(BunnySector_GetOpenGLCameraVerticalFOVDeg());
@@ -44,41 +41,6 @@ void angelscript_init()
 
 void angelscript_quit()
 {
-
-}
-
-void setup_3d()
-{
-    glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LEQUAL);
-	glDepthMask(GL_TRUE); //  is this needed?
-
-	// This is the other way around on Wii, but
-	// hopefully OpenGX handles it
-    glEnable(GL_CULL_FACE);
-    glCullFace(GL_BACK);
-    glShadeModel(GL_SMOOTH);
-
-	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-	mgdl_SetGlobalAmbientColor32(Debug_White, 0.2f);
-
-    glColor3f(1.0f, 1.0f, 1.0f);
-
-	glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-
-	int screenWidth = mgdl_GetScreenWidth();
-	int screenHeight = mgdl_GetScreenHeight();
-	float aspect = float(screenWidth)/float(screenHeight);
-	float nearZ = 0.01f;
-	float farZ = 100.0f;
-    gluPerspective(60.0f, aspect, nearZ, farZ);
-
-	glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-	gluLookAt(0.0f, 5.0f, 10.0f,
-				 0.0f, 0.0f, 0.0f,
-				 0.0f, 1.0f, 0.0);
 
 }
 
@@ -319,40 +281,6 @@ void angelscript_render()
 		DEBUG_LOG = false;
 }
 
-void angelscript_frame_duke(float deltatime)
-{
-	BunnySector_SetPlayerSpeeds(0, 1.0f, 0.7f);
-	movePlayer(0, deltatime);
-	adjustFov(deltatime);
-
-
-
-	glClearColor(0.3f, 0.2f, 0.3f, 1.0f);
-
-	StartFrame_Duke();
-
-	DukeMap@ map = BunnySector_GetDukeMap(dukeMapId);
-	// Hold down 2 to see software render result
-	float aspect = mgdl_GetScreenWidth()/mgdl_GetScreenHeight();
-	if (RENDER_2D_WALLS)
-	{
-		RenderMapSoftware(map, deltatime);
-	}
-	else
-	{
-		//BunnySector_RenderMap(dukeMapId); // This calls the old build render stuff
-		BunnySector_Setup3D(aspect, aspect);
-		BunnySector_AlignCameraToPlayer(0);
-		BunnySector_StartMapDrawing();
-			RenderMap(map, deltatime);
-		BunnySector_EndMapDrawing();
-	}
-
-	RenderMiniMap(map);
-
-	DrawDebugs();
-}
-
 void angelscript_frame(float deltatime)
 {
 	if (mgdl_IsButtonDown(0, Button2))
@@ -363,13 +291,11 @@ void angelscript_frame(float deltatime)
 	{
 		DEBUG_DRAW = true;
 	}
-
 		GameStatus status = BunnySector_GetGameStatus();
 		if (status == status_player_alive)
 		{
 			angelscript_frame_doom(deltatime);
 		}
-		//angelscript_frame_duke(deltatime);
 
 	// Check game state
 

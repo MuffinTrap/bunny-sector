@@ -1,6 +1,5 @@
 #pragma once
 #include <mgdl.h>
-#include "../duke/duke_types.h"
 #include "../doom/doom_types.h"
 
 struct RenderSettings2D;

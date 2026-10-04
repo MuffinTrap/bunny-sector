@@ -1,10 +1,9 @@
 
 #include "opengl-render.h"
+#include "render-settings.h"
 #include <mgdl.h>
 #include <mgdl/mgdl-memory.h>
 #include "../gameplay/actor.h"
-#include "../duke/dukemap.h"
-#include "../duke/build-render.h"
 #include "../bunny-sector-math.h"
 #include "../tinyxml2/tinyxml2.h"
 #include "../bunny-sector_main.h"
@@ -12,7 +11,6 @@
 #include "../map/tesselatorbuffer.h"
 #include "../map/polytesselator.h"
 #include "../map/obj-export.h"
-#include "../map/tesselator.h"
 
 
 // Used when drawing grass materials
@@ -67,7 +65,6 @@ static float unitsPerMeter = 1.0f;
 
 // NOTE New way to tesselate
 PolyTesselator* polytess;
-static bool USE_POLY_TESS = true;
  // #define TESS_DEBUG
 
 void OpenGLRender_SetUnitsToMeter(float unitsToMeter)
@@ -363,8 +360,6 @@ void OpenGLRender_Init()
     }
 }
 
-
-
 void OpenGLRender_Deinit()
 {
     for (int i = 0; i < RENDERER_MATERIAL_ARRAY_SIZE; i++)
@@ -477,42 +472,6 @@ void OpenGLRender_DrawWallV(Vector2 start, Vector2 end, Vector2 normalXZ, s32 fl
     // printf("DrawVallV %.2f %.2f -> %.2f %.2f, f : %d c: %d\n", start.x, start.y, end.x, end.y, floorY, ceilingY);
     DrawQuad(start, end, normalXZ, floorY, ceilingY, picnum, shade, 1.0f/unitsPerMeter);
 }
-
-void OpenGLRender_DrawWall(DukeMap* map, Wall* w, float floorY, float ceilingY, RenderSettingsOpenGL* settings)
-{
-    Vector2 start = Vector2New(w->x, w->z);
-    Wall* wend = DukeMap_GetWallEnd(map, w);
-    Vector2 end =  Vector2New(wend->x, wend->z);
-    Vector2 normalXZ = DukeMap_GetWallNormal(map, w);
-    if (w->nextsector >= 0)
-    {
-        // Create wall that goes down or up to adjacent sector: Note! both sectors dont need to do this. Only lower one
-        Sector* neighbor = DukeMap_GetSector(map, w->nextsector);
-        int n_floorY = neighbor->floory;
-        int n_ceilingY = neighbor->ceilingy;
-
-        // if this floor height is less than adjacent: Greate wall in between: goes up
-        if (floorY < n_floorY)
-        {
-            DrawQuad(start, end, normalXZ, floorY, n_floorY, w->picnum, w->shade, settings->scale);
-        }
-
-        // Ceiling:
-        // If this ceiling is higher than adjacent: Greate wall in between: goes down
-        if (ceilingY > n_ceilingY)
-        {
-            Wall* otherWall = DukeMap_GetWall(map, w->nextwall);
-            DrawQuad(start, end, normalXZ, n_ceilingY, ceilingY, otherWall->picnum, w->shade, settings->scale);
-        }
-    }
-    else
-    {
-        // TODO Masked walls
-        // Draw the wall
-        DrawQuad(start, end, normalXZ, floorY, ceilingY, w->picnum, w->shade, settings->scale);
-    }
-}
-
 
 void OpenGLRender_DrawFloorOrCeiling(BunnySector_Map* map, int sectorIndex, u8 shade, float ycoord, MaterialId materialId, bool floor)
 {
@@ -723,15 +682,7 @@ static void StartCountingFloorBufferSize(BunnySector_Map* map)
 
     // Start tesselator and send buffer adresses
 
-    if (USE_POLY_TESS)
-    {
         polytess = new PolyTesselator(floorData->floorBuffer, floorData->floorBufferSizeVertices, floorData->floorIndexBuffer, floorData->floorIndexBufferSize);
-    }
-    else
-    {
-        Tesselator_Init();
-        Tesselator_SetBuffers(floorData->floorBuffer, floorData->floorBufferSizeVertices, floorData->floorIndexBuffer, floorData->floorIndexBufferSize);
-    }
 }
 
 static void TesselateFloor(BunnySector_Map* map, u16 sectorIndex, float unitsPerMeterForUV)
@@ -744,30 +695,15 @@ static void TesselateFloor(BunnySector_Map* map, u16 sectorIndex, float unitsPer
     // Set translation offset, normal and color for the whole polygon
     RectF uvOffset = zeroOffset;
     Tesselator_BufferIndices indicesBefore;
-    if (USE_POLY_TESS)
-    {
-        indicesBefore = polytess->BeginPolygon(floorNormal, uvOffset, sectorWallNum);
-    }
-    else{
-        indicesBefore = Tesselator_BeginPolygon(floorNormal, uvOffset);
-    }
+    indicesBefore = polytess->BeginPolygon(floorNormal, uvOffset, sectorWallNum);
 
     GLfloat vertex[3];
     Vector2 calculatedUV;
     GLfloat uv[2];
 
 
-    if (USE_POLY_TESS)
-    {
-        polytess->BeginContour(contour_outline);
-    }
-    else
-    {
-        Tesselator_BeginContour(contour_outline);
-    }
+    polytess->BeginContour(contour_outline);
 
-    if (map->m_type == BunnyMapType::Map_Doom)
-    {
         // NOTE
         // In doom map's subsectors there are no islands
         // and points are stored in opposite winding order
@@ -783,118 +719,14 @@ static void TesselateFloor(BunnySector_Map* map, u16 sectorIndex, float unitsPer
             uv[0] = calculatedUV.x;
             uv[1] = calculatedUV.y;
 
-            if (USE_POLY_TESS)
-            {
-                polytess->AddVertexToPoly(vertex, uv);
-            }
-            else
-            {
-                Tesselator_AddVertexToPoly(vertex, uv);
-            }
-        }
-
-        if (USE_POLY_TESS)
-        {
-            polytess->EndContour();
-        }
-        else
-        {
-            Tesselator_EndContour();
-        }
-    }
-    else
-    {
-        // This is where the current contour started
-        int contourStartPoint = sectorFirstWallIndex + sectorWallNum -1;
-        int contourEndPoint = map->GetNextWallVertexIndexInSector(sectorIndex, sectorWallNum-1);
-
-        /* Because Mapster saves points in clockwise order, but we render
-        in counter-clockwise, we need to save the point2 of this vertex
-        that is the last point of this contour
-
-        Square sector:
-        0 > 1 > 2 > 3 > 0
-
-        Square sector with a square island:
-        0 > 1 > 2 > 3 > 0   : Outer wall
-        4 > 5 > 6 > 7 > 4   : Island
-
-        Our rendering order is
-        7, 6, 5, 4, 3, 2, 1, 0
-
-        When starting from point 7, the value of point2 is 4
-        Store that to contourEndPoint
-        When we come to point 4, we know that the contour is complete
-        and a new one should begin.
-        If the first point of new contour is > sector's wallptr there is still more
-        islands or the outside wall.
-        If the contourEndPoint is greater than sector's wallptr, we know that the sector is complete and
-        this was the last contour.
-        */
-#ifdef TESS_DEBUG
-        Log_InfoF("Tesselating sector %d start %d/%d\n", sectorIndex, sectorFirstWallIndex, sectorWallNum);
-#endif
-
-        // Keep track of global wall index
-        Tesselator_ContourType currentContour = contour_outline;
-        int pointIndex = contourStartPoint;
-        for (s16 wi = sectorWallNum-1; wi >= 0; wi--)
-        {
-            Vector2 w = map->GetWallVertexInSector(sectorIndex, wi);
-
-            vertex[0] = w.x;
-            vertex[1] = 0.0f;
-            vertex[2] = w.y;
-            calculatedUV = TesselatorBuffer::CalculateFloorOrCeilingUV(sectorSize, sectorMinPoint, sectorMaxTexCoord, w, unitsPerMeterForUV);
-            uv[0] = calculatedUV.x;
-            uv[1] = calculatedUV.y;
-
-            if(USE_POLY_TESS)
-            {
             polytess->AddVertexToPoly(vertex, uv);
-            }
-            else
-            {
-            Tesselator_AddVertexToPoly(vertex, uv);
-            }
-
-            if (pointIndex == contourEndPoint)
-            {
-                if(USE_POLY_TESS)
-                {
-                    polytess->EndContour();
-                }
-                else
-                {
-                    Tesselator_EndContour();
-                }
-                if (wi > 0 && contourEndPoint > sectorFirstWallIndex)
-                {
-                    if(USE_POLY_TESS)
-                    {
-                        polytess->BeginContour(contour_hole);
-                    }
-                    else {
-                        Tesselator_BeginContour(contour_hole);
-                    }
-                    contourEndPoint = map->GetNextWallVertexIndexInSector(sectorIndex, (wi-1));
-                    currentContour = contour_hole;
-                }
-
-            }
-            pointIndex--;
         }
-    }
+
+        polytess->EndContour();
+
 
     Tesselator_BufferIndices indicesAfter;
-    if (USE_POLY_TESS)
-    {
         indicesAfter = polytess->EndPolygon(sectorSize, sectorMinPoint, sectorMaxTexCoord, unitsPerMeterForUV);
-    }
-    else {
-        indicesAfter= Tesselator_EndPolygon();
-    }
-
 
     MapFloorVertexData* floorData = &map->floorVertexData;
     MapFloorVertexData_AddPolygon(floorData, sectorIndex, indicesBefore, indicesAfter);
@@ -916,15 +748,8 @@ static void StopCountingFloorBufferSize(BunnySector_Map* map)
 #ifdef TESS_DEBUG
     Log_InfoF("Tesselator created %d indices in total\n", floorData->floorIndexBufferSize);
 #endif
-    if (USE_POLY_TESS)
-    {
-        delete polytess;
-        polytess = nullptr;
-    }
-    else
-    {
-        Tesselator_Deinit();
-    }
+    delete polytess;
+    polytess = nullptr;
 
 #ifdef TESS_DEBUG
     Log_Info("Floor Vertex buffer:\n");

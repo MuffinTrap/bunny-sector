@@ -1,8 +1,8 @@
 #include "bunny-sector-math.h"
 #include <mgdl/mgdl-types.h>
 
-#include "build-render.h"
 #include "gameplay/actor.h"
+#include "render/render-settings.h"
 
 
 // RIGHT HANDED COORDINATE SYSTEM
