@@ -89,7 +89,7 @@ void BunnySector_EndMapDrawing();
 
 void BunnySector_EndFloorCeilingDrawing();
 
-void BunnySector_SetOpenGLUnitsToMeter(float scale);
+void BunnySector_SetOpenGLUnitsToMeter(float horizontalScale, float verticalScale);
 
 #ifdef __cplusplus
 }

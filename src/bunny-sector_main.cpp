@@ -41,7 +41,8 @@ static GameStatus gameStatus;
 // TODO Actor pool?
 // Map creates actors when it is loaded
 
-static float bunny_UnitsToMeter = 1.0f;
+static float bunny_UnitsToMeter_horizontal = 1.0f;
+static float bunny_UnitsToMeter_vertical = 1.0f;
 
 static void s_AlignCameraToViewpoint(Viewpoint* info, Camera* camera)
 {
@@ -179,8 +180,7 @@ int BunnySector_LoadMap(const zstr& mapfilename)
 	if (loaded != nullptr)
 	{
 		// Buffer the floor and ceiling vertices: The uvs need to be calculated first
-		float unitsToMeter = DOOM_UNITS_TO_METER;
-		OpenGLRender_CreateFloorBuffers(loaded, unitsToMeter);
+		OpenGLRender_CreateFloorBuffers(loaded);
 
 		mapsArray[firstFree] = loaded;
 		activeMap = loaded;
@@ -204,8 +204,8 @@ void BunnySector_StartMap(MapId mapId, int playerAmount)
 			activeMap = map;
 			activePlayerAmount = playerAmount;
 
-			RenderSettingsOpenGL_SetUnitToMeter(&defaultOpenGL, DOOM_UNITS_TO_METER);
-			BunnySector_SetOpenGLUnitsToMeter(DOOM_UNITS_TO_METER);
+			RenderSettingsOpenGL_SetUnitToMeter(&defaultOpenGL, DOOM_UNITS_TO_METER_H, DOOM_UNITS_TO_METER_H);
+			BunnySector_SetOpenGLUnitsToMeter(DOOM_UNITS_TO_METER_H, DOOM_UNITS_TO_METER_H);
 			actorPool.Clear();
 			map->SetActorPool(&actorPool);
 			map->CreateActors();
@@ -395,8 +395,8 @@ void BunnySector_Setup3D(float viewAspect, float cameraAspect)
 		case Map_Invalid:
 			break;
 		case Map_Doom:
-			RenderSettingsOpenGL_SetUnitToMeter(&defaultOpenGL, bunny_UnitsToMeter);
-			OpenGLRender_SetUnitsToMeter(bunny_UnitsToMeter);
+			RenderSettingsOpenGL_SetUnitToMeter(&defaultOpenGL, bunny_UnitsToMeter_horizontal, bunny_UnitsToMeter_vertical);
+			OpenGLRender_SetUnitsToMeter(bunny_UnitsToMeter_horizontal, bunny_UnitsToMeter_vertical);
 			break;
 	};
 }
@@ -491,9 +491,10 @@ void BunnySector_EndMapDrawing()
 	OpenGLRender_EndDrawingPolygons();
 }
 
-void BunnySector_SetOpenGLUnitsToMeter(float scale)
+void BunnySector_SetOpenGLUnitsToMeter(float horizontalScale, float verticalScale)
 {
-	bunny_UnitsToMeter = scale;
+	bunny_UnitsToMeter_horizontal = horizontalScale;
+	bunny_UnitsToMeter_vertical = verticalScale;
 }
 
 void BunnySector_DrawWallF(float startx, float startz, float endx, float endz, float normalx, float normalz, s32 floory, s32 ceilingy, s16 picnum, s8 shade)

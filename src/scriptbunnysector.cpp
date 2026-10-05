@@ -1,5 +1,6 @@
 #include "scriptbunnysector.h"
 #include "bunny-sector_main.h"
+#include "render/opengl-render.h"
 #include "bunny-sector-map.h"
 #include <mgdl/mgdl-angelscript.h>
 #include "gameplay/actor.h"
@@ -162,7 +163,8 @@ void RegisterBunnySector(mgdl_AngelScript* angel)
 	// Register functions to access map data
 
 	// Register OpenGL Drawing functions
-	as_engine->RegisterGlobalFunction("void BunnySector_SetOpenGLUnitsToMeter(float scale)", asFUNCTION(BunnySector_SetOpenGLUnitsToMeter), asCALL_CDECL);
+	as_engine->RegisterGlobalFunction("void BunnySector_SetOpenGLUnitsToMeter(float horizontalScale, float verticalScale)", asFUNCTION(BunnySector_SetOpenGLUnitsToMeter), asCALL_CDECL);
+	as_engine->RegisterGlobalFunction("void OpenGLRender_SetTextureScale(float scale)", asFUNCTION(OpenGLRender_SetTextureScale), asCALL_CDECL);
 
 
 	as_engine->RegisterGlobalFunction("void BunnySector_StartFloorCeilingDrawing()", asFUNCTION(BunnySector_StartFloorCeilingDrawing), asCALL_CDECL);

@@ -5,7 +5,10 @@
 
 //TODO Name this file main_angel.cpp
 
-float angel_unitstometer = 32.0f;
+float angel_unitstometerH = 32.0f;
+float angel_unitstometerV = 16.0f;
+float angel_textureScale = 112.0f;
+float angel_fov = 90.0f;
 
 // NOTE Uncomment for KDevelop intellisense to work
 //#include "../src/bunny-sector_main.h"
@@ -76,7 +79,41 @@ void DrawDebugs()
 {
 	Start2D();
 
+	mgdl_DrawTextFloat("Horizontal unitspm", angel_unitstometerH, text_x, NextY(), 8, Debug_Red);
+	mgdl_DrawTextFloat("Vertical unitspm", angel_unitstometerV, text_x, NextY(), 8, Debug_Green);
+	mgdl_DrawTextFloat("Texture scale", angel_textureScale, text_x, NextY(), 8, Debug_Yellow);
+
 	End2D();
+}
+void adjustScale(float deltatime)
+{
+	int playerIndex =0;
+
+		if (mgdl_IsButtonPressed(playerIndex, ButtonUp))
+		{
+			angel_unitstometerV += 1;
+		}
+		if (mgdl_IsButtonPressed(playerIndex, ButtonDown))
+		{
+			angel_unitstometerV -= 1;
+			if (angel_unitstometerV < 1.0)
+			{
+				angel_unitstometerV = 1;
+			}
+		}
+		if (mgdl_IsButtonPressed(playerIndex, ButtonLeft))
+		{
+			angel_textureScale -= 1;
+			if (angel_textureScale < 1.0)
+			{
+				angel_textureScale = 1;
+			}
+		}
+		if (mgdl_IsButtonPressed(playerIndex, ButtonRight))
+		{
+			angel_textureScale += 1;
+		}
+
 }
 
 void movePlayer(int playerIndex, float deltatime)
@@ -87,20 +124,22 @@ void movePlayer(int playerIndex, float deltatime)
 	float turn = 0.0f;
 	float vertical = 0.0f;
 
-
-	if (mgdl_IsButtonDown(playerIndex, ButtonUp))
+	if (mgdl_IsButtonDown(playerIndex, ButtonZ))
 	{
-		vertical = 1.0f;
-	}
-	else if (mgdl_IsButtonDown(playerIndex, ButtonDown))
-	{
-		vertical = -1.0f;
-	}
-	else
-	{
-		vertical = 0.0f;
-		Actor@ actor = BunnySector_GetPlayerActor(playerIndex);
-		actor.verticalVelocity = 0.0f;
+		if (mgdl_IsButtonDown(playerIndex, ButtonUp))
+		{
+			vertical = 1.0f;
+		}
+		else if (mgdl_IsButtonDown(playerIndex, ButtonDown))
+		{
+			vertical = -1.0f;
+		}
+		else
+		{
+			vertical = 0.0f;
+			Actor@ actor = BunnySector_GetPlayerActor(playerIndex);
+			actor.verticalVelocity = 0.0f;
+		}
 	}
 
 	Vector2 wasd = mgdl_GetJoystick(playerIndex, Joystick_Nunchuk);
@@ -145,29 +184,30 @@ void adjustFov(float deltatime)
 	// Minus resets the fov
 	if (mgdl_IsButtonPressed(0, ButtonMinus))
 	{
-		SetVerticalFovDeg(80.0f);
-		BunnySector_SetOpenGLCameraVerticalFOVDeg(80.0f);
+		SetVerticalFovDeg(angel_fov);
+		BunnySector_SetOpenGLCameraVerticalFOVDeg(angel_fov);
 	}
 
 	float fovchange = 0.0f;
-	if (mgdl_IsButtonDown(0, ButtonLeft))
+	if (mgdl_IsButtonPressed(0, ButtonLeft))
 	{
-		fovchange = 10.0f;
+		fovchange = 1;
 	}
-	else if (mgdl_IsButtonDown(0, ButtonRight))
+	else if (mgdl_IsButtonPressed(0, ButtonRight))
 	{
-		fovchange = -10.0f;
+		fovchange = -1.0f;
 	}
 	if (fovchange != 0.0f)
 	{
-		SetVerticalFovDeg(GetVerticalFovDeg() + fovchange * deltatime);
-		BunnySector_SetOpenGLCameraVerticalFOVDeg(BunnySector_GetOpenGLCameraVerticalFOVDeg() + fovchange * deltatime);
+		SetVerticalFovDeg(GetVerticalFovDeg() + fovchange);
+		BunnySector_SetOpenGLCameraVerticalFOVDeg(BunnySector_GetOpenGLCameraVerticalFOVDeg() + fovchange);
 	}
 }
 void angelscript_frame_doom(float deltatime)
 {
-	BunnySector_SetOpenGLUnitsToMeter(angel_unitstometer);
-	BunnySector_SetPlayerSpeeds(0, 1.0f, 1.0f);
+	BunnySector_SetOpenGLUnitsToMeter(angel_unitstometerH, angel_unitstometerV);
+	OpenGLRender_SetTextureScale(angel_textureScale);
+	BunnySector_SetPlayerSpeeds(0, 2.0f, 1.0f);
 	movePlayer(0, deltatime);
 }
 
@@ -289,7 +329,12 @@ void angelscript_frame(float deltatime)
 	}
 	if (mgdl_IsButtonDown(0, Button1))
 	{
-		DEBUG_DRAW = true;
+		adjustFov(deltatime);
+	//	DEBUG_DRAW = true;
+	}
+	else
+	{
+		adjustScale(deltatime);
 	}
 		GameStatus status = BunnySector_GetGameStatus();
 		if (status == status_player_alive)

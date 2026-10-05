@@ -61,15 +61,22 @@ static RectF zeroOffset;
 
 // What OpenGL settings are active
 
-static float unitsPerMeter = 1.0f;
+static float unitsPerMeterHorizontal = 1.0f;
+static float unitsPerMeterVertical = 1.0f;
+static float unitsPerMeterUV = 112.0f; // Note this depends on texture dimensions?
 
 // NOTE New way to tesselate
 PolyTesselator* polytess;
  // #define TESS_DEBUG
 
-void OpenGLRender_SetUnitsToMeter(float unitsToMeter)
+void OpenGLRender_SetUnitsToMeter(float unitsToMeterHorizontal, float unitsToMeterVertical)
 {
-    unitsPerMeter = unitsToMeter;
+    unitsPerMeterHorizontal = unitsToMeterHorizontal;
+    unitsPerMeterVertical = unitsToMeterVertical;
+}
+void OpenGLRender_SetTextureScale(float scale)
+{
+    unitsPerMeterUV = scale;
 }
 /**
  * @brief Sets OpenGL to draw from vertexBuffer
@@ -171,7 +178,7 @@ static void DrawBufferWithMaterial(MapMaterial* material, Vector3 normal, Buffer
             DrawGrassOnPolygonBuffer(m_grass,
                                      materialColor, normal,
                                      m_grass->height, 0.1f,
-                                     drawFunction, 1.0f/unitsPerMeter);
+                                     drawFunction, 1.0f/unitsPerMeterHorizontal);
         }
             break;
         case Material_Function:
@@ -245,8 +252,9 @@ void DrawMeshOnSprite(MapMaterial* material, Vector3 position, float angleYRadia
     glPushMatrix();
         glTranslatef(position.x, position.y, position.z);
         glRotatef(Rad2Deg(angleYRadians), WORLD_UP.x, WORLD_UP.y, WORLD_UP.z);
-        float antiScale = unitsPerMeter;
-        glScalef(antiScale, antiScale, antiScale);
+        float antiScaleH = unitsPerMeterHorizontal;
+        float antiScaleV = unitsPerMeterVertical; // TODO Just one?
+        glScalef(antiScaleH, antiScaleH, antiScaleH);
         glPushMatrix();
             float ms = material->parameter.meshScale;
             glScalef(ms, ms, ms);
@@ -266,8 +274,9 @@ void OpenGLRender_StartDrawingPolygons()
     glEnable(GL_TEXTURE_2D);
     glPushMatrix();
     mgdl_glSetAlphaTest(true);
-    float scaleXYZ = 1.0f / unitsPerMeter;
-    glScalef(scaleXYZ, scaleXYZ, scaleXYZ);
+    float scaleXZ = 1.0f / unitsPerMeterHorizontal;
+    float scaleY = 1.0f / unitsPerMeterVertical;
+    glScalef(scaleXZ, scaleY, scaleXZ);
 }
 
 void OpenGLRender_EndDrawingPolygons()
@@ -470,7 +479,7 @@ void DrawQuad(Vector2 start, Vector2 end, const Vector2 normalXZ, s32 floorY, s3
 void OpenGLRender_DrawWallV(Vector2 start, Vector2 end, Vector2 normalXZ, s32 floorY, s32 ceilingY,  s16 picnum, s8 shade)
 {
     // printf("DrawVallV %.2f %.2f -> %.2f %.2f, f : %d c: %d\n", start.x, start.y, end.x, end.y, floorY, ceilingY);
-    DrawQuad(start, end, normalXZ, floorY, ceilingY, picnum, shade, 1.0f/unitsPerMeter);
+    DrawQuad(start, end, normalXZ, floorY, ceilingY, picnum, shade, 1.0f/unitsPerMeterUV);
 }
 
 void OpenGLRender_DrawFloorOrCeiling(BunnySector_Map* map, int sectorIndex, u8 shade, float ycoord, MaterialId materialId, bool floor)
@@ -564,7 +573,7 @@ void OpenGLRender_DrawSprite(Vector3 position, float width, float height, float 
         position.y =0.0f;
         position.z =0.0f;
 
-        static const float pushOut = unitsPerMeter * 0.08f;
+        static const float pushOut = unitsPerMeterHorizontal * 0.08f;
 
         Vector3 spriteForward = WORLD_RIGHT;
         Vector3 spriteRight = Vector3RotateY(spriteForward, -M_PI_2);
@@ -767,13 +776,13 @@ static void StopCountingFloorBufferSize(BunnySector_Map* map)
 #endif
 }
 
-void OpenGLRender_CreateFloorBuffers(BunnySector_Map* map, float unitsPerMeterForUV)
+void OpenGLRender_CreateFloorBuffers(BunnySector_Map* map)
 {
 
     StartCountingFloorBufferSize(map);
     for (int si = 0; si < map->GetSectorAmount(); si++)
     {
-        TesselateFloor(map, si, unitsPerMeterForUV);
+        TesselateFloor(map, si, unitsPerMeterUV);
     }
     StopCountingFloorBufferSize(map);
 }
@@ -791,7 +800,7 @@ void OpenGLRender_StartDrawingFloorsFromBuffer(BunnySector_Map* map)
 
 void OpenGLRender_StartObjExport(BunnySector_Map* map, const char* filename, RenderSettingsOpenGL* settings)
 {
-    ObjExport_Start(filename, zstr_cstr(map->GetMapFile()), map->GetSectorAmount(), settings->scale);
+    ObjExport_Start(filename, zstr_cstr(map->GetMapFile()), map->GetSectorAmount(), settings->scaleXY.x);
 }
 void OpenGLRender_StartFillingWallBuffer(BunnySector_Map* map)
 {

@@ -7,7 +7,7 @@
 void Player::Init(int playerIndex, float moveSpeed, float moveAcceleration, float turnSpeed, float turnAccelerationDeg)
 {
 
-	float unitsToMeter = DOOM_UNITS_TO_METER;
+	float unitsToMeter = DOOM_UNITS_TO_METER_H;
 	this->index = playerIndex;
 
 	turnAccelerationDegrees = turnAccelerationDeg;
@@ -23,7 +23,7 @@ void Player::Init(int playerIndex, float moveSpeed, float moveAcceleration, floa
 	turnVelocity = 0.0f;
 
 	// Size
-	standingHeight = 1.0f * unitsToMeter;
+	standingHeight = 1.4f * unitsToMeter;
 	climbHeight = standingHeight/2.0f;
 	eyeHeightNormalized = 1.00f;
 

@@ -38,7 +38,7 @@ typedef struct RenderSettings2D RenderSettings2D;
 // TODO Add option to not cull walls and sectors
 struct RenderSettingsOpenGL
 {
-    float scale;
+    Vector2 scaleXY;
     float spriteDefaultWidth;
     float spriteDefaultHeight;
 
@@ -55,7 +55,7 @@ struct RenderSettingsOpenGL
 };
 typedef struct RenderSettingsOpenGL RenderSettingsOpenGL;
 
-void RenderSettingsOpenGL_SetUnitToMeter(RenderSettingsOpenGL* setting, float unitsToMeter);
+void RenderSettingsOpenGL_SetUnitToMeter(RenderSettingsOpenGL* setting, float unitsToMeterHorizontal, float unitsToMeterVertical);
 
 RenderSettings2D GetDefaultRenderSettings2D();
 RenderSettingsOpenGL GetDefaultRenderSettingsOpenGL();

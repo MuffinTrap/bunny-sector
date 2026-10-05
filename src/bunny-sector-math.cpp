@@ -64,11 +64,11 @@ float Math_DukeAngleToRad(s16 angleInt)
 
 Vector3 ScaleVector3ToOpenGL(Vector3 position, RenderSettingsOpenGL* settings3D)
 {
-	return Vector3Scale(position, settings3D->scale);
+	return Vector3Scale(position, settings3D->scaleXY.x);
 }
 Vector2 ScaleVector2ToOpenGL(Vector2 position, RenderSettingsOpenGL* settings3D)
 {
-	return Vector2Scale(position, settings3D->scale);
+	return Vector2Scale(position, settings3D->scaleXY.x);
 }
 
 bool IsPointInsideWall(Vector2 point, Vector2 wallStart, Vector2 wallEnd)

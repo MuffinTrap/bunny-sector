@@ -455,3 +455,5 @@ bool DoomNode_PointInsideBox(DoomNode* node, Vector2 point, int childIndex);
 float DoomSpeedToUnits(int doomSpeed);
 
 const char* DoomTypeToString(DOOM_EDITOR_NUMBER typeNumber);
+
+

@@ -57,7 +57,7 @@ void OpenGLRender_EndDrawingPolygons();
 
 
 // Tesselate and store all floors to buffer
-void OpenGLRender_CreateFloorBuffers(BunnySector_Map* map, float unitsPerMeterForUV);
+void OpenGLRender_CreateFloorBuffers(BunnySector_Map* map);
 /**
  * @brief Tesselates a floor of sector.
  */
@@ -90,7 +90,8 @@ Texture* OpenGLRender_GetTexture(s16 picnum);
 void OpenGLRender_SetColor(color32 oc);
 void OpenGLRender_DrawDot(Vector2 point, float size, color32 color);
 
-void OpenGLRender_SetUnitsToMeter(float unitsToMeter);
+void OpenGLRender_SetUnitsToMeter(float unitsToMeterHorizontal, float unitsToMeterVertical);
+void OpenGLRender_SetTextureScale(float scale);
 
 s16 OpenGLRender_GetPicnumForName(zstr* textureName);
 
