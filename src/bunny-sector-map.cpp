@@ -32,18 +32,18 @@ void BunnySector_Map::MoveActors(float delta)
 void BunnySector_Map::MoveActorInMap(float deltaTime, Actor* inoutActor)
 {
     Vector2 current = inoutActor->position.vectorPosition;
-    Vector2 destination = Actor_MoveOnFloor(inoutActor, deltaTime);
+    Vector2 destination = inoutActor->MoveOnFloor(deltaTime);
 
 	Vector2 point = current;
 	Vector2 endpoint = destination;
 
     // TODO Gravity depens on map?
-    float elevationEnd = Actor_MoveVertically(inoutActor, 8024.0, deltaTime);
+    float elevationEnd = inoutActor->MoveVertically(8024.0, deltaTime);
 
 	Vector2 pointOut;
 	s16 subSectorOut;
 	u32 resultFlags = MoveActorInMapImpl(
-		point,  endpoint, inoutActor->radius, inoutActor->subSectorNumber,elevationEnd,inoutActor->climbHeight,inoutActor->height, inoutActor,
+		point,  endpoint, inoutActor->size, inoutActor->subSectorNumber,elevationEnd,inoutActor->climbHeight,inoutActor->height, inoutActor,
 		&pointOut, &subSectorOut);
 
 	// Keep actor above floor and under the ceiling

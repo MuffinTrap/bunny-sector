@@ -1,0 +1,22 @@
+<!--
+This file configures the monsters used in the game
+
+@monsters This is the root tag
+	@folder Where the textures are loaded from
+
+	@monster This configures one monster
+		Monster is identified by one of the following
+		@name Editornumber name
+		@number Editor number
+
+		@texture Name of the image file
+		@facing See items.xml for format
+		@walk Configures the walk animations
+		@death Configures the dying animations
+		@hitpoints [default: 1] How many points of damage the monster takes before dying
+		@speed Movement speed of the monster
+-->
+
+<monsters>
+	<folder>assets</folder>
+</monsters>

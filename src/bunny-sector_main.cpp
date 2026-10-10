@@ -6,6 +6,7 @@
 
 #include "bunny-sector-math.h"
 #include "bunny-sector-materials.h"
+#include "bunny-sector-items.h"
 #include "render/opengl-render.h"
 #include "render/render-settings.h"
 #include "gameplay/actor.h"
@@ -13,7 +14,8 @@
 #include "gameplay/actorpool.h"
 #include "doom/doom-map-reader.h"
 
-static BunnySector::Materials* materialManager;
+static BunnySector::MaterialManager* materialManager;
+static BunnySector::ItemManager* itemManager;
 
 static BunnySector_Map** mapsArray = nullptr;
 static BunnySector_Map* activeMap = nullptr;
@@ -95,8 +97,11 @@ bool BunnySector_Init(mgdl_AngelScript* angel)
 	OpenGLRender_RegisterTexture(defaultChecker); // This becomes the default texture
 
 	// Read material definitions from a file
-	materialManager = new BunnySector::Materials();
-	materialManager->ReadXML("assets/materials.xml");
+	materialManager = new BunnySector::MaterialManager();
+	materialManager->ReadXML("config/materials.xml");
+
+	itemManager = new BunnySector::ItemManager();
+	itemManager->LoadXML("config/items.xml");
 
 	defaultOpenGL = GetDefaultRenderSettingsOpenGL();
 	defaultView = GetDefaultCameraInfo();
@@ -204,8 +209,8 @@ void BunnySector_StartMap(MapId mapId, int playerAmount)
 			activeMap = map;
 			activePlayerAmount = playerAmount;
 
-			RenderSettingsOpenGL_SetUnitToMeter(&defaultOpenGL, DOOM_UNITS_TO_METER_H, DOOM_UNITS_TO_METER_H);
-			BunnySector_SetOpenGLUnitsToMeter(DOOM_UNITS_TO_METER_H, DOOM_UNITS_TO_METER_H);
+			RenderSettingsOpenGL_SetUnitToMeter(&defaultOpenGL, DOOM_UNITS_TO_METER, DOOM_UNITS_TO_METER);
+			BunnySector_SetOpenGLUnitsToMeter(DOOM_UNITS_TO_METER, DOOM_UNITS_TO_METER);
 			actorPool.Clear();
 			map->SetActorPool(&actorPool);
 			map->CreateActors();
@@ -548,3 +553,6 @@ DoomMap* BunnySector_GetDoomMap(MapId mapId)
 	BunnySector_Map* map = mapsArray[mapId];
 	return (DoomMap*)map;
 }
+
+BunnySector::ItemManager* BunnySector_GetItemManager() { return itemManager;}
+BunnySector::MaterialManager* BunnySector_GetMaterialManager() { return materialManager;}

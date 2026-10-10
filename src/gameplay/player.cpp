@@ -143,7 +143,7 @@ void Player::ApplyDrive(Actor* actor, float deltaTime)
 
 Viewpoint Player::GetViewpoint(Actor* actor)
 {
-	Viewpoint v = Actor_GetViewpoint(actor);
+	Viewpoint v = actor->GetViewpoint();
 	v.position.y += standingHeight;
 	return v;
 }

@@ -4,7 +4,7 @@
 #include "../bunny-sector-map.h"
 #include "../bunny-sector-types.h"
 
-struct Actor;
+class Actor;
 
 #define DOOM_MAP_ACTION_AMOUNT 32
 
@@ -70,10 +70,7 @@ public:
 	void PrintInfo() override;
 	MapUpdateResult UpdateActions(float delta) override;
 
-	u32 MoveActorInMapImpl(
-	Vector2 start, Vector2 end, float radius, s16 sectorNumber,
-	float elevationEnd, float maxElevationChange, float height, Actor* actor,
-	Vector2* positionOut, s16* subSectorOut) override;
+	u32 MoveActorInMapImpl(Vector2 start, Vector2 end, float size, s16 sectorNumber, float elevationEnd, float maxElevationChange, float height, Actor* actor, Vector2* positionOut, s16* subSectorOut);
 
 	void StartLinedefAction(DoomLinedef* line, Actor* actor, bool crossed);
 
@@ -81,7 +78,7 @@ public:
 	float GetSectorCeilingy(int sectorIndex);
 	float GetSectorFloory(int sectorIndex);
 
-	void AddActor(ActorType actorType, int typeNumber, int id, Vector2 position, int width, int height, float angleDeg, MaterialId material);
+	void AddActor(ActorType actorType, int typeNumber, int id, Vector2 position, float angleDeg);
 
 	int FindSubSector(DoomNode* node, Vector2 point);
 
@@ -93,29 +90,30 @@ public:
 
 	bool DoOpenDoorAction(DoomMapAction* act, float delta);
 	bool DoCloseDoorAction(DoomMapAction* act, float delta);
+	void Allocate(int thingsAmount, int sectorAmount, int sideAmount, int lineAmount, int vertexAmount);
+	void AllocateNodes(int nodeAmount);
+	void AllocateSegments(int segmentAmount);
+	void AllocateSubsectors(int subSectorAmount);
+
+// property accessors for AngelScript
+DoomThing* GetThing(unsigned int index);
+DoomSector* GetSector(unsigned int index);
+DoomSidedef* GetSidedef(unsigned int index);
+DoomLinedef* GetLinedef(unsigned int index);
+DoomVertex* GetVertex(unsigned int index);
+DoomNode* GetNode(unsigned int index);
+DoomSubSector* GetSubSector(unsigned int index);
+DoomSegment* GetSegment(unsigned int index);
+
+DoomNode* GetRootNode();
+DoomNode* GetChildNode(ChildId id);
+int GetActorAmount() override;
+DoomSubSector* GetChildSubSector(ChildId id);
+
 
 };
 typedef class DoomMap DoomMap;
 
-void DoomMap_Allocate(DoomMap* map, int thingsAmount, int sectorAmount, int sideAmount, int lineAmount, int vertexAmount);
-void DoomMap_AllocateNodes(DoomMap* map, int nodeAmount);
-void DoomMap_AllocateSegments(DoomMap* map, int segmentAmount);
-void DoomMap_AllocateSubsectors(DoomMap* map, int subSectorAmount);
-
-// property accessors for AngelScript
-DoomThing* DoomMap_GetThing(DoomMap* map, unsigned int index);
-DoomSector* DoomMap_GetSector(DoomMap* map, unsigned int index);
-DoomSidedef* DoomMap_GetSidedef(DoomMap* map, unsigned int index);
-DoomLinedef* DoomMap_GetLinedef(DoomMap* map, unsigned int index);
-DoomVertex* DoomMap_GetVertex(DoomMap* map, unsigned int index);
-DoomNode* DoomMap_GetNode(DoomMap* map, unsigned int index);
-DoomSubSector* DoomMap_GetSubSector(DoomMap* map, unsigned int index);
-DoomSegment* DoomMap_GetSegment(DoomMap* map, unsigned int index);
-
-DoomNode* DoomMap_GetRootNode(DoomMap* map);
-DoomNode* DoomMap_GetChildNode(DoomMap* map, ChildId id);
-int DoomMap_GetActorAmount(DoomMap* map);
-DoomSubSector* DoomMap_GetChildSubSector(DoomMap* map, ChildId id);
 
 // Interface BunnySector_Map
 

@@ -710,7 +710,7 @@ void DrawSubSectorTopDown(DoomMap@ map, Actor@ player, DoomSubSector@ sub, int s
 
 		DrawCross(Vector2New(trans1.x, trans1.y), Debug_Yellow);
 		bool isPortal = seg.neighbourSubSector >= 0;
-		ProcessWallTopDown(trans1, trans2, player.radius, isPortal); // NOTE: FLIP_THE_Y changes this
+		ProcessWallTopDown(trans1, trans2, player.size/2.0f, isPortal); // NOTE: FLIP_THE_Y changes this
 
 		middlex += trans1.x;
 		middley += trans1.y;
@@ -1003,9 +1003,9 @@ glPushMatrix();
 		Actor@ act = BunnySector_GetActorByIndex(i);
 		BunnyV2@ ap = act.GetPosition();
 		Vector2 actorPos = Vector2New(ap.x, ap.y);
-		float radius = act.radius;
+		float size = act.size;
 		Vector2 actorCamera = WorldToCamera(actorPos, playerPos, playerAngle);
-		DrawBox(actorCamera, radius*2, radius*2, Debug_White);
+		DrawBox(actorCamera, size, size, Debug_White);
 
 	}
 

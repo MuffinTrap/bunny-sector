@@ -18,8 +18,9 @@ struct RenderSettingsOpenGL;
  * and then comes game specific stuff
  */
 
-struct Actor
+class Actor
 {
+public:
     int idNumber;
     s16 subSectorNumber;
     s16 prevSubSectorNumber;
@@ -61,29 +62,34 @@ struct Actor
     float pitchRad; // looking up and down
 
     // Collisions
-    float radius;
+    float size;
     float height;
     float climbHeight; //<< How much can move upwards when colliding with stairs
     bool noclip;
+
+    // Drawing
+    int renderWidth;
+    int renderHeight;
 
     // What actor is doing
     u32 actionFlags;
     
     u32 lastMoveResultFlags;
+
+    static Actor Create(int idNumber, s16 sector, Vector3 position, float yawRad, float radius, float height);
+    static Actor CreateFromViewPoint(Viewpoint point);
+
+    void Init();
+    BunnyV2* GetPosition();
+    BunnyV2* GetFloorDirection();
+    void SetPosition( float x, float y);
+    void StartAction( ActorActionBit flags);
+    void EndAction( ActorActionBit flags);
+    bool IsDoing( ActorActionBit flags);
+
+    Viewpoint GetViewpoint();
+
+    Vector2 MoveOnFloor( float delta);
+    float MoveVertically( float gravity, float delta);
 };
-typedef struct Actor Actor;
 
-Actor Actor_CreateFromViewPoint(Viewpoint point);
-void Actor_Init(Actor* actor);
-Actor Actor_Create(int idNumber, s16 sector, Vector3 position, float yawRad, float radius, float height);
-BunnyV2* Actor_GetPosition(Actor* actor);
-BunnyV2* Actor_GetFloorDirection(Actor* actor);
-void Actor_SetPosition(Actor* actor, float x, float y);
-void Actor_StartAction(Actor* actor, ActorActionBit flags);
-void Actor_EndAction(Actor* actor, ActorActionBit flags);
-bool Actor_IsDoing(Actor* actor, ActorActionBit flags);
-
-Viewpoint Actor_GetViewpoint(Actor* actor);
-
-Vector2 Actor_MoveOnFloor(Actor* actor, float delta);
-float Actor_MoveVertically(Actor* actor, float gravity, float delta);

@@ -3,7 +3,7 @@
 #include "../bunny-sector-types.h"
 #include "../doom/doom_types.h"
 
-struct Actor;
+class Actor;
 
 struct InventoryEntry
 {

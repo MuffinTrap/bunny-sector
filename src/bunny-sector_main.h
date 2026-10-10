@@ -4,6 +4,8 @@
 #include "doom/doom-map.h"
 #include "bunny-sector-map.h"
 #include "bunny-sector-types.h"
+#include "bunny-sector-items.h"
+#include "bunny-sector-materials.h"
 
 class Player;
 
@@ -118,4 +120,9 @@ MapId BunnySector_LoadMap(const char* mapfilename);
 bool BunnySector_LoadItemProperties(const zstr& propertiesfile);
 
 void BunnySector_DrawCameraInfo(float x, float y);
+
+// Manager singletons
+BunnySector::ItemManager* BunnySector_GetItemManager();
+BunnySector::MaterialManager* BunnySector_GetMaterialManager();
+
 

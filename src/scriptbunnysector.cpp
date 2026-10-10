@@ -53,11 +53,11 @@ void RegisterDoomMap(mgdl_AngelScript* angel)
 		as_engine->RegisterObjectProperty("DoomNode", "s16 y", asOFFSET(DoomNode, y));
 		as_engine->RegisterObjectProperty("DoomNode", "s16 dx", asOFFSET(DoomNode, dx));
 		as_engine->RegisterObjectProperty("DoomNode", "s16 dy", asOFFSET(DoomNode, dy));
-		as_engine->RegisterObjectMethod("DoomNode", "s16 get_bbox0(uint) property", asFUNCTION(DoomNode_GetBBox0), asCALL_CDECL_OBJFIRST);
-		as_engine->RegisterObjectMethod("DoomNode", "s16 get_bbox1(uint) property", asFUNCTION(DoomNode_GetBBox1), asCALL_CDECL_OBJFIRST);
-		as_engine->RegisterObjectMethod("DoomNode", "s16 get_bbox(uint) property", asFUNCTION(DoomNode_GetBBox), asCALL_CDECL_OBJFIRST);
-		as_engine->RegisterObjectMethod("DoomNode", "ChildId get_children(uint) property", asFUNCTION(DoomNode_GetChild), asCALL_CDECL_OBJFIRST);
-		as_engine->RegisterObjectMethod("DoomNode", "int GetChildSide(float x, float y)", asFUNCTION(DoomNode_GetChildSide), asCALL_CDECL_OBJFIRST);
+		as_engine->RegisterObjectMethod("DoomNode", "s16 get_bbox0(uint) property", asMETHOD(DoomNode,GetBBox0), asCALL_THISCALL);
+		as_engine->RegisterObjectMethod("DoomNode", "s16 get_bbox1(uint) property", asMETHOD(DoomNode,GetBBox1), asCALL_THISCALL);
+		as_engine->RegisterObjectMethod("DoomNode", "s16 get_bbox(uint) property", asMETHOD(DoomNode,GetBBox), asCALL_THISCALL);
+		as_engine->RegisterObjectMethod("DoomNode", "ChildId get_children(uint) property", asMETHOD(DoomNode,GetChild), asCALL_THISCALL);
+		as_engine->RegisterObjectMethod("DoomNode", "int GetChildSide(float x, float y)", asMETHOD(DoomNode,GetChildSide), asCALL_THISCALL);
 
 		as_engine->RegisterGlobalProperty("const int BB_TOP", &BB_TOP);
 		as_engine->RegisterGlobalProperty("const int BB_BOT", &BB_BOT);
@@ -80,19 +80,19 @@ void RegisterDoomMap(mgdl_AngelScript* angel)
 		as_engine->RegisterObjectProperty("DoomMap", "int subSectorAmount", asOFFSET(DoomMap, subSectorAmount));
 
 		// Register DoomMap_GetX(DoomMap* map, ...) as methods of DoomMap
-		as_engine->RegisterObjectMethod("DoomMap", "DoomSegment@ get_segments(uint) property", asFUNCTION(DoomMap_GetSegment), asCALL_CDECL_OBJFIRST);
-		as_engine->RegisterObjectMethod("DoomMap", "DoomSector@ get_sectors(uint) property", asFUNCTION(DoomMap_GetSector), asCALL_CDECL_OBJFIRST);
-		as_engine->RegisterObjectMethod("DoomMap", "DoomThing@ get_things(uint) property", asFUNCTION(DoomMap_GetThing), asCALL_CDECL_OBJFIRST);
-		as_engine->RegisterObjectMethod("DoomMap", "DoomNode@ get_nodes(uint) property", asFUNCTION(DoomMap_GetNode), asCALL_CDECL_OBJFIRST);
-		as_engine->RegisterObjectMethod("DoomMap", "DoomSubSector@ get_subsectors(uint) property", asFUNCTION(DoomMap_GetSubSector), asCALL_CDECL_OBJFIRST);
-		as_engine->RegisterObjectMethod("DoomMap", "DoomLinedef@ get_linedefs(uint) property", asFUNCTION(DoomMap_GetLinedef), asCALL_CDECL_OBJFIRST);
-		as_engine->RegisterObjectMethod("DoomMap", "DoomSidedef@ get_sidedefs(uint) property", asFUNCTION(DoomMap_GetSidedef), asCALL_CDECL_OBJFIRST);
-		as_engine->RegisterObjectMethod("DoomMap", "DoomVertex@ get_vertices(uint) property", asFUNCTION(DoomMap_GetVertex), asCALL_CDECL_OBJFIRST);
+		as_engine->RegisterObjectMethod("DoomMap", "DoomSegment@ get_segments(uint) property", asMETHOD(DoomMap,GetSegment), asCALL_THISCALL);
+		as_engine->RegisterObjectMethod("DoomMap", "DoomSector@ get_sectors(uint) property", asMETHOD(DoomMap,GetSector), asCALL_THISCALL);
+		as_engine->RegisterObjectMethod("DoomMap", "DoomThing@ get_things(uint) property", asMETHOD(DoomMap,GetThing), asCALL_THISCALL);
+		as_engine->RegisterObjectMethod("DoomMap", "DoomNode@ get_nodes(uint) property", asMETHOD(DoomMap,GetNode), asCALL_THISCALL);
+		as_engine->RegisterObjectMethod("DoomMap", "DoomSubSector@ get_subsectors(uint) property", asMETHOD(DoomMap,GetSubSector), asCALL_THISCALL);
+		as_engine->RegisterObjectMethod("DoomMap", "DoomLinedef@ get_linedefs(uint) property", asMETHOD(DoomMap,GetLinedef), asCALL_THISCALL);
+		as_engine->RegisterObjectMethod("DoomMap", "DoomSidedef@ get_sidedefs(uint) property", asMETHOD(DoomMap,GetSidedef), asCALL_THISCALL);
+		as_engine->RegisterObjectMethod("DoomMap", "DoomVertex@ get_vertices(uint) property", asMETHOD(DoomMap,GetVertex), asCALL_THISCALL);
 
-		as_engine->RegisterObjectMethod("DoomMap", "int GetActorAmount()", asFUNCTION(DoomMap_GetActorAmount), asCALL_CDECL_OBJFIRST);
-		as_engine->RegisterObjectMethod("DoomMap", "DoomNode@ GetRootNode()", asFUNCTION(DoomMap_GetRootNode), asCALL_CDECL_OBJFIRST);
-		as_engine->RegisterObjectMethod("DoomMap", "DoomNode@ GetChildNode(ChildId id)", asFUNCTION(DoomMap_GetChildNode), asCALL_CDECL_OBJFIRST);
-		as_engine->RegisterObjectMethod("DoomMap", "DoomSubSector@ GetChildSubSector(ChildId id)", asFUNCTION(DoomMap_GetChildSubSector), asCALL_CDECL_OBJFIRST);
+		as_engine->RegisterObjectMethod("DoomMap", "int GetActorAmount()", asMETHOD(DoomMap,GetActorAmount), asCALL_THISCALL);
+		as_engine->RegisterObjectMethod("DoomMap", "DoomNode@ GetRootNode()", asMETHOD(DoomMap,GetRootNode), asCALL_THISCALL);
+		as_engine->RegisterObjectMethod("DoomMap", "DoomNode@ GetChildNode(ChildId id)", asMETHOD(DoomMap,GetChildNode), asCALL_THISCALL);
+		as_engine->RegisterObjectMethod("DoomMap", "DoomSubSector@ GetChildSubSector(ChildId id)", asMETHOD(DoomMap,GetChildSubSector), asCALL_THISCALL);
 
 	// Functions
 	as_engine->RegisterGlobalFunction("DoomMap@ BunnySector_GetDoomMap(MapId mapId)", asFUNCTION(BunnySector_GetDoomMap), asCALL_CDECL);
@@ -200,14 +200,14 @@ void RegisterBunnySector(mgdl_AngelScript* angel)
 	as_engine->RegisterObjectProperty("Actor", "s16 sectorNumber", asOFFSET(Actor, subSectorNumber));
 	as_engine->RegisterObjectProperty("Actor", "float elevation", asOFFSET(Actor, elevation));
 	as_engine->RegisterObjectProperty("Actor", "bool noclip", asOFFSET(Actor, noclip));
-	as_engine->RegisterObjectProperty("Actor", "float radius", asOFFSET(Actor, radius));
+	as_engine->RegisterObjectProperty("Actor", "float size", asOFFSET(Actor, size));
 	as_engine->RegisterObjectProperty("Actor", "float verticalVelocity", asOFFSET(Actor, verticalVelocity));
 	as_engine->RegisterObjectProperty("Actor", "int typeNumber", asOFFSET(Actor, typeNumber));
 	as_engine->RegisterObjectProperty("Actor", "ActorType actorType", asOFFSET(Actor, actorType));
-	as_engine->RegisterObjectMethod("Actor", "BunnyV2@ GetPosition()", asFUNCTION(Actor_GetPosition), asCALL_CDECL_OBJFIRST);
-	as_engine->RegisterObjectMethod("Actor", "BunnyV2@ GetFloorDirection()", asFUNCTION(Actor_GetFloorDirection), asCALL_CDECL_OBJFIRST);
-	as_engine->RegisterObjectMethod("Actor", "void SetPosition(float x, float y)", asFUNCTION(Actor_SetPosition), asCALL_CDECL_OBJFIRST);
-	as_engine->RegisterObjectMethod("Actor", "bool IsDoing(ActorActionBit actionBit)", asFUNCTION(Actor_IsDoing), asCALL_CDECL_OBJFIRST);
+	as_engine->RegisterObjectMethod("Actor", "BunnyV2@ GetPosition()", asMETHOD(Actor,GetPosition), asCALL_THISCALL);
+	as_engine->RegisterObjectMethod("Actor", "BunnyV2@ GetFloorDirection()", asMETHOD(Actor,GetFloorDirection), asCALL_THISCALL);
+	as_engine->RegisterObjectMethod("Actor", "void SetPosition(float x, float y)", asMETHOD(Actor,SetPosition), asCALL_THISCALL);
+	as_engine->RegisterObjectMethod("Actor", "bool IsDoing(ActorActionBit actionBit)", asMETHOD(Actor,IsDoing), asCALL_THISCALL);
 
 	// ACTOR FUNCTIONS
 	as_engine->RegisterGlobalFunction("Actor@ BunnySector_GetActorByIndex(int actorIndex)", asFUNCTION(BunnySector_GetActorByIndex), asCALL_CDECL);

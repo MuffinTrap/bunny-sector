@@ -1,0 +1,42 @@
+<!--
+This file configures the different items in the game
+Items can be sprites or models
+If the model tag is present the texture will be the texture for that model
+If the model tag is present the facing tags are ignored
+The textures are looked from the same folder than material textures are. See @folder in materials.xml
+
+@item This configures one item
+	The item must have one of the following:
+	@name This is the doom editor number name from https://zdoom.org/wiki/Standard_editor_numbers
+	@number This the doom editor number
+
+	@texture This is the file name of the image to use as a texture.
+	@model [optional] This is the file name of the fbx file to load the mesh from.
+
+	@size [default: 1] Size of the collision box
+	@height [default: 1] Height of the collision box
+
+	@renderwidth [optional] Size when drawing. If not set, texture width is used
+	@renderheight [optional] Size when drawing. If not set, texture height is used
+
+	The item can look different from different directions
+	If no facings are configured the whole texture is used for all the facings
+	@facing This configures a facing
+		@direction [attribute] The facing, seen from player. Values are front, frontleft, frontright,left,
+		right, backleft, back, backright
+		The section of the texture used for this facing can be configured in pixels
+		@x The x of lower left point of the section
+		@y The y of lower left point of the section
+		@w The width of the section
+		@h The height of the section
+-->
+<items>
+	<folder>assets</folder>
+
+	<item>
+		<name>BlueCard</name>
+		<texture>BlueCard.png</texture>
+		<size>32</size>
+		<height>32</height>
+	</item>
+</items>

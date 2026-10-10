@@ -757,7 +757,7 @@ static int FindDoorOpenHeight(DoomMap* map, int sectorIndex)
 				BunnyMap = new DoomMap();// (BunnySector_Map*)mgdl_AllocateGeneralMemory(sizeof(BunnySector_Map));
 				map = (DoomMap*)BunnyMap;
 
-				DoomMap_Allocate(map, thingAmount, sectorAmount, sidedefAmount, linedefAmount, vertexAmount + NewVertes);
+				map->Allocate( thingAmount, sectorAmount, sidedefAmount, linedefAmount, vertexAmount + NewVertes);
 
 				counting = false;
 			}
@@ -795,7 +795,7 @@ static int FindDoorOpenHeight(DoomMap* map, int sectorIndex)
 			vertexAmount++;
 		}
 		u32 NumSubsectors = ReadDWORD();
-		DoomMap_AllocateSubsectors(map, NumSubsectors);
+		map->AllocateSubsectors( NumSubsectors);
 		printf("NumSubsectors %d\n", NumSubsectors);
 		int segmentsRead = 0;
 		for (int ni = 0; ni < NumSubsectors; ni++)
@@ -810,7 +810,7 @@ static int FindDoorOpenHeight(DoomMap* map, int sectorIndex)
 		u32 NumSegs = ReadDWORD();
 		mgdl_assert_test(NumSegs == segmentsRead);
 		printf("NumSeg %d\n", NumSegs);
-		DoomMap_AllocateSegments(map, NumSegs);
+		map->AllocateSegments( NumSegs);
 		for (int si = 0; si < map->segmentAmount; si++)
 		{
 			u32 v1 = ReadDWORD(); // Vertex index
@@ -827,7 +827,7 @@ static int FindDoorOpenHeight(DoomMap* map, int sectorIndex)
 
 		u32 NumNodes = ReadDWORD();
 		printf("NumNodes : %d\n", NumNodes);
-		DoomMap_AllocateNodes(map, NumNodes);
+		map->AllocateNodes( NumNodes);
 		for (int ni = 0; ni < NumNodes; ni++)
 		{
 			printf("Node %d\n", ni);
@@ -1032,6 +1032,23 @@ static int FindDoorOpenHeight(DoomMap* map, int sectorIndex)
 
 				printf("Subsector %d segment %d neighbor is %d\n", ssi, sub->firstSegment + segi, seg->neighbourSector);
 			}
+		}
+
+		// Adjust the height and elevation values of all sectors and things
+		// In doom the height is not in same units as width and depth
+		//
+		float heightConversion = (float)DOOM_UNITS_TO_METER_H / (float)DOOM_UNITS_TO_METER_V;
+
+		for (int si = 0; si < sectorAmount; si++)
+		{
+			DoomSector* sector = &map->sectors[si];
+			sector->heightfloor *= heightConversion;
+			sector->heightceiling *= heightConversion;
+		}
+		for (int ti= 0; ti < thingAmount; ti++)
+		{
+			DoomThing* thing = &map->things[ti];
+			thing->height *= heightConversion;
 		}
 
 		// TODO

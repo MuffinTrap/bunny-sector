@@ -6,7 +6,7 @@
 //TODO Name this file main_angel.cpp
 
 float angel_unitstometerH = 32.0f;
-float angel_unitstometerV = 16.0f;
+float angel_unitstometerV = 22.0f;
 float angel_textureScale = 112.0f;
 float angel_fov = 90.0f;
 
@@ -205,7 +205,7 @@ void adjustFov(float deltatime)
 }
 void angelscript_frame_doom(float deltatime)
 {
-	BunnySector_SetOpenGLUnitsToMeter(angel_unitstometerH, angel_unitstometerV);
+	//BunnySector_SetOpenGLUnitsToMeter(angel_unitstometerH, angel_unitstometerV);
 	OpenGLRender_SetTextureScale(angel_textureScale);
 	BunnySector_SetPlayerSpeeds(0, 2.0f, 1.0f);
 	movePlayer(0, deltatime);

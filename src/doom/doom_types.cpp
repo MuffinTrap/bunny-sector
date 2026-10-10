@@ -73,26 +73,26 @@ void DoomThing_Init(DoomThing* def)
 	def->arg4 = 0;
 }
 
-ChildId DoomNode_GetChild(DoomNode* node, unsigned int index)
+ChildId DoomNode::GetChild( unsigned int index)
 {
-	return node->children[index];
+	return children[index];
 }
-s16 DoomNode_GetBBox0(DoomNode* node, unsigned int index)
+s16 DoomNode::GetBBox0( unsigned int index)
 {
-	return node->bbox0[index];
+	return bbox0[index];
 }
-s16 DoomNode_GetBBox1(DoomNode* node, unsigned int index)
+s16 DoomNode::GetBBox1( unsigned int index)
 {
-	return node->bbox1[index];
+	return bbox1[index];
 }
-s16 DoomNode_GetBBox(DoomNode* node, unsigned int index) // Combined 0-7 index
+s16 DoomNode::GetBBox( unsigned int index) // Combined 0-7 index
 {
 	if (index < 4){
-		return node->bbox0[index];
+		return bbox0[index];
 	}
 	else
 	{
-		return node->bbox1[index-4];
+		return bbox1[index-4];
 	}
 }
 
@@ -100,51 +100,51 @@ s16 DoomNode_GetBBox(DoomNode* node, unsigned int index) // Combined 0-7 index
 #define CHILD_0 1
 #define CHILD_1 0
 
-int DoomNode_GetChildSide(DoomNode* node, float x, float y)
+int DoomNode::GetChildSide( float px, float py)
 {
-	if (node->dx == 0)
+	if (this->dx == 0)
 	{
 		// Vertical cut
-		if (x < node->x)
+		if (px < this->x)
 		{
-			if (node->dy > 0) {return CHILD_1;}
+			if (this->dy > 0) {return CHILD_1;}
 			else {return CHILD_0;}
 		}
-		if (node->dy < 0) {return CHILD_1;}
+		if (this->dy < 0) {return CHILD_1;}
 		else {return CHILD_0;}
 	}
-	if (node->dy == 0)
+	else if (this->dy == 0)
 	{
 		// Horizontal cut
-		if (y < node->y)
+		if (py < this->y)
 		{
-			if (node->dx > 0) {return CHILD_0;}
+			if (dx > 0) {return CHILD_0;}
 			else {return CHILD_1;}
 		}
-		if (node->dx < 0) {return CHILD_0;}
+		if (this->dx < 0) {return CHILD_0;}
 		else {return CHILD_1;}
 	}
-	float dx = x - node->x;
-	float dy = y - node->y;
-	if( dx * node->dy < dy * node->dx)
+	float mx = px - this->x;
+	float my = py - this->y;
+	if( mx * this->dy < my * this->dx)
 	{
 		return CHILD_1;
 	}
 	return CHILD_0;
 }
 
-bool DoomNode_PointInsideBox(DoomNode* node, Vector2 point, int childIndex)
+bool DoomNode::PointInsideBox( Vector2 point, int childIndex)
 {
-	s16 left =node->bbox0[BB_LFT];
-	s16 right =node->bbox0[BB_RGT];
-	s16 top =node->bbox0[BB_TOP];
-	s16 bot =node->bbox0[BB_BOT];
+	s16 left =bbox0[BB_LFT];
+	s16 right =bbox0[BB_RGT];
+	s16 top =bbox0[BB_TOP];
+	s16 bot =bbox0[BB_BOT];
 	if (childIndex == 1)
 	{
-	 left =node->bbox1[BB_LFT];
-	 right =node->bbox1[BB_RGT];
-	 top =node->bbox1[BB_TOP];
-	 bot =node->bbox1[BB_BOT];
+	 left =bbox1[BB_LFT];
+	 right =bbox1[BB_RGT];
+	 top =bbox1[BB_TOP];
+	 bot =bbox1[BB_BOT];
 	}
 	if (point.x < left || point.x > right)
 	{
@@ -162,21 +162,31 @@ float DoomSpeedToUnits(int doomSpeed)
 	 return ((float)doomSpeed * DOOM_SPEED_TO_UNITS) / DOOM_TICK_DURATION_SECONDS;
 }
 
-static const char* DoomTypeNames[6] =
+static zstr DoomTypeNames[NAMED_DOOM_TYPE_AMOUNT] =
 {
-	"No type",
-	"Player 1 start",
-	"Player 2 start",
-	"Player 3 start",
-	"Player 4 start",
-	"Blue key card"
+	zstr_from("No type"),
+	zstr_from("Player start #1"),
+	zstr_from("Player start #2"),
+	zstr_from("Player start #3"),
+	zstr_from("Player start #4"),
+	zstr_from("BlueCard")
 };
 
-const char* DoomTypeToString(DOOM_EDITOR_NUMBER typeNumber)
+const char* DoomTypeToStringChar(DOOM_EDITOR_NUMBER typeNumber)
 {
-	if (int(typeNumber)>= 0 && (int)typeNumber <= 5)
+	if (int(typeNumber)>= 0 && (int)typeNumber < NAMED_DOOM_TYPE_AMOUNT)
 	{
-		return DoomTypeNames[int(typeNumber)];
+		return zstr_cstr(&DoomTypeNames[int(typeNumber)]);
 	}
 	return nullptr;
 }
+
+zstr * DoomTypeToStringZstr(DOOM_EDITOR_NUMBER typeNumber)
+{
+	if (int(typeNumber)>= 0 && (int)typeNumber < NAMED_DOOM_TYPE_AMOUNT)
+	{
+		return &DoomTypeNames[int(typeNumber)];
+	}
+	return nullptr;
+}
+

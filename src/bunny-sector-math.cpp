@@ -81,16 +81,16 @@ bool IsPointInsideWall(Vector2 point, Vector2 wallStart, Vector2 wallEnd)
 }
 bool TestActorWallCollisionPtr(Actor* actor, Vector2 wallStart, Vector2 wallEnd)
 {
-	return TestActorWallCollision(actor->position.vectorPosition, actor->radius, wallStart, wallEnd);
+	return TestActorWallCollision(actor->position.vectorPosition, actor->size, wallStart, wallEnd);
 }
 
-bool TestActorWallCollision(Vector2 actorpos, float radius, Vector2 wallStart, Vector2 wallEnd)
+bool TestActorWallCollision(Vector2 actorpos, float size, Vector2 wallStart, Vector2 wallEnd)
 {
 	// Actor rectangle
-	float pxl = actorpos.x - radius;
-	float pxr = actorpos.x + radius;
-	float pyt = actorpos.y - radius;
-	float pyb = actorpos.y + radius;
+	float pxl = actorpos.x - size/2;
+	float pxr = actorpos.x + size/2;
+	float pyt = actorpos.y - size/2;
+	float pyb = actorpos.y + size/2;
 
 	bool over = IntersectBox(pxl, pyt, pxr, pyb, wallStart.x, wallStart.y, wallEnd.x, wallEnd.y);
 	if (over)
@@ -111,15 +111,15 @@ bool TestActorActorCollision(Actor* A, Actor* B)
 {
 	// Actor rectangle
 	Vector2 ap = A->position.vectorPosition;
-	float axl = ap.x - A->radius;
-	float axr = ap.x + A->radius;
-	float ayt = ap.y - A->radius;
-	float ayb = ap.y + A->radius;
+	float axl = ap.x - A->size/2;
+	float axr = ap.x + A->size/2;
+	float ayt = ap.y - A->size/2;
+	float ayb = ap.y + A->size/2;
 	Vector2 bp = B->position.vectorPosition;
-	float bxl = bp.x - B->radius;
-	float bxr = bp.x + B->radius;
-	float byt = bp.y - B->radius;
-	float byb = bp.y + B->radius;
+	float bxl = bp.x - B->size/2;
+	float bxr = bp.x + B->size/2;
+	float byt = bp.y - B->size/2;
+	float byb = bp.y + B->size/2;
 
 	return IntersectBox(axl, ayt, axr, ayb,
 						bxl, byt, bxr, byb);

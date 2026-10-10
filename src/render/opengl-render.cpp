@@ -97,7 +97,7 @@ static void ActivateFloorBuffer(u32 index, const GLfloat* floorBuffer)
     glTexCoordPointer(2, GL_FLOAT, sizeof(float) * 5, &floorBuffer[index + 3]);
 }
 
-MapMaterial* GetMaterialForMaterialId(MaterialId picnum)
+MapMaterial* OpenGLRender_GetMaterialForMaterialId(MaterialId picnum)
 {
     if (picnum >= 0 && picnum < RENDERER_MATERIALID_TO_MATERIAL_ARRAY_SIZE)
     {
@@ -304,7 +304,7 @@ void OpenGLRender_DrawActors(BunnySector_Map* map, Vector2 cameraPosition)
         // Draw a sprite representing this actor
         OpenGLRender_DrawSprite(
             Vector3New( actor->position.vectorPosition.x, actor->elevation, actor->position.vectorPosition.y),
-                                actor->radius*2.0f, actor->height,
+                                actor->renderWidth, actor->renderHeight,
                                 actor->yawRad, cameraPosition,
                                 SpriteAlignment::Sprite_FACE, Sprite_PivotFoot,
                                 actor->texture, // TODO Depends on facing
@@ -461,7 +461,7 @@ void DrawQuad(Vector2 start, Vector2 end, const Vector2 normalXZ, s32 floorY, s3
     float tex_top = 1.0 * height;
     Vector3 normal = Vector3New(normalXZ.x, 0.0f, normalXZ.y);
 
-    MapMaterial* material = GetMaterialForMaterialId(picnum);
+    MapMaterial* material = OpenGLRender_GetMaterialForMaterialId(picnum);
     ActivateVertexBuffer();
 
     BeginVertexBufferPolygon(normal, BrightnessOffsetToColor(brightnessOffset));
@@ -493,7 +493,7 @@ void OpenGLRender_DrawFloorOrCeiling(BunnySector_Map* map, int sectorIndex, u8 s
     {
         glTranslatef(0.0f, ycoord, 0.0f);
         float color = BrightnessOffsetToColor(shade);
-        material = GetMaterialForMaterialId(materialId);
+        material = OpenGLRender_GetMaterialForMaterialId(materialId);
         glNormal3f(floorNormal[0], floorNormal[1], floorNormal[2]);
         normal = Vector3New(floorNormal[0], floorNormal[1], floorNormal[2]);
         glColor3f(color, color, color);
@@ -502,7 +502,7 @@ void OpenGLRender_DrawFloorOrCeiling(BunnySector_Map* map, int sectorIndex, u8 s
     {
         glTranslatef(0.0f, ycoord, 0.0f);
         float color = BrightnessOffsetToColor(shade);
-        material = GetMaterialForMaterialId(materialId);
+        material = OpenGLRender_GetMaterialForMaterialId(materialId);
         glNormal3f(ceilingNormal[0], ceilingNormal[1], ceilingNormal[2]);
         normal = Vector3New(ceilingNormal[0], ceilingNormal[1], ceilingNormal[2]);
         glColor3f(color, color, color);
@@ -543,7 +543,7 @@ void OpenGLRender_DrawSprite(Vector3 position, float width, float height, float 
         return;
     }
 
-    MapMaterial* material = GetMaterialForMaterialId(picnum);
+    MapMaterial* material = OpenGLRender_GetMaterialForMaterialId(picnum);
     if (material->type == Material_SpriteModel)
     {
         DrawMeshOnSprite(material, position, spriteAngle);
@@ -552,6 +552,7 @@ void OpenGLRender_DrawSprite(Vector3 position, float width, float height, float 
 
     glPushMatrix();
         glTranslatef(position.x, position.y, position.z);
+
 
         if (alignment == Sprite_FACE)
         {
@@ -573,6 +574,7 @@ void OpenGLRender_DrawSprite(Vector3 position, float width, float height, float 
         position.y =0.0f;
         position.z =0.0f;
 
+        // TODO Precalculate these
         static const float pushOut = unitsPerMeterHorizontal * 0.08f;
 
         Vector3 spriteForward = WORLD_RIGHT;

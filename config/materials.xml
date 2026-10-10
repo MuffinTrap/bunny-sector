@@ -1,3 +1,11 @@
+<!--
+This file configures the materials that are used to render everything.
+@folder What folder has the textures. This is postfixed to all texture file names
+@material This defines one material
+	@name This is the name used by SLADE and UDMF
+	@texture This is the file name of the image to use for this material
+-->
+
 <materials>
 	<folder>assets</folder>
 	<material>

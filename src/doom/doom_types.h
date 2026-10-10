@@ -2,6 +2,10 @@
 #include <mgdl.h>
 #include "../bunny-sector-types.h"
 
+#define DOOM_UNITS_TO_METER 32.0f
+#define DOOM_UNITS_TO_METER_H 32.0f // NOTE only used in map loading
+#define DOOM_UNITS_TO_METER_V 22.0f // NOTE this is only used in map loading
+
 typedef unsigned int ChildId;
 
 #define DOOM_SIDE_FRONT 0
@@ -427,8 +431,9 @@ extern int BB_BOT;
 extern int BB_LFT;
 extern int BB_RGT;
 
-struct DoomNode
+class DoomNode
 {
+public:
 	// Dividing line start and direction of it
 	s16 x;
 	s16 y;
@@ -443,17 +448,19 @@ struct DoomNode
 	// Bit 31 : 1 subsector
 	// Bit 31 : 0 node
 	ChildId children[2];
+
+	ChildId GetChild( unsigned int index);
+	int GetChildSide(float px, float py);
+	s16 GetBBox0( unsigned int index);
+	s16 GetBBox1( unsigned int index);
+	s16 GetBBox( unsigned int index); // Combined 0-7 index
+	bool PointInsideBox( Vector2 point, int childIndex);
 };
-typedef struct DoomNode DoomNode;
-ChildId DoomNode_GetChild(DoomNode* node, unsigned int index);
-int DoomNode_GetChildSide(DoomNode* node, float x, float y);
-s16 DoomNode_GetBBox0(DoomNode* node, unsigned int index);
-s16 DoomNode_GetBBox1(DoomNode* node, unsigned int index);
-s16 DoomNode_GetBBox(DoomNode* node, unsigned int index); // Combined 0-7 index
-bool DoomNode_PointInsideBox(DoomNode* node, Vector2 point, int childIndex);
 
 float DoomSpeedToUnits(int doomSpeed);
 
-const char* DoomTypeToString(DOOM_EDITOR_NUMBER typeNumber);
+#define NAMED_DOOM_TYPE_AMOUNT 6
+const char* DoomTypeToStringChar(DOOM_EDITOR_NUMBER typeNumber);
+zstr* DoomTypeToStringZstr(DOOM_EDITOR_NUMBER typeNumber);
 
 

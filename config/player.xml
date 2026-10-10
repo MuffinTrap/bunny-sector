@@ -1,0 +1,35 @@
+<!--
+This file configures the default player attributes used in the game
+If player 0 is configured it is the base for all players.
+If other players are configured they inherit from player 0
+
+@player This configures the player
+	@number [default: 0] Number of the player, value can be 1,2,3,4 or 0. Value of 0 means all players.
+	@height Height in doom units
+	@size  Width and depth of the collision box
+	@movespeed Movement speed in doom units per second
+	@moveacceleration [optional] Movement speed acceleration. If not specified the player reaches max speed instantly.
+	@moveslowdown [optional] Movement speed slowdown when no input is given. If not specified stops instantly
+
+	@strafespeed [default> movespeed] Strafing speed
+	@strafeacceleration [optional] Strafe speed acceleration
+	@strafeslowdown [optional] Strafe speed slowdown
+
+	@turnspeed Turning speed in degrees per second
+	@turnacceleration [optional] Turning acceleration. If not specified reaches turnspeed instantly
+	@turnslowdown [optional] Turning slowdown. If not specified stops turning immediately
+
+	@jumpspeed Speed of the jump upwards. This is the minimum speed that is reached even with one frame press
+	@jumpduration How long the jump button can be held down. In seconds. Each second adds @jumpspeed more speed
+
+	@climbheight How tall stairs the character can climb automatically
+
+	@inventory This configures the player default items
+		@item This configures one item and amount in inventory
+			Item must have one of the following:
+			@name Name of the item
+			@number Number of the item
+
+			@amount [default: 1] How many of this item player has
+
+-->

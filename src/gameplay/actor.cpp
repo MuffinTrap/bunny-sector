@@ -6,197 +6,199 @@
 Actor Actor_Create(ActorType aType)
 {
 	Actor a;
-	Actor_Init(&a);
+	a.Init();
 	a.actorType = aType;
 	return a;
 }
 
-void Actor_Init(Actor* actor)
+void Actor::Init()
 {
-	actor->subSectorNumber = -1;
-	actor->typeNumber = -1;
-	actor->position.vectorPosition = Vector2Zero();
-	actor->elevation = 0;
-	actor->prevPosition = Vector2Zero();
-	actor->floorVelocity = 0.0f;
-	actor->verticalVelocity = 0.0f;
-	actor->lookDirection.vectorDirection = Vector2New(1, 0);
-	actor->moveDirection.vectorDirection = Vector2New(1, 0);
-	actor->yawRad = 0.0f;
-	actor->pitchRad = 0.0f;
-	actor->radius = 0.0f;
-	actor->noclip = false;
-	actor->lastMoveResultFlags = 0;
-	actor->actionFlags = 0;
+	subSectorNumber = -1;
+	typeNumber = -1;
+	position.vectorPosition = Vector2Zero();
+	elevation = 0;
+	prevPosition = Vector2Zero();
+	floorVelocity = 0.0f;
+	verticalVelocity = 0.0f;
+	lookDirection.vectorDirection = Vector2New(1, 0);
+	moveDirection.vectorDirection = Vector2New(1, 0);
+	yawRad = 0.0f;
+	pitchRad = 0.0f;
+	size = 16.0f;
+	height = 16.0f;
+	climbHeight = 0.0f;
+	noclip = false;
+	lastMoveResultFlags = 0;
+	actionFlags = 0;
 }
 
-Viewpoint Actor_GetViewpoint(Actor* actor)
+Viewpoint Actor::GetViewpoint()
 {
 	Viewpoint p;
-	p.position = Vector3New(actor->position.vectorPosition.x, actor->elevation, actor->position.vectorPosition.y);
-	p.sector = actor->subSectorNumber;
-	p.yawRad = actor->yawRad;
-	p.pitchRad = actor->pitchRad;
+	p.position = Vector3New(position.vectorPosition.x, elevation, position.vectorPosition.y);
+	p.sector = subSectorNumber;
+	p.yawRad = yawRad;
+	p.pitchRad = pitchRad;
 	return p;
 }
 
-Vector2 Actor_MoveOnFloor(Actor* actor, float delta)
+Vector2 Actor::MoveOnFloor(float delta)
 {
 	Vector2 floorDestination = Vector2Add(
-		actor->position.vectorPosition, Vector2Scale(
-				actor->moveDirection.vectorDirection,
-				actor->floorVelocity * delta
+		position.vectorPosition, Vector2Scale(
+				moveDirection.vectorDirection,
+				floorVelocity * delta
 				)
 		);
 
 	return floorDestination;
 }
 
-float Actor_MoveVertically(Actor* actor, float gravity, float delta)
+float Actor::MoveVertically(float gravity, float delta)
 {
-	actor->verticalVelocity -= gravity * delta;
+	verticalVelocity -= gravity * delta;
 
 	// Limit vertical speeds
-	if (actor->verticalVelocity > actor->verticalSpeedLimitUp)
+	if (verticalVelocity > verticalSpeedLimitUp)
 	{
-		actor->verticalVelocity = actor->verticalSpeedLimitUp;
+		verticalVelocity = verticalSpeedLimitUp;
 	}
-	else if (actor->verticalVelocity < 0)
+	else if (verticalVelocity < 0)
 	{
 		// If falling, stop velocity when hits ground or limit max falling speed
-		if (Flag_IsBitSet(actor->lastMoveResultFlags, Move_OnGround))
+		if (Flag_IsBitSet(lastMoveResultFlags, Move_OnGround))
 		{
-			actor->verticalVelocity = 0.0f;
+			verticalVelocity = 0.0f;
 		}
-		else if (actor->verticalVelocity < actor->verticalSpeedLimitDown)
+		else if (verticalVelocity < verticalSpeedLimitDown)
 		{
-			actor->verticalVelocity = actor->verticalSpeedLimitDown;
+			verticalVelocity = verticalSpeedLimitDown;
 		}
 	}
-	return actor->elevation + actor->verticalVelocity * delta;
+	return elevation + verticalVelocity * delta;
 }
 
 /*
-Vector3 Actor_ApplyDrive2(Actor* actor, float deltaTime)
+Vector3 Actor::ApplyDrive2(Actor* actor, float deltaTime)
 {
 	// calculate current floor direction
 	Vector2 forward = FLOOR_FORWARD;
-	actor->floorDirection = Vector2Rotate(forward, actor->yawRad);
-	Vector2 strafeDirection = Vector2Rotate(actor->floorDirection, Deg2Rad(90.0f));
+	floorDirection = Vector2Rotate(forward, yawRad);
+	Vector2 strafeDirection = Vector2Rotate(floorDirection, Deg2Rad(90.0f));
 
-	if (abs(actor->forwardDrive) > deadzone)
+	if (abs(forwardDrive) > deadzone)
 	{
-		Vector2 floorAcceleration = Vector2Scale(actor->floorDirection, actor->forwardDrive * actor->moveAcceleration * deltaTime);
-		actor->floorVelocity = Vector2Add(actor->floorVelocity, Vector2Scale(floorAcceleration, deltaTime));
+		Vector2 floorAcceleration = Vector2Scale(floorDirection, forwardDrive * moveAcceleration * deltaTime);
+		floorVelocity = Vector2Add(floorVelocity, Vector2Scale(floorAcceleration, deltaTime));
 	}
 	else
 	{
-		actor->floorVelocity = Vector2Scale(actor->floorVelocity, 0.9f);
-		if (Vector2Length(actor->floorVelocity) < deadzone)
+		floorVelocity = Vector2Scale(floorVelocity, 0.9f);
+		if (Vector2Length(floorVelocity) < deadzone)
 		{
-			actor->floorVelocity.x = 0.0f;
-			actor->floorVelocity.y = 0.0f;
+			floorVelocity.x = 0.0f;
+			floorVelocity.y = 0.0f;
 		}
 	}
 
 
 	// TODO limit velocity
-	if (Vector2Length(actor->floorVelocity) > actor->moveSpeed)
+	if (Vector2Length(floorVelocity) > moveSpeed)
 	{
-		actor->floorVelocity = Vector2Scale(Vector2Normalize(actor->floorVelocity), actor->moveSpeed);
+		floorVelocity = Vector2Scale(Vector2Normalize(floorVelocity), moveSpeed);
 	}
 
 	// Calculate new position
 	Vector2 floorDestination = Vector2New(
-		actor->position.vectorPosition.x + actor->floorVelocity.x * deltaTime,
-		actor->position.vectorPosition.y + actor->floorVelocity.y * deltaTime
+		position.vectorPosition.x + floorVelocity.x * deltaTime,
+		position.vectorPosition.y + floorVelocity.y * deltaTime
 	);
 
 	// Apply turn drive
-	if (abs(actor->turnDrive) > deadzone)
+	if (abs(turnDrive) > deadzone)
 	{
-		float accRad = Deg2Rad(actor->turnAccelerationDegrees);
-		actor->turnVelocity += actor->turnDrive * accRad * deltaTime;
+		float accRad = Deg2Rad(turnAccelerationDegrees);
+		turnVelocity += turnDrive * accRad * deltaTime;
 	}
 	else
 	{
-		actor->turnVelocity *= 0.9f;
-		if (abs(actor->turnVelocity) < deadzone)
+		turnVelocity *= 0.9f;
+		if (abs(turnVelocity) < deadzone)
 		{
-			actor->turnVelocity = 0.0f;
+			turnVelocity = 0.0f;
 		}
 	}
 
-	float tsd = Deg2Rad(actor->turnSpeedDegrees);
-	if (actor->turnVelocity > tsd)
+	float tsd = Deg2Rad(turnSpeedDegrees);
+	if (turnVelocity > tsd)
 	{
-		actor->turnVelocity = tsd;
+		turnVelocity = tsd;
 	}
-	if (actor->turnVelocity < -tsd)
+	if (turnVelocity < -tsd)
 	{
-		actor->turnVelocity = -tsd;
+		turnVelocity = -tsd;
 	}
 
 	// Rotate
-	actor->yawRad += actor->turnVelocity * deltaTime;
+	yawRad += turnVelocity * deltaTime;
 
-	if (abs(actor->verticalDrive) > deadzone)
+	if (abs(verticalDrive) > deadzone)
 	{
 		// Apply falling/jumping
-		actor->verticalVelocity += actor->verticalDrive * actor->verticalAccelerationUp * deltaTime;
+		verticalVelocity += verticalDrive * verticalAccelerationUp * deltaTime;
 	}
 	else
 	{
-		actor->verticalVelocity *= 0.9f;
-		if (abs(actor->verticalVelocity) < deadzone)
+		verticalVelocity *= 0.9f;
+		if (abs(verticalVelocity) < deadzone)
 		{
-			actor->verticalVelocity = 0.0f;
+			verticalVelocity = 0.0f;
 		}
 	}
 
 	// Limit falling speed
-	if (actor->verticalVelocity > actor->verticalSpeedUp)
+	if (verticalVelocity > verticalSpeedUp)
 	{
-		actor->verticalVelocity = actor->verticalSpeedUp;
+		verticalVelocity = verticalSpeedUp;
 	}
-	else if (actor->verticalVelocity < actor->verticalSpeedDown)
+	else if (verticalVelocity < verticalSpeedDown)
 	{
-		actor->verticalVelocity = actor->verticalSpeedDown;
+		verticalVelocity = verticalSpeedDown;
 	}
 
 	// Move vertically
-	float heightDestination = actor->elevation + actor->verticalVelocity * deltaTime;
+	float heightDestination = elevation + verticalVelocity * deltaTime;
 
 	Vector3 destination = Vector3New(floorDestination.x, heightDestination, floorDestination.y);
 	return destination;
 }
 
 */
-BunnyV2* Actor_GetPosition(Actor* actor)
+BunnyV2* Actor::GetPosition()
 {
-	return &actor->position.bunnyPosition;
+	return &position.bunnyPosition;
 }
-BunnyV2 * Actor_GetFloorDirection(Actor* actor)
+BunnyV2 * Actor::GetFloorDirection()
 {
-	return &actor->moveDirection.bunnyDirection;
+	return &moveDirection.bunnyDirection;
 }
-void Actor_SetPosition(Actor* actor, float x, float y)
+void Actor::SetPosition( float x, float y)
 {
-	actor->position.vectorPosition.x = x;
-	actor->position.vectorPosition.y = y;
+	position.vectorPosition.x = x;
+	position.vectorPosition.y = y;
 }
 
-void Actor_StartAction(Actor* actor, ActorActionBit flags)
+void Actor::StartAction( ActorActionBit flags)
 {
-	actor->actionFlags = Flag_SetAll(actor->actionFlags, flags);
+	actionFlags = Flag_SetAll(actionFlags, flags);
 }
-void Actor_EndAction(Actor* actor, ActorActionBit flags)
+void Actor::EndAction( ActorActionBit flags)
 {
-	actor->actionFlags = Flag_UnsetBit(actor->actionFlags, flags);
+	actionFlags = Flag_UnsetBit(actionFlags, flags);
 }
-bool Actor_IsDoing(Actor* actor, ActorActionBit flags)
+bool Actor::IsDoing( ActorActionBit flags)
 {
-	return Flag_IsBitSet(actor->actionFlags, flags);
+	return Flag_IsBitSet(actionFlags, flags);
 }
 
 

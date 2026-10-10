@@ -87,7 +87,7 @@ void ActorPool::DoActorToActorCollisions()
             if (TestActorActorCollision(player0, other))
             {
 				zstr otherTyper = ActorTypeToString(other->actorType);
-                printf("Player hit actor of type %s:%s\n", zstr_cstr(&otherTyper), DoomTypeToString((DOOM_EDITOR_NUMBER)other->typeNumber));
+                printf("Player hit actor of type %s:%s\n", zstr_cstr(&otherTyper), DoomTypeToStringChar((DOOM_EDITOR_NUMBER)other->typeNumber));
                 // Compile collision list: who collided with this actor
                 if ( playerCollisionCount == 0)
                 {

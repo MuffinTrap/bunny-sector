@@ -1,9 +1,10 @@
 #pragma once
 #include "bunny-sector-types.h"
+#include "bunny-sector-items.h"
 #include <mgdl.h>
 
 // Abstract map file
-struct Actor;
+class Actor;
 class ActorPool;
 
 struct Tesselator_BufferIndices;

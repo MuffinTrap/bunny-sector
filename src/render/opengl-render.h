@@ -86,7 +86,7 @@ void OpenGLRender_Line3(Vector3 start, Vector3 end);
 
 void OpenGLRender_AnimateSprites();
 
-Texture* OpenGLRender_GetTexture(s16 picnum);
+MapMaterial* OpenGLRender_GetMaterialForMaterialId(MaterialId picnum);
 void OpenGLRender_SetColor(color32 oc);
 void OpenGLRender_DrawDot(Vector2 point, float size, color32 color);
 

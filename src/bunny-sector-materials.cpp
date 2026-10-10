@@ -18,7 +18,7 @@ static const int TEXTURE_NAME_AMOUNT = 64;
 static int_int_map TextureIndexToMaterialId;
 static bool mapinitdone = false;
 
-BunnySector::Materials::Materials()
+BunnySector::MaterialManager::MaterialManager()
 {
 	if (mapinitdone == false)
 	{
@@ -60,7 +60,7 @@ s16 OpenGLRender_GetPicnumForName(zstr* textureName)
 }
 */
 
-bool BunnySector::Materials::ReadXML(const char* materialsfile)
+bool BunnySector::MaterialManager::ReadXML(const char* materialsfile)
 {
 /*
 XML structure
@@ -130,44 +130,17 @@ XML structure
 		if (nameElement)
 		{
 			Log_InfoF("material %d has name %s\n", materialindex, nameElement->GetText());
-			zstr namez = zstr_from(nameElement->GetText());
-
-			// Is the name already in array
-			bool found= false;
-			for (int i = 0; i < lastDoomTextureNameIndex; i++)
-			{
-				zstr* ati = &DoomTextureNames[i];
-				if (zstr_eq(&namez, ati))
-				{
-					found = true;
-					doomTextureNameIndex = i;
-					break;
-				}
-			}
-			if (!found)
-			{
-				doomTextureNameIndex = lastDoomTextureNameIndex;
-				DoomTextureNames[lastDoomTextureNameIndex] = namez;
-				lastDoomTextureNameIndex += 1;
-			}
-			else
-			{
-				zstr_free(&namez);
-			}
+			doomTextureNameIndex =  RecordMaterialName(nameElement->GetText());
 		}
 
 		tinyxml2::XMLElement* textureElement = materialElement->FirstChildElement("texture");
 		if (textureElement)
 		{
 			Log_InfoF("material %d has texture \"%s\"\n", materialindex, textureElement->GetText());
-			// TODO Check for mipmaps
-			MapMaterial* mat = &mapMaterials[doomTextureNameIndex];
-
-			// NOTE Texture is not loaded yet
-			mat->mgdlMaterial = Material_Load(textureElement->GetText(), nullptr, MaterialType::Diffuse);
-
-			// TODO can be some other type too
-			mat->type = MapMaterialType::Material_Texture;
+			if (ConnectTextureToMaterialIndex(doomTextureNameIndex, textureElement->GetText()))
+			{
+			 // OK
+			}
 		}
 
 
@@ -184,7 +157,57 @@ XML structure
 	return true;
 }
 
-MaterialId BunnySector::Materials::LoadMaterialByName(zstr* name)
+int BunnySector::MaterialManager::RecordMaterialName(const char* name)
+{
+	zstr namez = zstr_from(name);
+	int doomTextureNameIndex = -1;
+
+	// Is this name already in array
+	bool found= false;
+	for (int i = 0; i < lastDoomTextureNameIndex; i++)
+	{
+		zstr* ati = &DoomTextureNames[i];
+		if (zstr_eq(&namez, ati))
+		{
+			found = true;
+			doomTextureNameIndex = i;
+			break;
+		}
+	}
+	if (!found)
+	{
+		doomTextureNameIndex = lastDoomTextureNameIndex;
+		DoomTextureNames[lastDoomTextureNameIndex] = namez;
+		lastDoomTextureNameIndex += 1;
+	}
+	else
+	{
+		// The name already exists, can free this one
+		zstr_free(&namez);
+	}
+	return doomTextureNameIndex;
+}
+bool BunnySector::MaterialManager::ConnectTextureToMaterialIndex(int doomTextureNameIndex, const char* texture)
+{
+	if (doomTextureNameIndex >= 0 && doomTextureNameIndex < TEXTURE_NAME_AMOUNT)
+	{
+		// TODO Check for mipmaps
+		MapMaterial* mat = &mapMaterials[doomTextureNameIndex];
+		if (mat != nullptr)
+		{
+			// NOTE Texture is not loaded yet
+			mat->mgdlMaterial = Material_Load(texture, nullptr, MaterialType::Diffuse);
+
+			// TODO can be some other type too
+			mat->type = MapMaterialType::Material_Texture;
+			return true;
+		}
+	}
+	return false;
+}
+
+
+MaterialId BunnySector::MaterialManager::LoadMaterialByName(zstr* name)
 {
 	// Is this Doom Texture name in our array
 	bool found= false;
@@ -225,6 +248,7 @@ MaterialId BunnySector::Materials::LoadMaterialByName(zstr* name)
 
 	return INVALID_MATERIAL_ID;
 }
+
 
 
 

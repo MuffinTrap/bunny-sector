@@ -7,42 +7,41 @@
 #include <mgdl.h>
 #include <mgdl/mgdl-util.h>
 
- void DoomMap_Allocate(DoomMap* map, int thingsAmount, int sectorAmount, int sideAmount, int lineAmount, int vertexAmount)
+ void DoomMap::Allocate(int thingsAmount, int sectorAmount, int sideAmount, int lineAmount, int vertexAmount)
 {
-	map->thingAmount = thingsAmount;
-	map->sectorAmount = sectorAmount;
-	map->sideAmount = sideAmount;
-	map->lineAmount = lineAmount;
-	map->vertexAmount = vertexAmount;
+	thingAmount = thingsAmount;
+	this->sectorAmount = sectorAmount;
+	this->sideAmount = sideAmount;
+	this->lineAmount = lineAmount;
+	this->vertexAmount = vertexAmount;
 
-	map->things = (DoomThing*)mgdl_AllocateGeneralMemory(thingsAmount * sizeof(DoomThing));
-	map->sectors = (DoomSector*)mgdl_AllocateGeneralMemory(sectorAmount * sizeof(DoomSector));
-	map->linedefs = (DoomLinedef*)mgdl_AllocateGeneralMemory(lineAmount * sizeof(DoomLinedef));
-	map->sidedefs = (DoomSidedef*)mgdl_AllocateGeneralMemory(sideAmount * sizeof(DoomSidedef));
-	map->vertices = (DoomVertex*)mgdl_AllocateGeneralMemory(vertexAmount * sizeof(DoomVertex));
+	things = (DoomThing*)mgdl_AllocateGeneralMemory(thingsAmount * sizeof(DoomThing));
+	sectors = (DoomSector*)mgdl_AllocateGeneralMemory(sectorAmount * sizeof(DoomSector));
+	linedefs = (DoomLinedef*)mgdl_AllocateGeneralMemory(lineAmount * sizeof(DoomLinedef));
+	sidedefs = (DoomSidedef*)mgdl_AllocateGeneralMemory(sideAmount * sizeof(DoomSidedef));
+	vertices = (DoomVertex*)mgdl_AllocateGeneralMemory(vertexAmount * sizeof(DoomVertex));
 
-	map->actions = (DoomMapAction*)mgdl_AllocateGeneralMemory(DOOM_MAP_ACTION_AMOUNT * sizeof(DoomMapAction));
-	map->actionCount = 0;
-
+	actions = (DoomMapAction*)mgdl_AllocateGeneralMemory(DOOM_MAP_ACTION_AMOUNT * sizeof(DoomMapAction));
+	actionCount = 0;
 }
 
-void DoomMap::AddActor(ActorType actorType, int typeNumber, int id, Vector2 position, int width, int height, float angleDeg, MaterialId material)
+void DoomMap::AddActor(ActorType actorType, int typeNumber, int id, Vector2 position, float angleDeg)
 {
 	Actor a;
-	Actor_Init(&a);
+	a.Init();
 
 	a.actorType = actorType;
 	a.idNumber = id;
 	a.position.vectorPosition = position;
 	a.yawRad = DEG2RAD * angleDeg;
-	a.texture = material;
-	a.subSectorNumber = FindSubSector(DoomMap_GetRootNode(this), position);
+	a.subSectorNumber = FindSubSector(GetRootNode(), position);
 	a.elevation = GetFloory(a.subSectorNumber);
 	a.typeNumber = typeNumber;
 
 	// These are needed for drawing
-	a.radius = width/2;
-	a.height = height;
+	// Try to load a prefab from Item manager
+	BunnySector::ItemManager* im = BunnySector_GetItemManager();
+	im->LoadItemToActor(&a, (DOOM_EDITOR_NUMBER)typeNumber);
 
 	actorPool->Insert(a);
 }
@@ -50,24 +49,21 @@ void DoomMap::AddActor(ActorType actorType, int typeNumber, int id, Vector2 posi
 
 void DoomMap::CreateActors()
 {
-	// TODO move somewhere else
-	int itemSize = 16;
 	bool playerCreated = false;
 	for (int i = 0; i < thingAmount; i++)
 	{
 		// Should this thing spawn an actor?
 		DoomThing* t = &things[i];
 		Vector2 pos = Vector2New(t->x, t->y);
-		MaterialId material = 0; // TODO get texture based on type
 		switch(t->type)
 		{
 			case editorNumber_player_start_1:
-				AddActor(actor_player, t->type, 0, pos, itemSize, itemSize, t->angleDeg, material);
+				AddActor(actor_player, t->type, t->id, pos, t->angleDeg);
 				playerCreated = true;
 				break;
 
 			case editorNumber_blue_card:
-				AddActor(actor_item, t->type, 0, pos, itemSize, itemSize, t->angleDeg, material);
+				AddActor(actor_item, t->type, t->id, pos, t->angleDeg);
 				break;
 		}
 
@@ -96,26 +92,22 @@ u8 DoomMap::GetSectorShade(int sectorIndex, bool floor)
 
 
 
-void DoomMap_AllocateNodes(DoomMap* map, int nodeAmount)
+void DoomMap::AllocateNodes( int nodeAmount)
 {
-	map->nodeAmount = nodeAmount;
-	map->nodes = (DoomNode*)mgdl_AllocateGeneralMemory(nodeAmount * sizeof(DoomNode));
+	this->nodeAmount = nodeAmount;
+	nodes = (DoomNode*)mgdl_AllocateGeneralMemory(nodeAmount * sizeof(DoomNode));
 }
-void DoomMap_AllocateSegments(DoomMap* map, int segmentAmount)
+void DoomMap::AllocateSegments( int segmentAmount)
 {
-	map->segmentAmount = segmentAmount;
-	map->segments = (DoomSegment*)mgdl_AllocateGeneralMemory(segmentAmount * sizeof(DoomSegment));
+	this->segmentAmount = segmentAmount;
+	segments = (DoomSegment*)mgdl_AllocateGeneralMemory(segmentAmount * sizeof(DoomSegment));
 }
-void DoomMap_AllocateSubsectors(DoomMap* map, int subSectorAmount)
+void DoomMap::AllocateSubsectors( int subSectorAmount)
 {
-	map->subSectorAmount = subSectorAmount;
-	map->subsectors = (DoomSubSector*)mgdl_AllocateGeneralMemory(subSectorAmount * sizeof(DoomSubSector));
+	this->subSectorAmount = subSectorAmount;
+	subsectors = (DoomSubSector*)mgdl_AllocateGeneralMemory(subSectorAmount * sizeof(DoomSubSector));
 }
 
-void SetActorToStart(DoomMap* map, Actor* actor)
-{
-
-}
 void DoomMap::SetActorToStart(Actor* actor)
 {
 	// Find thing 0
@@ -267,7 +259,7 @@ int DoomMap::GetWallVertexAmount()
 
 int DoomMap::FindSubSector(DoomNode* node, Vector2 point)
 {
-	int childSide = DoomNode_GetChildSide(node, point.x, point.y);
+	int childSide = node->GetChildSide( point.x, point.y);
 	if (ChildIsNode(node->children[childSide]))
 	{
 		return FindSubSector(&nodes[node->children[childSide]], point);
@@ -300,7 +292,7 @@ Vector2 DoomMap::GetSectorSize(int sectorIndex)
 }
 
 
-u32 DoomMap::MoveActorInMapImpl(Vector2 start, Vector2 end, float radius, s16 sectorNumber, float elevationEnd, float maxElevationChange, float height, Actor* actor, Vector2* positionOut, s16* subSectorOut)
+u32 DoomMap::MoveActorInMapImpl(Vector2 start, Vector2 end, float size, s16 sectorNumber, float elevationEnd, float maxElevationChange, float height, Actor* actor, Vector2* positionOut, s16* subSectorOut)
 {
     u32 moveResultBitfield = 0;
     Vector2 cross;
@@ -333,7 +325,13 @@ u32 DoomMap::MoveActorInMapImpl(Vector2 start, Vector2 end, float radius, s16 se
         {
             s16 newSector = wall->neighbourSector;
             float neighborFloor = GetSectorFloory(newSector);
-            if (neighborFloor > elevationEnd + maxElevationChange)
+			float neighborCeiling = GetSectorCeilingy(newSector);
+			if (neighborFloor >= neighborCeiling - 0.1f)
+			{
+				// Closed door
+				treatAsWall = true;
+			}
+            else if (neighborFloor > elevationEnd + maxElevationChange)
             {
                 treatAsWall = true;
             }
@@ -379,14 +377,14 @@ u32 DoomMap::MoveActorInMapImpl(Vector2 start, Vector2 end, float radius, s16 se
 
             // Check if player is too close to wall
             // NOTE: end was maybe modified above
-            if (TestActorWallCollision(end, radius, wstart, wend))
+            if (TestActorWallCollision(end, size, wstart, wend))
             {
                 float distance = GetDistanceToWall(end, wstart, wend);
-                if (distance < radius)
+                if (distance < size/2)
                 {
                     // NOTE : Slides automagically
                     Vector2 normal = GetWallNormal(wstart, wend);
-                    float intoWall = radius - distance;
+                    float intoWall = size/2 - distance;
                     end = Vector2Add(end, Vector2Scale(normal, intoWall));
                     moveResultBitfield = Flag_SetBit(moveResultBitfield, Move_HitWall);
 
@@ -435,7 +433,7 @@ u32 DoomMap::MoveActorInMapImpl(Vector2 start, Vector2 end, float radius, s16 se
             if (isClose)
             {
                 // Is player on the other side of it
-                bool startThisSide = IsPointInsideWall(start, wstart, wend);
+               bool startThisSide = IsPointInsideWall(start, wstart, wend);
                 bool endOtherSide = IsPointInsideWall(end, wstart, wend) == false;
                 crosses = startThisSide && endOtherSide;
             }
@@ -470,7 +468,7 @@ void DoomMap::StartLinedefAction(DoomLinedef* linedef, Actor* actor, bool crosse
 		if (
 			(crossed && Flag_IsBitSet(linedef->linedef_flags, linedef_activate_player_cross))
 		|| (Flag_IsBitSet(linedef->linedef_flags, linedef_activate_player_push))
-		|| (Flag_IsBitSet(linedef->linedef_flags, linedef_activate_player_use) && Actor_IsDoing(actor, action_use)))
+		|| (Flag_IsBitSet(linedef->linedef_flags, linedef_activate_player_use) && actor->IsDoing(action_use)))
 		{
 			// Does the door need a key?
 			int lockArg = linedef->arg3;
@@ -739,18 +737,18 @@ bool DoomMap::IsPointInsideWall(Vector2 point, Vector2 wallStart, Vector2 wallEn
 }
 
 
-DoomThing* DoomMap_GetThing(DoomMap* map, unsigned int index) { return &map->things[index];}
-DoomSector* DoomMap_GetSector(DoomMap* map, unsigned int index) { return &map->sectors[index];}
-DoomSidedef* DoomMap_GetSidedef(DoomMap* map, unsigned int index) { return &map->sidedefs[index];}
-DoomLinedef* DoomMap_GetLinedef(DoomMap* map, unsigned int index) { return &map->linedefs[index];}
-DoomVertex* DoomMap_GetVertex(DoomMap* map, unsigned int index) { return &map->vertices[index];}
-DoomNode* DoomMap_GetNode(DoomMap* map, unsigned int index) { return &map->nodes[index];}
-DoomSubSector* DoomMap_GetSubSector(DoomMap* map, unsigned int index) { return &map->subsectors[index];}
-DoomSegment* DoomMap_GetSegment(DoomMap* map, unsigned int index) { return &map->segments[index];}
+DoomThing* DoomMap::GetThing( unsigned int index) { return &things[index];}
+DoomSector* DoomMap::GetSector( unsigned int index) { return &sectors[index];}
+DoomSidedef* DoomMap::GetSidedef( unsigned int index) { return &sidedefs[index];}
+DoomLinedef* DoomMap::GetLinedef( unsigned int index) { return &linedefs[index];}
+DoomVertex* DoomMap::GetVertex( unsigned int index) { return &vertices[index];}
+DoomNode* DoomMap::GetNode( unsigned int index) { return &nodes[index];}
+DoomSubSector* DoomMap::GetSubSector( unsigned int index) { return &subsectors[index];}
+DoomSegment* DoomMap::GetSegment( unsigned int index) { return &segments[index];}
 
-DoomNode * DoomMap_GetRootNode(DoomMap* map) { return &map->nodes[map->nodeAmount-1]; }
+DoomNode * DoomMap::GetRootNode() { return &nodes[nodeAmount-1]; }
 
-DoomNode* DoomMap_GetChildNode(DoomMap* map, ChildId id) {return &map->nodes[id];}
-DoomSubSector* DoomMap_GetChildSubSector(DoomMap* map, ChildId id) { return &map->subsectors[(id & 0x7fffffff)];}
+DoomNode* DoomMap::GetChildNode( ChildId id) {return &nodes[id];}
+DoomSubSector* DoomMap::GetChildSubSector( ChildId id) { return &subsectors[(id & 0x7fffffff)];}
 
-int DoomMap_GetActorAmount(DoomMap* map) { return map->actorPool->count; }
+int DoomMap::GetActorAmount() { return actorPool->count; }
