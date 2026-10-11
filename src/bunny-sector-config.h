@@ -1,4 +1,5 @@
 #pragma once
+#include "tinyxml2/tinyxml2.h"
 
 class Player;
 
@@ -11,3 +12,7 @@ bool BunnySector_ReadMaterialsXML();
 
 // TODO Where should this go?
 void BunnySector_LoadPlayerDefaults(Player* player, int playerIndex);
+
+// XML reading functions
+bool XML_ReadChildInt(tinyxml2::XMLElement*parent, const char* tag, int* valueOut);
+const char* XML_ReadChildString(tinyxml2::XMLElement*parent, const char* tag);

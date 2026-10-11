@@ -462,5 +462,6 @@ float DoomSpeedToUnits(int doomSpeed);
 #define NAMED_DOOM_TYPE_AMOUNT 6
 const char* DoomTypeToStringChar(DOOM_EDITOR_NUMBER typeNumber);
 zstr* DoomTypeToStringZstr(DOOM_EDITOR_NUMBER typeNumber);
+DOOM_EDITOR_NUMBER NameToDoomEditorNumberChar(const char* name);
 
 

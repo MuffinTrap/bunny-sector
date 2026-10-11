@@ -190,3 +190,19 @@ zstr * DoomTypeToStringZstr(DOOM_EDITOR_NUMBER typeNumber)
 	return nullptr;
 }
 
+DOOM_EDITOR_NUMBER NameToDoomEditorNumberChar(const char* name)
+{
+	zstr namez = zstr_from(name);
+	DOOM_EDITOR_NUMBER foundType = editorNumber_none;
+	for (int i = 0; i < NAMED_DOOM_TYPE_AMOUNT; i++)
+	{
+		if (zstr_eq(&namez, &DoomTypeNames[i]))
+		{
+			foundType = (DOOM_EDITOR_NUMBER)i;
+			break;
+		}
+	}
+	zstr_free(&namez);
+	return foundType;
+}
+

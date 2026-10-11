@@ -125,16 +125,9 @@ bool BunnySector::ItemManager::LoadXML(const char* filename)
 			if (nameElement)
 			{
 				Log_InfoF("item %d has name %s\n", itemIndex, nameElement->GetText());
+				prefab->typeNumber = NameToDoomEditorNumberChar(nameElement->GetText());
+				found = (prefab->typeNumber != editorNumber_none);
 
-				for (int i = 0; i < NAMED_DOOM_TYPE_AMOUNT; i++)
-				{
-					if (strncmp(nameElement->GetText(), DoomTypeToStringChar((DOOM_EDITOR_NUMBER)i), 16) == 0)
-					{
-						prefab->typeNumber = i;
-						found = true;
-						break;
-					}
-				}
 				if (!found)
 				{
 					Log_ErrorF("Item name %s did not match any DOOM type name\n", nameElement->GetText());

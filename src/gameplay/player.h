@@ -18,8 +18,7 @@ struct InventoryEntry
 class Player
 {
 public:
-	// TODO Id and controller etc.
-	int index;
+	int number; // 1 to 4
 
 	// TODO Items and abilities
 
@@ -32,25 +31,42 @@ public:
     float turnDrive; /**< Is turning on yaw axis */
     float verticalDrive; /**< Is going up or down */
 
-    float turnVelocity; /*< How fast actor is turning */
 
-    float turnAccelerationDegrees;
-    float turnSpeedDegrees;
+    int turnSpeedDegrees;
+    int turnAccelerationDegrees;
+    int turnSlowdownDegrees;
 
-    // These are in OpenGL units
-    float moveSpeed;
-    float moveAcceleration;
+    float turnVelocityDegrees; /*< How fast actor is turning */
+
+    int moveSpeed;
+    int moveAcceleration;
+    int moveSlowdown;
+
+    float moveVelocity;
+
+    int strafeSpeed;
+    int strafeAcceleration;
+    int strafeSlowdown;
+
+    float strafeVelocity;
+
+    int jumpSpeed;
+    int jumpAcceleration;
+    float jumpDuration;
+
     float verticalSpeedUp;
     float verticalSpeedDown;
     float verticalAccelerationUp;
     float verticalAccelerationDown;
-    float standingHeight; ///< How much above ground when standing
-    float climbHeight; ///< How tall elevation change can traverse
+
+    int standingHeight; ///< How much above ground when standing
+    int climbHeight; ///< How tall elevation change can traverse
     float eyeHeightNormalized; ///< Eye height of active height
+    int size; // Transferred to Actor
 
 
     // changed during gameplay
-    float walkSpeedMultiplier;
+    float walkSpeedMultiplier; // Affects both moving and strafing
     float turnSpeedMultiplier;
 
     // What the actor should be doing
@@ -60,7 +76,8 @@ public:
 
 	InventoryEntry inventory[32];
 
-	void Init(int playerIndex, float moveSpeed, float moveAcceleration, float turnSpeed, float turnAccelerationDeg);
+	void Init(int playerNumber);
+    void ConfigureActor(Actor* actor);
 	void ApplyDrive(Actor* actor, float delta);
 	void ApplyVerticalMove(Actor* actor, float delta);
 	Viewpoint GetViewpoint(Actor* actor);

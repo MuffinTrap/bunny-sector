@@ -3,6 +3,8 @@ This file configures the default player attributes used in the game
 If player 0 is configured it is the base for all players.
 If other players are configured they inherit from player 0
 
+@root This is the root node
+
 @player This configures the player
 	@number [default: 0] Number of the player, value can be 1,2,3,4 or 0. Value of 0 means all players.
 	@height Height in doom units
@@ -19,12 +21,13 @@ If other players are configured they inherit from player 0
 	@turnacceleration [optional] Turning acceleration. If not specified reaches turnspeed instantly
 	@turnslowdown [optional] Turning slowdown. If not specified stops turning immediately
 
-	@jumpspeed Speed of the jump upwards. This is the minimum speed that is reached even with one frame press
-	@jumpduration How long the jump button can be held down. In seconds. Each second adds @jumpspeed more speed
+	@jumpspeed [default: 0] Speed of the jump upwards. This is the minimum speed that is reached even with one frame press
+	@jumpacceleration [default: 0] How fast the jump speed increase when the jump button is held down
+	@jumpduration [default: 0] How long the jump button can be held down. In milliseconds. Each second adds @jumpspeed more speed
 
-	@climbheight How tall stairs the character can climb automatically
+	@climbheight [default: 0] How tall stairs the character can climb automatically
 
-	@inventory This configures the player default items
+	@inventory [optional] This configures the player default items
 		@item This configures one item and amount in inventory
 			Item must have one of the following:
 			@name Name of the item
@@ -33,3 +36,20 @@ If other players are configured they inherit from player 0
 			@amount [default: 1] How many of this item player has
 
 -->
+
+<root>
+	<player>
+		<number>0</number>
+
+		<height>80</height>
+		<size>32</size>
+
+		<movespeed>8024</movespeed>
+		<moveacceleration>16000</moveacceleration>
+		<moveslowdown>16000</moveslowdown>
+
+		<turnspeed>720</turnspeed>
+		<turnacceleration>1024</turnacceleration>
+		<turnslowdown>1024</turnslowdown>
+	</player>
+</root>

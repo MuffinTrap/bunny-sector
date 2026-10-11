@@ -7,6 +7,8 @@
 #include "bunny-sector-math.h"
 #include "bunny-sector-materials.h"
 #include "bunny-sector-items.h"
+#include "bunny-sector-players.h"
+
 #include "render/opengl-render.h"
 #include "render/render-settings.h"
 #include "gameplay/actor.h"
@@ -16,6 +18,7 @@
 
 static BunnySector::MaterialManager* materialManager;
 static BunnySector::ItemManager* itemManager;
+static PlayerManager* playerManager;
 
 static BunnySector_Map** mapsArray = nullptr;
 static BunnySector_Map* activeMap = nullptr;
@@ -102,6 +105,9 @@ bool BunnySector_Init(mgdl_AngelScript* angel)
 
 	itemManager = new BunnySector::ItemManager();
 	itemManager->LoadXML("config/items.xml");
+
+	playerManager = new PlayerManager();
+	playerManager->ReadXML("config/players.xml");
 
 	defaultOpenGL = GetDefaultRenderSettingsOpenGL();
 	defaultView = GetDefaultCameraInfo();
@@ -215,12 +221,16 @@ void BunnySector_StartMap(MapId mapId, int playerAmount)
 			map->SetActorPool(&actorPool);
 			map->CreateActors();
 			map->ClearActions();
+			// NOTE player numbers, not index
 			for (int i = 0; i < activePlayerAmount; i++)
 			{
-				players[i].Init(0, 2024,6000, 720, 1400);
-				Actor* player0Actor = activeMap->GetActorByTypeAndIndex(actor_player, i);
-				printf("BunnySector startmap put actor to %.2f, %.2f, sector %d\n", player0Actor->position.vectorPosition.x, player0Actor->position.vectorPosition.y, player0Actor->subSectorNumber);
-				playerViews[i] = players[i].GetViewpoint(player0Actor);
+				int playerNumber = i + 1;
+				int playerIndex = i;
+				playerManager->LoadPlayer(&players[playerIndex], playerNumber);
+				Actor* playerActor = activeMap->GetActorByTypeAndIndex(actor_player, playerIndex);
+				players[i].ConfigureActor(playerActor);
+				printf("BunnySector startmap put actor to %.2f, %.2f, sector %d\n", playerActor->position.vectorPosition.x, playerActor->position.vectorPosition.y, playerActor->subSectorNumber);
+				playerViews[i] = players[i].GetViewpoint(playerActor);
 
 				s_AlignCameraToViewpoint(&playerViews[i], playerCameras[i]);
 			}

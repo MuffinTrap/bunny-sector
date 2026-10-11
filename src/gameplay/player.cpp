@@ -4,43 +4,37 @@
 #include "../bunny-sector-math.h"
 #include "../bunny-sector-types.h"
 
-void Player::Init(int playerIndex, float moveSpeed, float moveAcceleration, float turnSpeed, float turnAccelerationDeg)
+void Player::Init(int playerNumber)
 {
+	this->number = playerNumber;
 
-	float unitsToMeter = DOOM_UNITS_TO_METER_H;
-	this->index = playerIndex;
-
-	turnAccelerationDegrees = turnAccelerationDeg;
-	turnSpeedDegrees = turnSpeed;
-
-	this->moveSpeed = 2.0f * unitsToMeter;
-	moveAcceleration = 2.0f * unitsToMeter;
-
-	verticalSpeedUp = 89.0f * unitsToMeter;
-	verticalSpeedDown = -80.2f * unitsToMeter; // DANGER
-	verticalAccelerationUp = 4.0f * unitsToMeter;
-	verticalAccelerationDown = 4.0f * unitsToMeter;
-	turnVelocity = 0.0f;
+	moveVelocity = 0.0f;
+	turnVelocityDegrees = 0.0f;
+	strafeVelocity = 0.0f;
 
 	// Size
-	standingHeight = 1.4f * unitsToMeter;
-	climbHeight = standingHeight/2.0f;
 	eyeHeightNormalized = 1.00f;
-
 
 	forwardDrive = 0.0f;
 	strafeDrive = 0.0f;
 	turnDrive = 0.0f;
 	verticalDrive = 0.0f;
 
-	turnSpeedMultiplier = 1.0f;
 	walkSpeedMultiplier = 1.0f;
+	turnSpeedMultiplier = 1.0f;
 
 	for (int i = 0; i < 32; i++)
 	{
 		inventory[i].itemType = editorNumber_none;
 	}
 }
+void Player::ConfigureActor(Actor* actor)
+{
+	actor->size = size;
+	actor->height = standingHeight;
+	actor->climbHeight = climbHeight;
+}
+
 
 bool Player::GiveItem(DOOM_EDITOR_NUMBER item, int amount)
 {
@@ -110,35 +104,60 @@ void Player::ApplyDrive(Actor* actor, float deltaTime)
 	if (abs(turnDrive) > deadzone)
 	{
 		float accRad = Deg2Rad(turnAccelerationDegrees);
-		turnVelocity += turnDrive * turnSpeedMultiplier * accRad * deltaTime;
+		turnVelocityDegrees += turnDrive * turnSpeedMultiplier * accRad * deltaTime;
 	}
 	else
 	{
-		turnVelocity *= 0.9f;
-		if (abs(turnVelocity) < deadzone)
+		turnVelocityDegrees *= 0.9f;
+		if (abs(turnVelocityDegrees) < deadzone)
 		{
-			turnVelocity = 0.0f;
+			turnVelocityDegrees = 0.0f;
 		}
 	}
 
 	float tsd = Deg2Rad(turnSpeedDegrees);
-	if (turnVelocity > tsd)
+	if (turnVelocityDegrees > tsd)
 	{
-		turnVelocity = tsd;
+		turnVelocityDegrees = tsd;
 	}
-	if (turnVelocity < -tsd)
+	if (turnVelocityDegrees < -tsd)
 	{
-		turnVelocity = -tsd;
+		turnVelocityDegrees = -tsd;
 	}
 
 	// Rotate
-	actor->yawRad += turnVelocity * deltaTime;
+	actor->yawRad += turnVelocityDegrees * deltaTime;
 	// calculate current floor direction
 	Vector2 forward = FLOOR_FORWARD;
 	actor->moveDirection.vectorDirection = Vector2Rotate(forward, actor->yawRad);
 
 	// TODO Strafing
-	actor->floorVelocity = forwardDrive * walkSpeedMultiplier * moveSpeed;
+	if (forwardDrive != 0)
+	{
+		moveVelocity += forwardDrive * moveAcceleration * deltaTime;
+	}
+	else if (moveVelocity != 0)
+	{
+		// Slow down
+		if (moveVelocity < 0)
+		{
+			moveVelocity += moveSlowdown * deltaTime;
+			if (moveVelocity > 0)
+			{
+				moveVelocity = 0;
+			}
+		}
+		else
+		{
+
+			moveVelocity -= moveSlowdown * deltaTime;
+			if (moveVelocity < 0)
+			{
+				moveVelocity = 0;
+			}
+		}
+	}
+	actor->floorVelocity = walkSpeedMultiplier * moveVelocity;
 }
 
 Viewpoint Player::GetViewpoint(Actor* actor)
