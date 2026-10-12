@@ -21,6 +21,7 @@ struct RenderSettingsOpenGL;
 class Actor
 {
 public:
+    Actor();
     int idNumber;
     s16 subSectorNumber;
     s16 prevSubSectorNumber;
@@ -41,7 +42,7 @@ public:
 
     Vector2 prevPosition; /**< Place to store position before moving */
 
-    float floorVelocity; /**< Where actor is trying to go */
+    Vector2 floorVelocity; /**< Where actor is trying to go */ // Y forward, back, x strafe
     float floorSpeedLimit;
 
     float verticalVelocity;
@@ -91,5 +92,12 @@ public:
 
     Vector2 MoveOnFloor( float delta);
     float MoveVertically( float gravity, float delta);
+
+    bool IsValid();
+    static void Init_DUMMY();
 };
 
+/**
+ * @brief Return address of this instead of nullptr
+ */
+extern Actor Actor_DUMMY;

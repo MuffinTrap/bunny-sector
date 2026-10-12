@@ -24,6 +24,9 @@ void BunnySector_StartMap(MapId mapId, int playerAmount);
 void BunnySector_UpdateActiveMap(float deltaTime);
 void BunnySector_UpdateMap(MapId mapId, float deltaTime);
 void BunnySector_UpdateMapPtr(BunnySector_Map* map, float deltaTime);
+
+void BunnySector_DrawActiveMap();
+
 BunnyMapType BunnySector_GetMapType(MapId mapid);
 GameStatus BunnySector_GetGameStatus();
 void BunnySector_SetGameStatus(GameStatus status);

@@ -42,11 +42,11 @@ If other players are configured they inherit from player 0
 		<number>0</number>
 
 		<height>80</height>
-		<size>32</size>
+		<size>16</size>
 
-		<movespeed>8024</movespeed>
-		<moveacceleration>16000</moveacceleration>
-		<moveslowdown>16000</moveslowdown>
+		<movespeed>128</movespeed>
+		<moveacceleration>1600</moveacceleration>
+		<moveslowdown>1600</moveslowdown>
 
 		<turnspeed>720</turnspeed>
 		<turnacceleration>1024</turnacceleration>

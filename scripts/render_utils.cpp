@@ -200,55 +200,53 @@ Vector2 GetConvertXY()
 // WALL DRAWING
 // /////////////
 
-
-void OutlineWall(float ax, float ayt, float ayb, float az,
-	float bx, float byt, float byb, float bz,
-	int limitLeft, int limitRight,
-	color32 color)
+void DrawWall3D(Vector2 left, Vector2 right, s16 picnumMiddle, s16 picnumBottom, s16 picnumTop, s8 shade)
 {
-	int x1 = int( fmaxf(ax, limitLeft));
-	int x2 = int( fminf(bx, limitRight));
-	float ytop1 = ayt;
-	float ytop2 = byt;
-	float ybot1 = ayb;
-	float ybot2 = byb;
-	float z1 = az;
-	float z2 = bz;
-
-	// How much y and z change from a to b
-	float xchange = (bx-ax); // Whole x change, not clipped
-	if (xchange == 0) {
-		return;
-	}
-	float ytopchange = (ytop2-ytop1)/xchange;
-	float ybotchange = (ybot2-ybot1)/xchange;
-	float zchange = (z2-z1)/xchange;
-
-	// If part of wall is not on screen, need to advance y and z
-	// accordingly
-	float ytopleft=ytop1;
-	float ybotleft=ybot1;
-	float zleft=z1;
-	if (ax < x1) // Wall starts outside screen
+	if (DEBUG_LOG)
 	{
-		float xoutside = x1-ax;
-		ytopleft += xoutside*ytopchange;
-		ybotleft += xoutside*ybotchange;
-		zleft += xoutside*zchange;
+		mgdl_LogTextInt("DrawWall3D left", int(left.x));
+		mgdl_LogTextInt("DrawWall3D right", int(right.x));
 	}
-	// Add the change done during drawing
-	float ytopright = ytopleft + (x2-x1)*ytopchange;
-	float ybotright = ybotleft + (x2-x1)*ybotchange;
+	Vector2 wallNormal = Vector2RightNormal(left, right);
+	if (SECTOR_NEIGHBOR_ID >= 0)
+	{
+		// Calculate top and bottom parts
 
-	// Do z check?
-	mgdl_DrawLine(x1,ytopleft, x2, ytopright, color);
-	mgdl_DrawLine(x1,ybotleft, x2, ybotright, color);
-	mgdl_DrawLine(x1,ybotleft, x1, ybotleft, color);
-	mgdl_DrawLine(x2,ytopright, x2, ybotright, color);
+		// Create wall that goes down or up to adjacent sector: Note! both sectors dont need to do this. Only lower one
 
-	OUTLINE_START_X = x1;
-	OUTLINE_END_X = x2;
+		// if this floor height is less than adjacent: Greate wall in between: goes up
+		if (SECTOR_FLOORY < SECTOR_NEIGHBOR_FLOORY && picnumBottom >= 0)
+		{
+			//BunnySector_DrawWall(wall, end, floory, neighbor.floory, wall.picnum, wall.shade);
+			BunnySector_DrawWallF(left.x, left.y, right.x, right.y, wallNormal.x, wallNormal.y, SECTOR_NEIGHBOR_FLOORY,SECTOR_FLOORY,  picnumBottom, shade);
+		}
+
+
+		// Ceiling:
+		// If this ceiling is higher than adjacent: Greate wall in between: goes down
+		if (SECTOR_CEILINGY > SECTOR_NEIGHBOR_CEILINGY && picnumTop >= 0)
+		{
+			//Wall@ otherWall = BunnySector_GetWall(wall.nextwall);
+			//DrawQuad(startPoint, endPoint, wallNormal, neighbor.ceilingy, ceilingy, otherWall.picnum, otherWall.shade, 1.0f);
+			BunnySector_DrawWallF(left.x, left.y, right.x, right.y, wallNormal.x, wallNormal.y, SECTOR_CEILINGY, SECTOR_NEIGHBOR_CEILINGY, picnumTop, shade);
+		}
+
+		if (picnumMiddle >= 0)
+		{
+			// TODO Masked portal from higher floor to lower ceiling
+			BunnySector_DrawWallF(left.x, left.y, right.x, right.y, wallNormal.x, wallNormal.y, MaxI(SECTOR_FLOORY, SECTOR_NEIGHBOR_FLOORY),
+			MinI(SECTOR_CEILINGY, SECTOR_NEIGHBOR_CEILINGY),
+			picnumMiddle, shade);
+		}
+	}
+	else if (picnumMiddle >= 0)
+	{
+		//BunnySector_DrawWall(wall, end, floory, ceilingy, wall.picnum, wall.shade);
+        //DrawQuad(startPoint, endPoint, wallNormal, floory, ceilingy, wall.picnum, wall.shade, 1.0f);
+		BunnySector_DrawWallF(left.x, left.y, right.x, right.y, wallNormal.x, wallNormal.y, SECTOR_FLOORY, SECTOR_CEILINGY, picnumMiddle, shade);
+	}
 }
+
 
 
 // MATH FUNCTIONS
@@ -761,6 +759,55 @@ void DrawCross(Vector2 point, color32 color)
 		point.x, point.y + size, color);
 }
 
+void OutlineWall(float ax, float ayt, float ayb, float az,
+	float bx, float byt, float byb, float bz,
+	int limitLeft, int limitRight,
+	color32 color)
+{
+	int x1 = int( fmaxf(ax, limitLeft));
+	int x2 = int( fminf(bx, limitRight));
+	float ytop1 = ayt;
+	float ytop2 = byt;
+	float ybot1 = ayb;
+	float ybot2 = byb;
+	float z1 = az;
+	float z2 = bz;
+
+	// How much y and z change from a to b
+	float xchange = (bx-ax); // Whole x change, not clipped
+	if (xchange == 0) {
+		return;
+	}
+	float ytopchange = (ytop2-ytop1)/xchange;
+	float ybotchange = (ybot2-ybot1)/xchange;
+	float zchange = (z2-z1)/xchange;
+
+	// If part of wall is not on screen, need to advance y and z
+	// accordingly
+	float ytopleft=ytop1;
+	float ybotleft=ybot1;
+	float zleft=z1;
+	if (ax < x1) // Wall starts outside screen
+	{
+		float xoutside = x1-ax;
+		ytopleft += xoutside*ytopchange;
+		ybotleft += xoutside*ybotchange;
+		zleft += xoutside*zchange;
+	}
+	// Add the change done during drawing
+	float ytopright = ytopleft + (x2-x1)*ytopchange;
+	float ybotright = ybotleft + (x2-x1)*ybotchange;
+
+	// Do z check?
+	mgdl_DrawLine(x1,ytopleft, x2, ytopright, color);
+	mgdl_DrawLine(x1,ybotleft, x2, ybotright, color);
+	mgdl_DrawLine(x1,ybotleft, x1, ybotleft, color);
+	mgdl_DrawLine(x2,ytopright, x2, ybotright, color);
+
+	OUTLINE_START_X = x1;
+	OUTLINE_END_X = x2;
+}
+
 void DrawWall2D(bool fill)
 {
 	float ax = A_XZ.x;
@@ -949,49 +996,3 @@ void DrawWall2DFill(float ax, float ayt, float ayb, float az,
 	glEnd();
 }
 
-void DrawWall3D(Vector2 left, Vector2 right, s16 picnumMiddle, s16 picnumBottom, s16 picnumTop, s8 shade)
-{
-	if (DEBUG_LOG)
-	{
-		mgdl_LogTextInt("DrawWall3D left", int(left.x));
-		mgdl_LogTextInt("DrawWall3D right", int(right.x));
-	}
-	Vector2 wallNormal = Vector2RightNormal(left, right);
-	if (SECTOR_NEIGHBOR_ID >= 0)
-	{
-		// Calculate top and bottom parts
-
-		// Create wall that goes down or up to adjacent sector: Note! both sectors dont need to do this. Only lower one
-
-		// if this floor height is less than adjacent: Greate wall in between: goes up
-		if (SECTOR_FLOORY < SECTOR_NEIGHBOR_FLOORY && picnumBottom >= 0)
-		{
-			//BunnySector_DrawWall(wall, end, floory, neighbor.floory, wall.picnum, wall.shade);
-			BunnySector_DrawWallF(left.x, left.y, right.x, right.y, wallNormal.x, wallNormal.y, SECTOR_NEIGHBOR_FLOORY,SECTOR_FLOORY,  picnumBottom, shade);
-		}
-
-
-		// Ceiling:
-		// If this ceiling is higher than adjacent: Greate wall in between: goes down
-		if (SECTOR_CEILINGY > SECTOR_NEIGHBOR_CEILINGY && picnumTop >= 0)
-		{
-			//Wall@ otherWall = BunnySector_GetWall(wall.nextwall);
-			//DrawQuad(startPoint, endPoint, wallNormal, neighbor.ceilingy, ceilingy, otherWall.picnum, otherWall.shade, 1.0f);
-			BunnySector_DrawWallF(left.x, left.y, right.x, right.y, wallNormal.x, wallNormal.y, SECTOR_CEILINGY, SECTOR_NEIGHBOR_CEILINGY, picnumTop, shade);
-		}
-
-		if (picnumMiddle >= 0)
-		{
-			// TODO Masked portal from higher floor to lower ceiling
-			BunnySector_DrawWallF(left.x, left.y, right.x, right.y, wallNormal.x, wallNormal.y, MaxI(SECTOR_FLOORY, SECTOR_NEIGHBOR_FLOORY),
-			MinI(SECTOR_CEILINGY, SECTOR_NEIGHBOR_CEILINGY),
-			picnumMiddle, shade);
-		}
-	}
-	else if (picnumMiddle >= 0)
-	{
-		//BunnySector_DrawWall(wall, end, floory, ceilingy, wall.picnum, wall.shade);
-        //DrawQuad(startPoint, endPoint, wallNormal, floory, ceilingy, wall.picnum, wall.shade, 1.0f);
-		BunnySector_DrawWallF(left.x, left.y, right.x, right.y, wallNormal.x, wallNormal.y, SECTOR_CEILINGY, SECTOR_FLOORY, picnumMiddle, shade);
-	}
-}

@@ -13,6 +13,17 @@ const Vector3 WORLD_FORWARD = 	Vector3New(0, 0, -1);
 const Vector2 FLOOR_FORWARD = Vector2New(1.0f, 0.0f);
 const Vector2 FLOOR_RIGHT = 	Vector2New(0, 1);
 
+int MinI(int a, int b)
+{
+    if (a < b) {return a;}
+    else { return b;}
+}
+int MaxI(int a, int b)
+{
+    if (a > b) {return a;}
+    else { return b;}
+}
+
 Vector2 Vec2XZCrossWithY(Vector2 a)
 {
 	float ax = a.x;
@@ -34,6 +45,17 @@ Vector2 Vec2XZCrossWithY(Vector2 a)
 Vector2 Vector2Project(Vector2 move, Vector2 wall)
 {
 	return Vector2Scale(wall, Vector2DotProduct(move, wall)/Vector2DotProduct(wall, wall));
+}
+
+Vector2 Vector2RightNormalV(Vector2 v1)
+{
+    Vector2 to = Vector2Normalize(v1);
+    return Vector2New(-to.y, to.x);
+}
+Vector2 Vector2RightNormal(Vector2 start, Vector2 end)
+{
+    Vector2 to = Vector2Normalize(Vector2Subtract(end, start));
+    return Vector2New(-to.y, to.x);
 }
 
 /*
@@ -123,4 +145,39 @@ bool TestActorActorCollision(Actor* A, Actor* B)
 
 	return IntersectBox(axl, ayt, axr, ayb,
 						bxl, byt, bxr, byb);
+}
+
+int GetWallSide(Vector2 wstart, Vector2 wend, Vector2 point)
+{
+	Vector2 delta = Vector2Subtract(wend, wstart);
+
+	if (delta.x == 0)
+	{
+		// Vertical cut
+		if (point.x < wstart.x)
+		{
+			if (delta.y > 0) {return DOOM_SIDE_BACK;}
+			else {return DOOM_SIDE_FRONT;}
+		}
+		if (delta.y < 0) {return DOOM_SIDE_BACK;}
+		else {return DOOM_SIDE_FRONT;}
+	}
+	if (delta.y == 0)
+	{
+		// Horizontal cut
+		if (point.y < wstart.y)
+		{
+			if (delta.x > 0) {return DOOM_SIDE_FRONT;}
+			else {return DOOM_SIDE_BACK;}
+		}
+		if (delta.x < 0) {return DOOM_SIDE_FRONT;}
+		else {return DOOM_SIDE_BACK;}
+	}
+	float dxp = point.x - wstart.x;
+	float dyp = point.y - wstart.y;
+	if( dxp * delta.y < dyp * delta.x)
+	{
+		return DOOM_SIDE_BACK;
+	}
+	return DOOM_SIDE_FRONT;
 }

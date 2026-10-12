@@ -23,7 +23,7 @@ void RegisterDoomMap(mgdl_AngelScript* angel)
 		as_engine->RegisterObjectProperty("DoomSegment", "u32 partnerSegment", asOFFSET(DoomSegment, partnerSegment));
 		as_engine->RegisterObjectProperty("DoomSegment", "u16 linedef", asOFFSET(DoomSegment, linedef));
 		as_engine->RegisterObjectProperty("DoomSegment", "u8 lineSide", asOFFSET(DoomSegment, lineSide));
-		as_engine->RegisterObjectProperty("DoomSegment", "int neighbourSubSector", asOFFSET(DoomSegment, neighbourSector));
+		as_engine->RegisterObjectProperty("DoomSegment", "int neighbourSector", asOFFSET(DoomSegment, neighbourSector));
 
 	as_engine->RegisterObjectType("DoomLinedef", 0, asOBJ_REF|asOBJ_NOCOUNT);
 		as_engine->RegisterObjectProperty("DoomLinedef", "int sidefront", asOFFSET(DoomLinedef, sidefront));

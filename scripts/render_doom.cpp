@@ -5,10 +5,16 @@ const int DOOM_SIDE_BACK = 0;
 
 // Kep Track which subsectors have been drewn
 int[] DrawnSubSectors(128);
-int drawnIndex = 0;
+int subSectorDrawCount = 0;
+
+// How many subsectors were drawn
+int drawnIndex;
 
 class SegmentPush
 {
+#if USE_ANGEL_AS_CPP
+public:
+#endif
 	int start;
 	int end;
 	int drawOrder;
@@ -37,6 +43,9 @@ int pushCount = 0;
 // Keeping track which ares of the screen have been drawn
 class WallSegment
 {
+	#if USE_ANGEL_AS_CPP
+public:
+	#endif
 	int start;
 	int end;
 	int nextIndex;
@@ -65,8 +74,8 @@ class WallSegment
 
 	bool OverlapsWith(WallSegment@ other)
 	{
-// Overlap:  Determine whether the two number ranges overlap.
-// #define Overlap(a0,a1,b0,b1) (map_min(a0,a1) <= map_max(b0,b1) && map_min(b0,b1) <= map_max(a0,a1))
+		// Overlap:  Determine whether the two number ranges overlap.
+		// #define Overlap(a0,a1,b0,b1) (map_min(a0,a1) <= map_max(b0,b1) && map_min(b0,b1) <= map_max(a0,a1))
 
 		if (MinI(start, end) <= MaxI(other.start, other.end) && MinI(other.start, other.end) <= MaxI(start, end))
 		{
@@ -148,7 +157,7 @@ void PushWallSegment(int startx, int endx, bool isPortal)
 		{
 			mgdl_LogTextInt("Push debug ", pushCount);
 		}
-		PushedSegments[pushCount] = SegmentPush(startx, endx, drawnIndex, isPortal);
+		PushedSegments[pushCount] = SegmentPush(startx, endx, subSectorDrawCount, isPortal);
 	}
 	pushCount += 1;
 
@@ -675,7 +684,7 @@ void DrawSubSectorTopDown(DoomMap@ map, Actor@ player, DoomSubSector@ sub, int s
 	BunnyV2@ pp = player.GetPosition();
 	Vector2 playerPos = Vector2New(pp.x, pp.y);
 	float playerAngle = player.yawRad;
-	PLAYER_Y = player.elevation + 40;
+	PLAYER_Y = player.elevation + 80;
 
 	// NOTE in doom the vertices are stored in counter
 	// clockwise order, but ProcessWallTopDown excepts
@@ -709,7 +718,7 @@ void DrawSubSectorTopDown(DoomMap@ map, Actor@ player, DoomSubSector@ sub, int s
 		Vector2 trans2 = WorldToCamera(wall2, playerPos, playerAngle);
 
 		DrawCross(Vector2New(trans1.x, trans1.y), Debug_Yellow);
-		bool isPortal = seg.neighbourSubSector >= 0;
+		bool isPortal = seg.neighbourSector >= 0;
 		ProcessWallTopDown(trans1, trans2, player.size/2.0f, isPortal); // NOTE: FLIP_THE_Y changes this
 
 		middlex += trans1.x;
@@ -760,7 +769,7 @@ void DrawSubSector(DoomMap@ map, Actor@ player, DoomSubSector@ sub, int sectorIn
 		// Check if wall is facing away
 		// NOTE Portals can be either way around and these checks don't work
 		DoomLinedef@ linedef = map.linedefs[seg.linedef];
-		bool isPortal = seg.neighbourSubSector >= 0;
+		bool isPortal = seg.neighbourSector >= 0;
 		bool isSolidWall = !isPortal;
 		if (isPortal || SeesSide(trans1, trans2)) // NOTE FLIP_THE_Y affets this check
 		{

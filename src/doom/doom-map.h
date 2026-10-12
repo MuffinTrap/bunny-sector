@@ -70,7 +70,7 @@ public:
 	void PrintInfo() override;
 	MapUpdateResult UpdateActions(float delta) override;
 
-	u32 MoveActorInMapImpl(Vector2 start, Vector2 end, float size, s16 sectorNumber, float elevationEnd, float maxElevationChange, float height, Actor* actor, Vector2* positionOut, s16* subSectorOut);
+	u32 MoveActorInMapImpl(Vector2 start, Vector2 end, float size, s16 sectorNumber, float elevationEnd, float maxElevationChange, float height, Actor* actor, Vector2* positionOut, s16* subSectorOut) override;
 
 	void StartLinedefAction(DoomLinedef* line, Actor* actor, bool crossed);
 

@@ -52,7 +52,7 @@ Actor* ActorPool::GetCollisionForActor(Actor* actor, int collisionIndex)
 {
 	for(int i = 0; actorCollisionEntryCount; i++)
 	{
-		ActorCollisionEntry e = actorCollisionEntries[i];
+	ActorCollisionEntry e = actorCollisionEntries[i];
 		// TODO Should actors have a guid instead of pointer magic?
 		if (e.collider == actor && collisionIndex < e.collisionAmount)
 		{
@@ -263,11 +263,11 @@ Actor* ActorPool::GetActorByTypeAndIndex(ActorType aType, int index)
     {
         if (actors[i].actorType == aType)
         {
-            if (indexCounter == index) {return &actors[i];}
+            if (indexCounter == index) {return &actors[i] ;}
             else {indexCounter += 1;}
         }
     }
-    return nullptr;
+    return &Actor_DUMMY;
 }
 
 // Private

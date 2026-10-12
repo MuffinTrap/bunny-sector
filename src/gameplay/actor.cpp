@@ -3,6 +3,19 @@
 #include "../bunny-sector-math.h"
 #include "math.h"
 
+
+Actor Actor_DUMMY;
+bool Actor::IsValid()
+{
+	return idNumber != 0xdead;
+}
+Actor::Actor()
+{
+	idNumber = 0xdead;
+}
+
+
+
 Actor Actor_Create(ActorType aType)
 {
 	Actor a;
@@ -18,7 +31,7 @@ void Actor::Init()
 	position.vectorPosition = Vector2Zero();
 	elevation = 0;
 	prevPosition = Vector2Zero();
-	floorVelocity = 0.0f;
+	floorVelocity = Vector2Zero();
 	verticalVelocity = 0.0f;
 	lookDirection.vectorDirection = Vector2New(1, 0);
 	moveDirection.vectorDirection = Vector2New(1, 0);
@@ -44,12 +57,19 @@ Viewpoint Actor::GetViewpoint()
 
 Vector2 Actor::MoveOnFloor(float delta)
 {
+	Vector2 strafeDirection = Vector2RightNormalV(moveDirection.vectorDirection);
 	Vector2 floorDestination = Vector2Add(
-		position.vectorPosition, Vector2Scale(
-				moveDirection.vectorDirection,
-				floorVelocity * delta
-				)
-		);
+								position.vectorPosition, Vector2Scale(
+															moveDirection.vectorDirection,
+															floorVelocity.y * delta
+														)
+								);
+	floorDestination = Vector2Add(
+								floorDestination, Vector2Scale(
+															strafeDirection,
+															floorVelocity.x * delta
+														)
+								);
 
 	return floorDestination;
 }

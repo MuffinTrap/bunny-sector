@@ -124,6 +124,7 @@ void movePlayer(int playerIndex, float deltatime)
 	float turn = 0.0f;
 	float vertical = 0.0f;
 
+	// TODO Jump on C
 	if (mgdl_IsButtonDown(playerIndex, ButtonZ))
 	{
 		if (mgdl_IsButtonDown(playerIndex, ButtonUp))
@@ -144,7 +145,15 @@ void movePlayer(int playerIndex, float deltatime)
 
 	Vector2 wasd = mgdl_GetJoystick(playerIndex, Joystick_Nunchuk);
 	forward = -wasd.y;
-	turn = wasd.x;
+	// NOTE Strafe on Z
+	if (mgdl_IsButtonDown(playerIndex, ButtonZ))
+	{
+		strafe = wasd.x;
+	}
+	else
+	{
+		turn = wasd.x;
+	}
 
 	BunnySector_SetPlayerDriveInput(playerIndex, forward, strafe, vertical, turn, 0.0f);
 
@@ -294,12 +303,14 @@ void angelscript_render()
 		}
 		else
 		{
+			/*
 			BunnySector_Setup3D(aspect, aspect);
 			BunnySector_AlignCameraToPlayer(0);
 			BunnySector_StartMapDrawing();
 			RenderDoomMap(BunnySector_GetDoomMap(doomMapId));
 			BunnySector_DrawMapActorsForPlayer(0);
 			BunnySector_EndMapDrawing();
+			*/
 		}
 
 		RenderMiniMapDoom(BunnySector_GetDoomMap(doomMapId));

@@ -19,6 +19,9 @@ extern const Vector2 FLOOR_FORWARD;
 #define IntersectBox(x0,y0, x1,y1, x2,y2, x3,y3) (Overlap(x0,x1,x2,x3) && Overlap(y0,y1,y2,y3))
 #define IntersectBoxV(v0, v1, v2, v3) (Overlap(v0.x,v1.x,v2.x,v3.x) && Overlap(v0.y,v1.y,v2.y,v3.y))
 
+int MinI(int a, int b);
+int MaxI(int a, int b);
+
 struct RenderSettingsOpenGL;
 class Actor;
 
@@ -32,6 +35,9 @@ extern "C" {
 Vector2 Vec2XZCrossWithY(Vector2 a);
 
 Vector2 Vector2Project(Vector2 move, Vector2 wall);
+
+Vector2 Vector2RightNormalV(Vector2 v1);
+Vector2 Vector2RightNormal(Vector2 start, Vector2 end);
 
 Vector2 Vec2XZRotateY(Vector2 p, float angle);
 Vector3 Vec3XYZRotateY(Vector3 p, float angle);
@@ -49,6 +55,8 @@ bool TestActorWallCollision(Vector2 actorpos, float size, Vector2 wallStart, Vec
 bool TestActorActorCollision(Actor* A, Actor* B);
 
 bool IsPointInsideRect(RectF rect, Vector2 point);
+
+int GetWallSide(Vector2 wstart, Vector2 wend, Vector2 point);
 
 #ifdef __cplusplus
 }

@@ -1,7 +1,7 @@
-
 #pragma once
 
-struct Actor;
+#include "../bunny-sector-types.h"
+class Actor;
 struct ActorCollisionEntry;
 
 class ActorPool

@@ -466,7 +466,7 @@ void DoomMap::StartLinedefAction(DoomLinedef* linedef, Actor* actor, bool crosse
 	if (actor->actorType == actor_player)
 	{
 		if (
-			(crossed && Flag_IsBitSet(linedef->linedef_flags, linedef_activate_player_cross))
+		(crossed && Flag_IsBitSet(linedef->linedef_flags, linedef_activate_player_cross))
 		|| (Flag_IsBitSet(linedef->linedef_flags, linedef_activate_player_push))
 		|| (Flag_IsBitSet(linedef->linedef_flags, linedef_activate_player_use) && actor->IsDoing(action_use)))
 		{
@@ -564,7 +564,7 @@ bool DoomMap::DoOpenDoorAction(DoomMapAction* act, float delta)
 			DoomSector* sector = &sectors[back->sector];
 			if (sector->usecase == sector_door)
 			{
-				actionDone = OpenDoorSector(back->sector, sector, (int)act->accumulation);
+		actionDone = OpenDoorSector(back->sector, sector, (int)act->accumulation);
 			}
 		}
 		else
@@ -746,7 +746,7 @@ DoomNode* DoomMap::GetNode( unsigned int index) { return &nodes[index];}
 DoomSubSector* DoomMap::GetSubSector( unsigned int index) { return &subsectors[index];}
 DoomSegment* DoomMap::GetSegment( unsigned int index) { return &segments[index];}
 
-DoomNode * DoomMap::GetRootNode() { return &nodes[nodeAmount-1]; }
+DoomNode* DoomMap::GetRootNode() { return &nodes[nodeAmount-1]; }
 
 DoomNode* DoomMap::GetChildNode( ChildId id) {return &nodes[id];}
 DoomSubSector* DoomMap::GetChildSubSector( ChildId id) { return &subsectors[(id & 0x7fffffff)];}

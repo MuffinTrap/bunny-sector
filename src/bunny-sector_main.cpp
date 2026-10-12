@@ -1,20 +1,23 @@
-#include "bunny-sector_main.h"
-#include "bunny-sector-map.h"
-#include "bunny-sector-types.h"
 #include <mgdl.h>
 #include <mgdl/mgdl-script-api.h>
 
+#include "bunny-sector-types.h"
 #include "bunny-sector-math.h"
+#include "bunny-sector_main.h"
+#include "bunny-sector-map.h"
 #include "bunny-sector-materials.h"
 #include "bunny-sector-items.h"
 #include "bunny-sector-players.h"
 
 #include "render/opengl-render.h"
 #include "render/render-settings.h"
+
 #include "gameplay/actor.h"
 #include "gameplay/player.h"
 #include "gameplay/actorpool.h"
+
 #include "doom/doom-map-reader.h"
+#include "doom/doom_render.h"
 
 static BunnySector::MaterialManager* materialManager;
 static BunnySector::ItemManager* itemManager;
@@ -113,6 +116,7 @@ bool BunnySector_Init(mgdl_AngelScript* angel)
 	defaultView = GetDefaultCameraInfo();
 	defaultCamera = GetDefaultCamera();
 
+
 	for (int i = 0; i < 4; i++)
 	{
 		playerCameras[i] = GetDefaultCamera();
@@ -120,6 +124,9 @@ bool BunnySector_Init(mgdl_AngelScript* angel)
 	}
 
 	actorPool.Init(MAP_ACTOR_AMOUNT);
+
+	// Needs Camara to be set
+	InitDoomRender(BunnySector_GetOpenGLCameraVerticalFOVDeg());
 
 	gameStatus = GameStatus::status_menu;
 
@@ -268,7 +275,9 @@ void BunnySector_Update(float deltaTime)
 			if (activeMap != nullptr)
 			{
 				BunnySector_UpdateActiveMap(deltaTime);
+				BunnySector_DrawActiveMap();
 			}
+
 			break;
 		case status_player_dead:
 			// NOTE Draw something but don't unload the map, player might revive
@@ -277,6 +286,7 @@ void BunnySector_Update(float deltaTime)
 			// NOTE Wait until game loads next map
 			break;
 	}
+
 	// Draw after updating
 #if defined(USE_ANGEL_AS_SCRIPT)
 	mgdl_RunAngelScriptFunction(angelContenxt, RenderingCallback);
@@ -309,14 +319,14 @@ void BunnySector_UpdateMapPtr(BunnySector_Map* map, float deltaTime)
 			for (int pi = 0; pi < activePlayerAmount; pi++)
 			{
 				// Note: to prevent insane delta times when debugging this is done in fixed time
-				Actor* player0Actor = activeMap->GetActorByTypeAndIndex(actor_player, pi); // player0.lastActorSubSector); // Start search from where the actor was last time
-				players[pi].ApplyDrive(player0Actor, FIXED_STEP);
-				players[pi].ApplyVerticalMove(player0Actor, FIXED_STEP);
-				player0Actor->actionFlags = players[pi].actionFlags;
+				Actor* playerActor = activeMap->GetActorByTypeAndIndex(actor_player, pi); // player0.lastActorSubSector); // Start search from where the actor was last time
+				players[pi].ApplyDrive(playerActor, FIXED_STEP);
+				players[pi].ApplyVerticalMove(playerActor, FIXED_STEP);
+				playerActor->actionFlags = players[pi].actionFlags;
 
 				map->MoveActors(FIXED_STEP);
 
-				players[pi].prevActorSubSectorNumber = player0Actor->subSectorNumber;
+				players[pi].prevActorSubSectorNumber = playerActor->subSectorNumber;
 			}
 
 			map->SortMovedActors();
@@ -338,9 +348,22 @@ void BunnySector_UpdateMapPtr(BunnySector_Map* map, float deltaTime)
 	}
 }
 
+void BunnySector_DrawActiveMap()
+{
+	float aspect = mgdl_GetScreenWidth()/mgdl_GetScreenHeight();
+	BunnySector_Setup3D(aspect, aspect);
+	for (int pi = 0; pi < activePlayerAmount; pi++)
+	{
+		BunnySector_AlignCameraToPlayer(0);
+		BunnySector_StartMapDrawing();
+		RenderDoomMap( (DoomMap*)activeMap);
+		BunnySector_DrawMapActorsForPlayer(0);
+	}
+	BunnySector_EndMapDrawing();
+}
+
 BunnyMapType BunnySector_GetMapType(MapId mapid)
 {
-
 	if (mapid >=0 && mapid < MAP_AMOUNT)
 	{
 		BunnySector_Map* map = mapsArray[mapid];
@@ -350,11 +373,12 @@ BunnyMapType BunnySector_GetMapType(MapId mapid)
 		}
 	}
 	return Map_Invalid;
-
 }
 
 void BunnySector_AlignCameraToPlayer(int playerIndex)
 {
+	// TODO Different viewports for each player
+
 	Viewport viewPort = mgdl_GetViewport();
 	// NOTE Must set GL_PROJECTION first then GL_MODELVIEW
 
@@ -499,7 +523,7 @@ Actor* BunnySector_GetActorCollisionAt(Actor* actor, int index)
 
 void BunnySector_StartMapDrawing()
 {
-	OpenGLRender_StartDrawingPolygons();
+OpenGLRender_StartDrawingPolygons();
 }
 void BunnySector_EndMapDrawing()
 {

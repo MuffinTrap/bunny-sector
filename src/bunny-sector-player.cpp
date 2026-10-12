@@ -54,11 +54,15 @@ bool PlayerManager::ReadXML(const char* filename)
 				goto player_end;
 			}
 		}
+		// Default values
+		prefab->turnSpeedMultiplier = 1.0f;
+		prefab->walkSpeedMultiplier = 1.0f;
+
 		if (XML_ReadChildInt(playerElement, "height", &prefab->standingHeight) == false)
 		{
 			Log_Error("No player height in XML\n");
 		}
-		if (XML_ReadChildInt(playerElement, "height", &prefab->size) == false)
+		if (XML_ReadChildInt(playerElement, "size", &prefab->size) == false)
 		{
 			Log_Error("No player size in XML\n");
 		}

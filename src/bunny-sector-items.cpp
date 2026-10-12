@@ -136,7 +136,7 @@ bool BunnySector::ItemManager::LoadXML(const char* filename)
 			}
 			else
 			{
-				Log_Error("Item has no number or name\n");
+			Log_Error("Item has no number or name\n");
 				continue;
 			}
 		}

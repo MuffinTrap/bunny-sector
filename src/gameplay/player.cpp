@@ -73,7 +73,7 @@ bool Player::GetItemCount(DOOM_EDITOR_NUMBER item)
 }
 
 
-static float deadzone = 0.01f;
+static float deadzone = 0.2; // NOTE XBOX360
 
 void Player::ApplyVerticalMove(Actor* actor, float deltaTime)
 {
@@ -132,9 +132,10 @@ void Player::ApplyDrive(Actor* actor, float deltaTime)
 	actor->moveDirection.vectorDirection = Vector2Rotate(forward, actor->yawRad);
 
 	// TODO Strafing
-	if (forwardDrive != 0)
+	if (abs(forwardDrive) > deadzone)
 	{
 		moveVelocity += forwardDrive * moveAcceleration * deltaTime;
+		moveVelocity = clampF(moveVelocity, -moveSpeed, moveSpeed);
 	}
 	else if (moveVelocity != 0)
 	{
@@ -149,7 +150,6 @@ void Player::ApplyDrive(Actor* actor, float deltaTime)
 		}
 		else
 		{
-
 			moveVelocity -= moveSlowdown * deltaTime;
 			if (moveVelocity < 0)
 			{
@@ -157,7 +157,34 @@ void Player::ApplyDrive(Actor* actor, float deltaTime)
 			}
 		}
 	}
-	actor->floorVelocity = walkSpeedMultiplier * moveVelocity;
+
+	if (abs(strafeDrive) > deadzone)
+	{
+		strafeVelocity += strafeDrive * strafeAcceleration * deltaTime;
+		strafeVelocity = clampF(strafeVelocity, -strafeSpeed, strafeSpeed);
+	}
+	else if (strafeVelocity != 0)
+	{
+		// Slow down
+		if (strafeVelocity < 0)
+		{
+			strafeVelocity += strafeSlowdown * deltaTime;
+			if (strafeVelocity > 0)
+			{
+				strafeVelocity = 0;
+			}
+		}
+		else
+		{
+			strafeVelocity -= strafeSlowdown * deltaTime;
+			if (strafeVelocity < 0)
+			{
+				strafeVelocity = 0;
+			}
+		}
+	}
+	actor->floorVelocity.y = walkSpeedMultiplier * moveVelocity;
+	actor->floorVelocity.x = walkSpeedMultiplier * strafeVelocity;
 }
 
 Viewpoint Player::GetViewpoint(Actor* actor)

@@ -7,6 +7,8 @@
 
 #include <mgdl.h>
 
+// NOTE This is to make AngelScript code easier to port to C++
+
 enum ActorType
 {
     actor_player,
