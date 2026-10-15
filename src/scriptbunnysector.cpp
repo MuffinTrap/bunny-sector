@@ -95,7 +95,7 @@ void RegisterDoomMap(mgdl_AngelScript* angel)
 		as_engine->RegisterObjectMethod("DoomMap", "DoomSubSector@ GetChildSubSector(ChildId id)", asMETHOD(DoomMap,GetChildSubSector), asCALL_THISCALL);
 
 	// Functions
-	as_engine->RegisterGlobalFunction("DoomMap@ BunnySector_GetDoomMap(MapId mapId)", asFUNCTION(BunnySector_GetDoomMap), asCALL_CDECL);
+	as_engine->RegisterGlobalFunction("DoomMap@ BunnySector_GetDoomMap()", asFUNCTION(BunnySector_GetDoomMap), asCALL_CDECL);
 }
 
 static float ANGEL_PI = M_PI;
@@ -106,11 +106,8 @@ void RegisterBunnySector(mgdl_AngelScript* angel)
 
 	// TODO move to mgdl
 	as_engine->RegisterGlobalProperty("const float M_PI", &ANGEL_PI);
-	as_engine->RegisterTypedef("MapId", "int");
 
-	as_engine->RegisterGlobalFunction("bool BunnySector_Init()", asFUNCTION(BunnySector_Init), asCALL_CDECL);
-	as_engine->RegisterGlobalFunction("MapId BunnySector_LoadMap(const zstr &in mapfilename)", asFUNCTIONPR(BunnySector_LoadMap, (const zstr&), MapId), asCALL_CDECL);
-	as_engine->RegisterGlobalFunction("void BunnySector_StartMap(MapId mapId, int playerAmount)", asFUNCTION(BunnySector_StartMap), asCALL_CDECL);
+	as_engine->RegisterGlobalFunction("void BunnySector_StartMap(int mapNumber, int playerAmount)", asFUNCTION(BunnySector_StartMap), asCALL_CDECL);
 
 	as_engine->RegisterEnum("ActorActionBit");
 	as_engine->RegisterEnumValue("ActorActionBit", "action_use",(int)action_use);
@@ -124,10 +121,6 @@ void RegisterBunnySector(mgdl_AngelScript* angel)
 	as_engine->RegisterEnumValue("GameStatus", "status_player_dead", (int)status_player_dead);
 	as_engine->RegisterEnumValue("GameStatus", "status_exit_normal", (int)status_exit_normal);
 
-	as_engine->RegisterEnum("BunnyMapType");
-	as_engine->RegisterEnumValue("BunnyMapType", "Map_Doom", (int)Map_Doom);
-	as_engine->RegisterEnumValue("BunnyMapType", "Map_Invalid", (int)Map_Invalid);
-
 	as_engine->RegisterEnum("ActorType");
 	as_engine->RegisterEnumValue("ActorType", "actor_player", (int)actor_player);
 	as_engine->RegisterEnumValue("ActorType", "actor_item", (int)actor_item);
@@ -137,10 +130,6 @@ void RegisterBunnySector(mgdl_AngelScript* angel)
     	as_engine->RegisterEnumValue("ActorType", "actor_particle_emitter",(int)actor_particle_emitter);
 
 	as_engine->RegisterGlobalFunction("zstr ActorTypeToString(ActorType atype)", asFUNCTION(ActorTypeToString), asCALL_CDECL);
-
-
-	as_engine->RegisterGlobalFunction("BunnyMapType BunnySector_GetMapType(MapId mapid)", asFUNCTION(BunnySector_GetMapType), asCALL_CDECL);
-
 
 	// Register callback hooks that script can connect to
 

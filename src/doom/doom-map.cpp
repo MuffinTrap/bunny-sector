@@ -37,11 +37,15 @@ void DoomMap::AddActor(ActorType actorType, int typeNumber, int id, Vector2 posi
 	a.subSectorNumber = FindSubSector(GetRootNode(), position);
 	a.elevation = GetFloory(a.subSectorNumber);
 	a.typeNumber = typeNumber;
+	a.texture = -1;
 
 	// These are needed for drawing
 	// Try to load a prefab from Item manager
-	BunnySector::ItemManager* im = BunnySector_GetItemManager();
-	im->LoadItemToActor(&a, (DOOM_EDITOR_NUMBER)typeNumber);
+	if ( actorType == actor_item)
+	{
+		BunnySector::ItemManager* im = BunnySector_GetItemManager();
+		im->LoadItemToActor(&a, (DOOM_EDITOR_NUMBER)typeNumber);
+	}
 
 	actorPool->Insert(a);
 }

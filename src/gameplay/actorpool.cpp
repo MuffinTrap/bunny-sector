@@ -40,7 +40,7 @@ int ActorPool::GetCollisionAmountForActor(Actor* actor)
 	{
 		ActorCollisionEntry e = actorCollisionEntries[i];
 		// TODO Should actors have a guid instead of pointer magic?
-		if (e.collider == actor)
+		if (e.collider == actor && e.handledByGame == false)
 		{
 			return e.collisionAmount;
 		}
@@ -121,6 +121,8 @@ void ActorPool::DoActorToActorCollisions()
     // Check collisions
     // Get next actor from same subsector
 }
+
+
 
 void ActorPool::RemoveDeadActors()
 {

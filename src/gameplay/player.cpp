@@ -73,6 +73,68 @@ bool Player::GetItemCount(DOOM_EDITOR_NUMBER item)
 }
 
 
+bool Player::ReadInput(int controllerIndex)
+{
+	float forward = 0;
+	float strafe = 0.0f;
+	float turn = 0.0f;
+	float vertical = 0.0f;
+
+	if (mgdl_IsButtonDown(controllerIndex, ButtonC))
+	{
+		// TODO Jump on C
+	}
+
+	Vector2 wasd = mgdl_GetJoystick(controllerIndex, Joystick_Nunchuk);
+	forward = -wasd.y;
+	// NOTE Strafe on Z
+	if (mgdl_IsButtonDown(controllerIndex, ButtonZ))
+	{
+		strafe = wasd.x;
+	}
+	else
+	{
+		turn = wasd.x;
+	}
+
+
+	// Use button is A for now
+	if (mgdl_IsButtonDown(controllerIndex, ButtonA))
+	{
+		StartAction(action_use);
+	}
+	else if (mgdl_IsButtonReleased(controllerIndex, ButtonA))
+	{
+		StopAction(action_use);
+	}
+
+	if (mgdl_IsButtonDown(controllerIndex, ButtonB))
+	{
+		StartAction(action_shoot);
+	}
+	else if (mgdl_IsButtonReleased(controllerIndex, ButtonB))
+	{
+		StopAction(action_shoot);
+	}
+
+	if (mgdl_IsButtonDown(controllerIndex, ButtonC))
+	{
+		StartAction(action_jump);
+	}
+	else if (mgdl_IsButtonReleased(controllerIndex, ButtonC))
+	{
+		StopAction(action_jump);
+	}
+
+	forwardDrive = Clamp(forward, -1.0f, 1.0f);
+	strafeDrive = Clamp(strafe, -1.0f, 1.0f);
+	verticalDrive = Clamp(vertical, -1.0f, 1.0f);
+	turnDrive = Clamp(turn, -1.0f, 1.0f);
+
+	return true;
+}
+
+
 static float deadzone = 0.2; // NOTE XBOX360
 
 void Player::ApplyVerticalMove(Actor* actor, float deltaTime)
@@ -89,6 +151,17 @@ void Player::ApplyVerticalMove(Actor* actor, float deltaTime)
 
 	actor->verticalVelocity += verticalAcceleration * deltaTime;
 }
+
+void Player::StartAction(ActorActionBit action)
+{
+	actionFlags = Flag_SetBit(actionFlags, action);
+}
+
+void Player::StopAction(ActorActionBit action)
+{
+	actionFlags = Flag_UnsetBit(actionFlags, action);
+}
+
 
 void Player::ApplyDrive(Actor* actor, float deltaTime)
 {

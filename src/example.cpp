@@ -5,14 +5,11 @@
 #include "scriptbunnysector.h"
 #include <string>
 
-#if defined(MGDL_ROCKET)
-    #include <mgdl-rocket.h>
-    static ROCKET_TRACK sync_value;
-#endif
-
 #if defined(USE_ANGEL_AS_CPP)
 #include <angel.hpp>
 #endif
+
+bool initOk = false;
 
 Example::Example()
 {
@@ -24,6 +21,10 @@ void Example::AngelInit()
     // AngelScript
 #if defined(USE_ANGEL_AS_SCRIPT)
     angelContext = mgdl_InitAngelScript();
+#elif defined(USE_ANGEL_AS_CPP)
+    angelContext = mgdl_InitAngelCpp(&angelscript_init, &angelscript_frame, &angelscript_quit);
+#endif
+
     if (angelContext != nullptr)
     {
         RegisterBunnySector(angelContext);
@@ -31,24 +32,23 @@ void Example::AngelInit()
         if (mgdl_LoadAngelScriptFiles(angelContext, "scripts/angel.cpp", "scripts", "example"))
         {
             // This must be after loading the files, because the function is in there
-            // TODO The script could also set a callback
-            BunnySector_Init(angelContext);
-            // This will call bunnysector functions
-            mgdl_RunAngelScriptInit(angelContext);
+            if (BunnySector_Init(angelContext))
+            {
+                // This will call bunnysector functions
+                mgdl_RunAngelScriptInit(angelContext);
+                initOk = true;
+            }
         }
     }
-
-#elif defined(USE_ANGEL_AS_CPP)
-    angelContext = mgdl_InitAngelCpp(&angelscript_init, &angelscript_frame, &angelscript_quit);
-	mgdl_RunAngelScriptInit(angelContext);
-#endif
-    AssetManager_PrintLoadedTextures();
+    mgdl_assert_print(initOk, "BunnySector Init failed");
 }
 
 void Example::AngelFrame()
 {
-    // First AngelScript does something
-    mgdl_RunAngelScriptFrame(angelContext, mgdl_GetDeltaTime());
+
+    // First AngelScript can do something
+   // mgdl_RunAngelScriptFrame(angelContext, mgdl_GetDeltaTime());
+
     // Then we update and call after collision callback and rendering callback
     BunnySector_Update(mgdl_GetDeltaTime());
 }
@@ -56,29 +56,16 @@ void Example::AngelFrame()
 
 void Example::Quit()
 {
-#ifdef MGDL_ROCKET
-    Rocket_Disconnect();
-#endif
 }
 
 void Example::Update()
 {
-    #ifdef MGDL_ROCKET
-
-        Rocket_UpdateRow();
-        if (WiiController_ButtonPress(mgdl_GetController(0), WiiButtons::Button2))
-        {
-            Rocket_SaveAllTracks();
-        }
-    #endif
-
     elapsedSeconds = mgdl_GetElapsedSeconds();
     deltaTime = mgdl_GetDeltaTime();
 
     cursorPos = WiiController_GetCursorPosition(Platform_GetController(0));
     mouseClick = WiiController_ButtonPress(Platform_GetController(0), ButtonA);
     mouseDown = WiiController_ButtonHeld(Platform_GetController(0), ButtonA);
-
 }
 
 

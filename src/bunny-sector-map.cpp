@@ -37,8 +37,7 @@ void BunnySector_Map::MoveActorInMap(float deltaTime, Actor* inoutActor)
 	Vector2 point = current;
 	Vector2 endpoint = destination;
 
-    // TODO Gravity depens on map?
-    float elevationEnd = inoutActor->MoveVertically(8024.0, deltaTime);
+    float elevationEnd = inoutActor->MoveVertically(gravity, deltaTime);
 
 	Vector2 pointOut;
 	s16 subSectorOut;

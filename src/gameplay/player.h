@@ -83,4 +83,7 @@ public:
 	Viewpoint GetViewpoint(Actor* actor);
 	bool GiveItem(DOOM_EDITOR_NUMBER item, int amount);
     bool GetItemCount(DOOM_EDITOR_NUMBER item);
+    bool ReadInput(int controllerIndex);
+    void StartAction(ActorActionBit action);
+    void StopAction(ActorActionBit action);
 };

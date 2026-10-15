@@ -300,6 +300,12 @@ void OpenGLRender_DrawActors(BunnySector_Map* map, Vector2 cameraPosition)
         Actor* actor = map->GetActorByIndex(i);
 
         // TODO Check if this actor is in sector that was drawn
+        if (actor->texture < 0)
+        {
+            continue;
+
+        }
+        // TODO don't draw player for himself
 
         // Draw a sprite representing this actor
         OpenGLRender_DrawSprite(

@@ -25,36 +25,18 @@ float angel_fov = 90.0f;
 #	endif
 #endif
 
-MapId doomMapId;
-
 void angelscript_init()
 {
-	int screenWidth = mgdl_GetScreenWidth();
-	int screenHeight = mgdl_GetScreenHeight();
-
 	BunnySector_SetAfterCollisionCallback(angelscript_after_collision);
 	BunnySector_SetRenderingCallback(angelscript_render);
 
-	doomMapId = BunnySector_LoadMap("assets/slade_test.wad");
-
 	// Match 2D render to OpenGL render
 	RenderInit(BunnySector_GetOpenGLCameraVerticalFOVDeg());
-
 }
 
 void angelscript_quit()
 {
 
-}
-
-void DrawDrive(int x, int y, float amount)
-{
-	if (amount < 0)
-	{
-		x += amount*100;
-		amount = amount * -1.0f;
-	}
-	mgdl_DrawRectangle(x,y, amount * 100, 8, Debug_Yellow);
 }
 
 void Start2D()
@@ -113,83 +95,10 @@ void adjustScale(float deltatime)
 		{
 			angel_textureScale += 1;
 		}
-
-}
-
-void movePlayer(int playerIndex, float deltatime)
-{
-
-	float forward = 0;
-	float strafe = 0.0f;
-	float turn = 0.0f;
-	float vertical = 0.0f;
-
-	// TODO Jump on C
-	if (mgdl_IsButtonDown(playerIndex, ButtonZ))
-	{
-		if (mgdl_IsButtonDown(playerIndex, ButtonUp))
-		{
-			vertical = 1.0f;
-		}
-		else if (mgdl_IsButtonDown(playerIndex, ButtonDown))
-		{
-			vertical = -1.0f;
-		}
-		else
-		{
-			vertical = 0.0f;
-			Actor@ actor = BunnySector_GetPlayerActor(playerIndex);
-			actor.verticalVelocity = 0.0f;
-		}
-	}
-
-	Vector2 wasd = mgdl_GetJoystick(playerIndex, Joystick_Nunchuk);
-	forward = -wasd.y;
-	// NOTE Strafe on Z
-	if (mgdl_IsButtonDown(playerIndex, ButtonZ))
-	{
-		strafe = wasd.x;
-	}
-	else
-	{
-		turn = wasd.x;
-	}
-
-	BunnySector_SetPlayerDriveInput(playerIndex, forward, strafe, vertical, turn, 0.0f);
-
-	// Use button is A for now
-	if (mgdl_IsButtonDown(playerIndex, ButtonA))
-	{
-		BunnySector_StartPlayerAction(playerIndex, action_use);
-	}
-	else if (mgdl_IsButtonReleased(playerIndex, ButtonA))
-	{
-		BunnySector_StopPlayerAction(playerIndex, action_use);
-	}
-
-	if (mgdl_IsButtonDown(playerIndex, ButtonB))
-	{
-		BunnySector_StartPlayerAction(playerIndex, action_shoot);
-	}
-	else if (mgdl_IsButtonReleased(playerIndex, ButtonB))
-	{
-		BunnySector_StopPlayerAction(playerIndex, action_shoot);
-	}
-
-	if (mgdl_IsButtonDown(playerIndex, ButtonC))
-	{
-		BunnySector_StartPlayerAction(playerIndex, action_jump);
-	}
-	else if (mgdl_IsButtonReleased(playerIndex, ButtonC))
-	{
-		BunnySector_StopPlayerAction(playerIndex, action_jump);
-	}
-
 }
 
 void adjustFov(float deltatime)
 {
-
 	// Minus resets the fov
 	if (mgdl_IsButtonPressed(0, ButtonMinus))
 	{
@@ -212,60 +121,10 @@ void adjustFov(float deltatime)
 		BunnySector_SetOpenGLCameraVerticalFOVDeg(BunnySector_GetOpenGLCameraVerticalFOVDeg() + fovchange);
 	}
 }
-void angelscript_frame_doom(float deltatime)
-{
-	//BunnySector_SetOpenGLUnitsToMeter(angel_unitstometerH, angel_unitstometerV);
-	OpenGLRender_SetTextureScale(angel_textureScale);
-	BunnySector_SetPlayerSpeeds(0, 2.0f, 1.0f);
-	movePlayer(0, deltatime);
-}
 
 void angelscript_after_collision()
 {
 	// This is called after all collisions are registered
-	Actor@ player0 = BunnySector_GetPlayerActor(0);
-	int collisions = BunnySector_GetActorCollisionAmount(player0);
-	if (collisions > 0)
-	{
-		mgdl_LogTextInt("Player hit this many other actors ", collisions);
-	}
-	for (int i = 0; i < collisions; i++)
-	{
-		Actor@ other = BunnySector_GetActorCollisionAt(player0, i);
-		mgdl_LogText("Player collision with ");
-		mgdl_LogText(ActorTypeToString(other.actorType));
-		BunnySector_GivePlayerItem(0, editorNumber_blue_card, 1);
-		BunnySector_DestroyActor(other);
-	}
-}
-
-void angelscript_render_menu()
-{
-	Start2D();
-	mgdl_DrawText("Menu", text_x, NextY(32), 32, Debug_LightYellow);
-	mgdl_DrawText("Press (A) to start", text_x, NextY(), 16, Debug_LightBlue);
-	End2D();
-	if (mgdl_IsButtonPressed(0, ButtonA))
-	{
-		BunnySector_StartMap(doomMapId, 1);
-		BunnySector_SetGameStatus(status_player_alive);
-	}
-}
-
-void angelscript_render_exit_menu()
-{
-	Start2D();
-		// Map is over
-		mgdl_DrawText("Exit map", text_x, NextY(32), 32, Debug_LightYellow);
-		mgdl_DrawText("Press (A) and (B) together to restart", text_x, NextY(), 8, Debug_LightBlue);
-
-	End2D();
-
-	if (mgdl_IsButtonDown(0, ButtonA) && mgdl_IsButtonDown(0, ButtonB))
-	{
-		BunnySector_StartMap(doomMapId, 1);
-		BunnySector_SetGameStatus(status_player_alive);
-	}
 }
 
 void angelscript_render_player_info()
@@ -299,37 +158,18 @@ void angelscript_render()
 		StartFrame_Doom();
 		if (RENDER_2D_WALLS)
 		{
-			RenderDoomMapLines(BunnySector_GetDoomMap(doomMapId));
-		}
-		else
-		{
-			/*
-			BunnySector_Setup3D(aspect, aspect);
-			BunnySector_AlignCameraToPlayer(0);
-			BunnySector_StartMapDrawing();
-			RenderDoomMap(BunnySector_GetDoomMap(doomMapId));
-			BunnySector_DrawMapActorsForPlayer(0);
-			BunnySector_EndMapDrawing();
-			*/
+			RenderDoomMapLines(BunnySector_GetDoomMap());
 		}
 
-		RenderMiniMapDoom(BunnySector_GetDoomMap(doomMapId));
+		RenderMiniMapDoom(BunnySector_GetDoomMap());
 		angelscript_render_player_info();
-	}
-	else if (status == status_menu)
-	{
-		angelscript_render_menu();
-	}
-	else if (status == status_exit_normal)
-	{
-		angelscript_render_exit_menu();
 	}
 
 	DrawDebugs();
 
 	RENDER_2D_WALLS = false;
 	DEBUG_DRAW = false;
-		DEBUG_LOG = false;
+	DEBUG_LOG = false;
 }
 
 void angelscript_frame(float deltatime)
@@ -347,17 +187,9 @@ void angelscript_frame(float deltatime)
 	{
 		adjustScale(deltatime);
 	}
-		GameStatus status = BunnySector_GetGameStatus();
-		if (status == status_player_alive)
-		{
-			angelscript_frame_doom(deltatime);
-		}
 
 	// Check game state
-
 }
-bool actest = true;
-
 
 #if USE_ANGEL_AS_CPP
 #	ifdef __cplusplus

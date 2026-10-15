@@ -43,6 +43,8 @@ void Actor::Init()
 	noclip = false;
 	lastMoveResultFlags = 0;
 	actionFlags = 0;
+
+	texture = -1;
 }
 
 Viewpoint Actor::GetViewpoint()

@@ -16,3 +16,4 @@ void BunnySector_LoadPlayerDefaults(Player* player, int playerIndex);
 // XML reading functions
 bool XML_ReadChildInt(tinyxml2::XMLElement*parent, const char* tag, int* valueOut);
 const char* XML_ReadChildString(tinyxml2::XMLElement*parent, const char* tag);
+const char* XML_ReadChildString(tinyxml2::XMLElement*parent, const char* tag);

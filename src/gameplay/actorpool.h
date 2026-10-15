@@ -31,6 +31,7 @@ public:
 	// Projectiles kept separately since they are very short lived and local
 	void InsertProjectile(Actor actor);
 	void DoActorToProjectileCollisions();
+	void HandleCollisionsForPlayerActor(Actor* player);
 	void RemoveDeadProjectiles();
 
 

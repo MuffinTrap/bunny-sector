@@ -14,25 +14,23 @@ class Player;
 extern "C" {
 #endif
 
-
-typedef int MapId;
-
 bool BunnySector_Init(mgdl_AngelScript* angel);
 void BunnySector_Update(float deltaTime);
 
-void BunnySector_StartMap(MapId mapId, int playerAmount);
+void BunnySector_StartMap(int playerAmount);
 void BunnySector_UpdateActiveMap(float deltaTime);
-void BunnySector_UpdateMap(MapId mapId, float deltaTime);
+void BunnySector_UpdateMap(int mapNumber, float deltaTime);
 void BunnySector_UpdateMapPtr(BunnySector_Map* map, float deltaTime);
 
 void BunnySector_DrawActiveMap();
 
-BunnyMapType BunnySector_GetMapType(MapId mapid);
 GameStatus BunnySector_GetGameStatus();
 void BunnySector_SetGameStatus(GameStatus status);
 
 void BunnySector_SetRenderingCallback(asIScriptFunction* callbackFunction);
 void BunnySector_SetAfterCollisionCallback(asIScriptFunction* callbackFunction);
+
+void BunnySector_HandleDefaultCollisions();
 
 
 MaterialId BunnySector_GetMaterialId(zstr* doomTextureFilename);
@@ -51,7 +49,7 @@ bool buns_Intersect(float a1x, float a1y,
 // DUKE
 
 // DOOM
-DoomMap* BunnySector_GetDoomMap(MapId mapId);
+DoomMap* BunnySector_GetDoomMap();
 
 // Actor functions
 Actor* BunnySector_GetPlayerActor(int playerIndex);
@@ -102,25 +100,10 @@ void BunnySector_SetOpenGLUnitsToMeter(float horizontalScale, float verticalScal
 
 /**
  * @brief Loads a map from file and returns map id
- * @param mapfilename Name of the map file
- * @param dukesPerUnit All dimensions are divided by this to convert to meters. 1024 is a good default.
- * @returns Map id. Negative number indicates failed load and is an error code?
+ * @param mapNumber Number of the map in game
+ * @returns True if load succeeded
  */
-MapId BunnySector_LoadMap(const zstr& mapfilename);
-/**
- * @brief Loads a map from file and returns map id
- * @param mapfilename Name of the map file
- * @param dukesPerUnit All dimensions are divided by this to convert to meters. 1024 is a good default.
- * @returns Map id. Negative number indicates failed load and is an error code?
- */
-MapId BunnySector_LoadMap(const char* mapfilename);
-
-/**
- * @brief Loads item properties from an xml file
- * @param propertiesfile Filename of the properties
- * @returns True if the file was loaded correctly
- */
-bool BunnySector_LoadItemProperties(const zstr& propertiesfile);
+bool BunnySector_LoadMap(int mapNumber);
 
 void BunnySector_DrawCameraInfo(float x, float y);
 

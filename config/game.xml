@@ -5,20 +5,18 @@ This file configures game wide settings and map order and parameters
 	@name [default: "Bunny Sector"] Name of the game. Shown in main menu and window title
 
 	Game must have at least one map
-	@folder This is the folder where maps are loaded from
 	@map This configures a map
 		@file Filename of the wad that contains the map
+		@number Number of the map, minimum is 1
 		@name [optional] Name of the map
-		@episode [default: 1] Episode number of this map
-		@number [default: 1] Number of the map in the episode
 		@gravity [default: 8024] How fast things accelerate downwards if they are in air
 -->
-
-<game>
-	<name>Bunny Game</name>
-	<folder>assets</folder>
-	<map>
-		<file>slade_test.wad</file>
-	</map>
-
-</game>
+<root>
+	<game>
+		<name>Bunny Game</name>
+		<map>
+			<file>assets/slade_test.wad</file>
+			<number>1</number>
+		</map>
+	</game>
+</root>

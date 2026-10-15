@@ -116,5 +116,8 @@ public:
 	//
 	BunnyMapType m_type;
     zstr mapfile;
+	zstr mapname;
+	int number;
+	int gravity;
 };
 
