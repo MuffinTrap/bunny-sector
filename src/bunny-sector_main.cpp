@@ -1,4 +1,8 @@
+#if defined(_WIN32)
+#	define _CRT_SECURE_NO_WARNINGS
+#endif
 #include <mgdl.h>
+
 #include <mgdl/mgdl-script-api.h>
 
 #include "bunny-sector-types.h"
@@ -21,7 +25,7 @@
 #include "doom/doom_render.h"
 
 #if defined(USE_ANGEL_AS_CPP)
-#	include <angel.hpp
+#	include "../scripts/angel.hpp"
 #endif
 
 static BunnySector::MaterialManager* materialManager;

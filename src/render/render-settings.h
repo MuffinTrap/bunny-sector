@@ -45,7 +45,8 @@ struct RenderSettingsOpenGL
     // TODO move to camera info
     // Camera information
     float FOVyDegrees;
-    float near, far;
+    float farz;
+    float nearz;
     float aspectRatio;
 
     // This ratio controls how much fov increases

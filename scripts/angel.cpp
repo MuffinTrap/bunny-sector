@@ -1,3 +1,6 @@
+
+#if defined(USE_ANGEL_AS_SCRIPT)
+
 #include "mgdl.angel"
 #include "raymath.angel"
 #include "render_utils.cpp"
@@ -13,17 +16,6 @@ float angel_fov = 90.0f;
 // NOTE Uncomment for KDevelop intellisense to work
 //#include "../src/bunny-sector_main.h"
 //#include <mgdl.h>
-
-#if USE_ANGEL_AS_CPP
-#	include <mgdl.h>
-#	include <mgdl/raymath/raymath.h>
-#	include <mgdl/mgdl-script-api.h>
-#	include "angel.hpp"
-#	include <mgdl/mgdl-angelscript.h>
-#	ifdef __cplusplus
-		extern "C" {
-#	endif
-#endif
 
 void angelscript_init()
 {
@@ -191,8 +183,13 @@ void angelscript_frame(float deltatime)
 	// Check game state
 }
 
-#if USE_ANGEL_AS_CPP
-#	ifdef __cplusplus
-		}
-#	endif
+#endif
+# if defined(USE_ANGEL_AS_CPP)
+#include <mgdl.h>
+#include "angel.hpp"
+void angelscript_init() { int i = 0; Log_Info("Angel init\n"); }
+void angelscript_frame(float dt) {}
+void angelscript_quit() {}
+void angelscript_render() {}
+void angelscript_after_collision() {}
 #endif

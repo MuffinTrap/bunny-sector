@@ -233,6 +233,7 @@ void Start2D()
 {
 	int screenWidth = mgdl_GetScreenWidth();
 	int screenHeight = mgdl_GetScreenHeight();
+	mgdl_InitOrthoProjection(1.0f);
 
 glPushMatrix();
 

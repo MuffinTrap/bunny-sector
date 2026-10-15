@@ -413,9 +413,9 @@ void DrawSubSector(DoomMap& map, Actor& player, DoomSubSector& sub, int sectorIn
 
 	// TODO Optimize by remembering the previous point
 
-	uint firstSeg = sub.firstSegment;
-	uint lastSeg = sub.firstSegment + sub.segmentAmount;
-	for (uint i = firstSeg; i < lastSeg; i++)
+	u32 firstSeg = sub.firstSegment;
+	u32 lastSeg = sub.firstSegment + sub.segmentAmount;
+	for (u32 i = firstSeg; i < lastSeg; i++)
 	{
 		DoomSegment& seg = map.segments[i];
 
@@ -426,7 +426,7 @@ void DrawSubSector(DoomMap& map, Actor& player, DoomSubSector& sub, int sectorIn
 			continue;
 		}
 
-		uint next = i + 1;
+		u32 next = i + 1;
 		if (next >= lastSeg) { next = firstSeg;}
 
 		DoomSegment& partner = map.segments[next];

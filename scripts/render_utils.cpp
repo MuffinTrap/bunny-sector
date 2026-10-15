@@ -1,4 +1,5 @@
 
+#if USE_ANGEL_AS_SCRIPT
 bool DEBUG_DRAW = true;
 bool DEBUG_LOG = false;
 bool RENDER_2D_WALLS = false;
@@ -7,7 +8,7 @@ int SCREEN_WIDTH = 640;
 int SCREEN_HEIGHT = 480;
 // Stuff used by both Doom and Duke render
 
-Vector2 FORWARD_2D = Vector2(1, 0);
+Vector2 FORWARD_2D = Vector2New(1, 0);
 Vector2 RIGHT_2D = Vector2Rotate(FORWARD_2D, DEG2RAD * 90);
 
 
@@ -996,3 +997,4 @@ void DrawWall2DFill(float ax, float ayt, float ayb, float az,
 	glEnd();
 }
 
+#endif // ONLY USE AS SCRIPT

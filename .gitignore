@@ -45,6 +45,9 @@
 # Object files from images and sound
 build/
 
+# Exports
+export/
+
 # Mac folder files?
 .DS_Store
 

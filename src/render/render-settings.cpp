@@ -55,8 +55,8 @@ RenderSettingsOpenGL GetDefaultRenderSettingsOpenGL()
     renderGL.spriteDefaultWidth = 1024;
     renderGL.spriteDefaultHeight = 8024;
 
-    renderGL.near = 1.0f/unitsPerMetre;
-    renderGL.far = 100.0f * unitsPerMetre;
+    renderGL.farz = 1.0f/unitsPerMetre;
+    renderGL.nearz = 100.0f * unitsPerMetre;
     renderGL.FOVyDegrees = 90.0f;
     renderGL.aspectRatio = mgdl_GetAspectRatio();
     return renderGL;
@@ -66,6 +66,6 @@ void RenderSettingsOpenGL_SetUnitToMeter(RenderSettingsOpenGL* setting, float un
 {
     setting->scaleXY.x = 1.0f/unitsToMeterHorizontal;
     setting->scaleXY.y = 1.0f/unitsToMeterVertical;
-    setting->near = 1.0f/unitsToMeterHorizontal;
-    setting->far = 100 * unitsToMeterHorizontal;
+    setting->farz = 1.0f/unitsToMeterHorizontal;
+    setting->nearz = 100 * unitsToMeterHorizontal;
 }

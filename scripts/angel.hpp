@@ -8,6 +8,8 @@
 	void angelscript_init();
 	void angelscript_frame(float deltatime);
 	void angelscript_quit();
+	void angelscript_after_collision();
+	void angelscript_render();
 
 #	ifdef __cplusplus
 	}

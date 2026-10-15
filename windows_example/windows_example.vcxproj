@@ -24,6 +24,7 @@
     <ProjectGuid>{6f5dff6b-0602-4f38-89b4-7174b433f2a9}</ProjectGuid>
     <RootNamespace>windowsexample</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>bunny_sector</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -49,7 +50,7 @@
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <WholeProgramOptimization>false</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
@@ -115,26 +116,115 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
-      <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;MGDL_PLATFORM_WINDOWS;MGDL_PLATFORM="Windows Native";MGDL_WINDOWS_NATIVE;MGDL_USE_CCVECTOR;UFBX_REAL_IS_FLOAT;_XKEYCHECK_H;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <IntrinsicFunctions>false</IntrinsicFunctions>
+      <SDLCheck>false</SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;MGDL_PLATFORM_WINDOWS;MGDL_PLATFORM="Windows Native";MGDL_WINDOWS_NATIVE;MGDL_USE_CCVECTOR;UFBX_REAL_IS_FLOAT;_XKEYCHECK_H;USE_ANGEL_AS_CPP;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Dev\Wii\mtek-gdl\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <AdditionalIncludeDirectories>C:\Dev\Wii\Libraries\sdk\angelscript;C:\Dev\Wii\Libraries\sdk;C:\Dev\Wii\Libraries\sdk\angelscript\include;C:\Dev\Wii\mtek-gdl\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Dev\Wii\mtek-gdl\windows_mgdl\x64\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Dev\Wii\Libraries\sdk\angelscript\lib;C:\Dev\Wii\mtek-gdl\windows_mgdl\x64\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>windows_mgdl.lib;opengl32.lib;glu32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\example.cpp" />
-    <ClCompile Include="..\main.cpp" />
+    <ClCompile Include="..\scripts\angel.cpp" />
+    <ClCompile Include="..\src\bunny-sector-config.cpp" />
+    <ClCompile Include="..\src\bunny-sector-game.cpp" />
+    <ClCompile Include="..\src\bunny-sector-items.cpp" />
+    <ClCompile Include="..\src\bunny-sector-map.cpp" />
+    <ClCompile Include="..\src\bunny-sector-materials.cpp" />
+    <ClCompile Include="..\src\bunny-sector-math.cpp" />
+    <ClCompile Include="..\src\bunny-sector-player.cpp" />
+    <ClCompile Include="..\src\bunny-sector-types.cpp" />
+    <ClCompile Include="..\src\bunny-sector_main.cpp" />
+    <ClCompile Include="..\src\doom\block_segment.cpp" />
+    <ClCompile Include="..\src\doom\doom-map-reader.cpp" />
+    <ClCompile Include="..\src\doom\doom-map.cpp" />
+    <ClCompile Include="..\src\doom\doom_render.cpp" />
+    <ClCompile Include="..\src\doom\doom_render_util.cpp" />
+    <ClCompile Include="..\src\doom\doom_types.cpp" />
+    <ClCompile Include="..\src\example.cpp" />
+    <ClCompile Include="..\src\gameplay\actor.cpp" />
+    <ClCompile Include="..\src\gameplay\actorpool.cpp" />
+    <ClCompile Include="..\src\gameplay\player.cpp" />
+    <ClCompile Include="..\src\main.cpp" />
+    <ClCompile Include="..\src\map\binaryreader.cpp" />
+    <ClCompile Include="..\src\map\obj-export.cpp" />
+    <ClCompile Include="..\src\map\polytesselator.cpp" />
+    <ClCompile Include="..\src\map\tesselatorbuffer.cpp" />
+    <ClCompile Include="..\src\polypartition\polypartition.cpp" />
+    <ClCompile Include="..\src\render\opengl-render.cpp" />
+    <ClCompile Include="..\src\render\render-settings.cpp" />
+    <ClCompile Include="..\src\render\shell-grass.cpp" />
+    <ClCompile Include="..\src\scriptbunnysector.cpp" />
+    <ClCompile Include="..\src\tinyxml2\tinyxml2.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\example.h" />
+    <ClInclude Include="..\..\..\Libraries\sdk\angelscript\include\angelscript.h" />
+    <ClInclude Include="..\scripts\angel.hpp" />
+    <ClInclude Include="..\src\bunny-sector-config.h" />
+    <ClInclude Include="..\src\bunny-sector-game.h" />
+    <ClInclude Include="..\src\bunny-sector-items.h" />
+    <ClInclude Include="..\src\bunny-sector-map.h" />
+    <ClInclude Include="..\src\bunny-sector-materials.h" />
+    <ClInclude Include="..\src\bunny-sector-math.h" />
+    <ClInclude Include="..\src\bunny-sector-players.h" />
+    <ClInclude Include="..\src\bunny-sector-types.h" />
+    <ClInclude Include="..\src\bunny-sector_main.h" />
+    <ClInclude Include="..\src\doom\block_segment.h" />
+    <ClInclude Include="..\src\doom\doom-map-reader.h" />
+    <ClInclude Include="..\src\doom\doom-map.h" />
+    <ClInclude Include="..\src\doom\doom_render.h" />
+    <ClInclude Include="..\src\doom\doom_render_util.h" />
+    <ClInclude Include="..\src\doom\doom_types.h" />
+    <ClInclude Include="..\src\example.h" />
+    <ClInclude Include="..\src\gameplay\actor.h" />
+    <ClInclude Include="..\src\gameplay\actorcollision.h" />
+    <ClInclude Include="..\src\gameplay\actorpool.h" />
+    <ClInclude Include="..\src\gameplay\player.h" />
+    <ClInclude Include="..\src\map\binaryreader.h" />
+    <ClInclude Include="..\src\map\obj-export.h" />
+    <ClInclude Include="..\src\map\polytesselator.h" />
+    <ClInclude Include="..\src\map\tesselatorbuffer.h" />
+    <ClInclude Include="..\src\polypartition\polypartition.h" />
+    <ClInclude Include="..\src\render\opengl-render.h" />
+    <ClInclude Include="..\src\render\render-settings.h" />
+    <ClInclude Include="..\src\render\shell-grass.h" />
+    <ClInclude Include="..\src\scriptbunnysector.h" />
+    <ClInclude Include="..\src\tinyxml2\tinyxml2.h" />
+    <ClInclude Include="..\src\verstable\verstable.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Libraries\sdk\angelscript\projects\msvc2022\angelscript.vcxproj">
+      <Project>{39e6af97-6ba3-4a72-8c61-bcebf214ebfd}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\mtek-gdl\windows_mgdl\windows_mgdl.vcxproj">
+      <Project>{e18426e7-028a-48a3-a328-2e575efa02ea}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Xml Include="..\config\game.xml">
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
+    </Xml>
+    <Xml Include="..\config\items.xml">
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
+    </Xml>
+    <Xml Include="..\config\materials.xml">
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
+    </Xml>
+    <Xml Include="..\config\monsters.xml">
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
+    </Xml>
+    <Xml Include="..\config\players.xml">
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
+    </Xml>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

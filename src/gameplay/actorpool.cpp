@@ -36,7 +36,7 @@ void ActorPool::Clear()
 
 int ActorPool::GetCollisionAmountForActor(Actor* actor)
 {
-	for(int i = 0; actorCollisionEntryCount; i++)
+	for(int i = 0; i < actorCollisionEntryCount; i++)
 	{
 		ActorCollisionEntry e = actorCollisionEntries[i];
 		// TODO Should actors have a guid instead of pointer magic?
@@ -107,6 +107,7 @@ void ActorPool::DoActorToActorCollisions()
     if (playerCollisionCount > 0)
     {
         actorCollisionEntries[actorCollisionEntryCount].collisionAmount = playerCollisionCount;
+		actorCollisionEntries[actorCollisionEntryCount].handledByGame = false;
         actorCollisionEntryCount += 1;
 
         player0->lastMoveResultFlags = Flag_SetBit(player0->lastMoveResultFlags, MoveResultBit::Move_Collision);
