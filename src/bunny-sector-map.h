@@ -67,6 +67,13 @@ public:
 	float elevationEnd, float maxElevationChange, float height, Actor* actor,
 	Vector2* positionOut, s16* subSectorOut) = 0;
 
+	/**
+	 * @brief Return index of wall that was hit
+	 * @param startSubsector Can be -1. That means the start place is found
+	 */
+	virtual Rayhit CastRayInMap(Vector2 start, Vector2 direction, float elevation, float length, int startSubSector) = 0;
+	virtual void TryUseWall(Actor* user, int wallIndex) = 0;
+
 	virtual void PrintInfo() = 0;
 
 	virtual WallInfo GetWallInfo(int sectorIndex, int wallIndex);

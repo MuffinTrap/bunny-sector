@@ -233,10 +233,14 @@ MaterialId BunnySector::MaterialManager::LoadMaterialByName(zstr* name)
 			return existing;
 		}
 		mgdl_BufferPrintf("%s/%s", zstr_cstr(&assetFolderName), zstr_cstr(&material->mgdlMaterial->name));
-		TextureHandle textureH = AssetManager_LoadTexture(mgdl_GetPrintfBuffer(), true);
+		bool mipmapsOn = true;
+		TextureHandle textureH = AssetManager_LoadTexture(mgdl_GetPrintfBuffer(), mipmapsOn);
 		if (Handle_IsValid(textureH))
 		{
-			mgdl_SetTextureFilterMin(textureH, TextureFilterModes::MipmapLinear);
+			if (mipmapsOn)
+			{
+				mgdl_SetTextureFilterMin(textureH, TextureFilterModes::MipmapNearest);
+			}
 			material->mgdlMaterial->texture = AssetManager_GetTexture(textureH);
 			return OpenGLRender_RegisterMapMaterial(material);
 		}

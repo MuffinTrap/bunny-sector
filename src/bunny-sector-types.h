@@ -165,3 +165,13 @@ enum SpritePivot
     Sprite_PivotFoot    // center is position + height/2
 };
 typedef enum SpritePivot SpritePivot;
+
+struct Rayhit
+{
+	bool hit;
+	int wallIndex;
+	Vector2 floorPosition;
+	Vector2 wallNormal;
+	float elevation;
+	float distanceTravelled;
+};

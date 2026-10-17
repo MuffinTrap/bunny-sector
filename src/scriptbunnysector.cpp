@@ -95,7 +95,7 @@ void RegisterDoomMap(mgdl_AngelScript* angel)
 		as_engine->RegisterObjectMethod("DoomMap", "DoomSubSector@ GetChildSubSector(ChildId id)", asMETHOD(DoomMap,GetChildSubSector), asCALL_THISCALL);
 
 	// Functions
-	as_engine->RegisterGlobalFunction("DoomMap@ BunnySector_GetDoomMap()", asFUNCTION(BunnySector_GetDoomMap), asCALL_CDECL);
+	as_engine->RegisterGlobalFunction("DoomMap@ BunnySector_GetDoomMap()", asGLFunctionLink(BunnySector_GetDoomMap), asGLFunctionCall);
 }
 
 static float ANGEL_PI = M_PI;
@@ -107,7 +107,7 @@ void RegisterBunnySector(mgdl_AngelScript* angel)
 	// TODO move to mgdl
 	as_engine->RegisterGlobalProperty("const float M_PI", &ANGEL_PI);
 
-	as_engine->RegisterGlobalFunction("void BunnySector_StartMap(int mapNumber, int playerAmount)", asFUNCTION(BunnySector_StartMap), asCALL_CDECL);
+	as_engine->RegisterGlobalFunction("void BunnySector_StartMap(int mapNumber, int playerAmount)", asGLFunctionLink(BunnySector_StartMap), asGLFunctionCall);
 
 	as_engine->RegisterEnum("ActorActionBit");
 	as_engine->RegisterEnumValue("ActorActionBit", "action_use",(int)action_use);
@@ -129,19 +129,19 @@ void RegisterBunnySector(mgdl_AngelScript* angel)
     	as_engine->RegisterEnumValue("ActorType", "actor_decoration",(int)actor_decoration);
     	as_engine->RegisterEnumValue("ActorType", "actor_particle_emitter",(int)actor_particle_emitter);
 
-	as_engine->RegisterGlobalFunction("zstr ActorTypeToString(ActorType atype)", asFUNCTION(ActorTypeToString), asCALL_CDECL);
+	as_engine->RegisterGlobalFunction("zstr ActorTypeToString(ActorType atype)", asGLFunctionLink(ActorTypeToString), asGLFunctionCall);
 
 	// Register callback hooks that script can connect to
 
 	// Find custom anglescript function
 	as_engine->RegisterFuncdef("void Callback()");
-	as_engine->RegisterGlobalFunction("void BunnySector_SetAfterCollisionCallback(Callback @cb)", asFUNCTION(BunnySector_SetAfterCollisionCallback), asCALL_CDECL);
-	as_engine->RegisterGlobalFunction("void BunnySector_SetRenderingCallback(Callback @cb)", asFUNCTION(BunnySector_SetRenderingCallback), asCALL_CDECL);
+	as_engine->RegisterGlobalFunction("void BunnySector_SetAfterCollisionCallback(Callback @cb)", asGLFunctionLink(BunnySector_SetAfterCollisionCallback), asGLFunctionCall);
+	as_engine->RegisterGlobalFunction("void BunnySector_SetRenderingCallback(Callback @cb)", asGLFunctionLink(BunnySector_SetRenderingCallback), asGLFunctionCall);
 
 
 	// Register getting and setting the game state
-	as_engine->RegisterGlobalFunction("GameStatus BunnySector_GetGameStatus()", asFUNCTION(BunnySector_GetGameStatus), asCALL_CDECL);
-	as_engine->RegisterGlobalFunction("void BunnySector_SetGameStatus(GameStatus status)", asFUNCTION(BunnySector_SetGameStatus), asCALL_CDECL);
+	as_engine->RegisterGlobalFunction("GameStatus BunnySector_GetGameStatus()", asGLFunctionLink(BunnySector_GetGameStatus), asGLFunctionCall);
+	as_engine->RegisterGlobalFunction("void BunnySector_SetGameStatus(GameStatus status)", asGLFunctionLink(BunnySector_SetGameStatus), asGLFunctionCall);
 
 	// Register other types
 
@@ -152,30 +152,30 @@ void RegisterBunnySector(mgdl_AngelScript* angel)
 	// Register functions to access map data
 
 	// Register OpenGL Drawing functions
-	as_engine->RegisterGlobalFunction("void BunnySector_SetOpenGLUnitsToMeter(float horizontalScale, float verticalScale)", asFUNCTION(BunnySector_SetOpenGLUnitsToMeter), asCALL_CDECL);
-	as_engine->RegisterGlobalFunction("void OpenGLRender_SetTextureScale(float scale)", asFUNCTION(OpenGLRender_SetTextureScale), asCALL_CDECL);
+	as_engine->RegisterGlobalFunction("void BunnySector_SetOpenGLUnitsToMeter(float horizontalScale, float verticalScale)", asGLFunctionLink(BunnySector_SetOpenGLUnitsToMeter), asGLFunctionCall);
+	as_engine->RegisterGlobalFunction("void OpenGLRender_SetTextureScale(float scale)", asGLFunctionLink(OpenGLRender_SetTextureScale), asGLFunctionCall);
 
 
-	as_engine->RegisterGlobalFunction("void BunnySector_StartFloorCeilingDrawing()", asFUNCTION(BunnySector_StartFloorCeilingDrawing), asCALL_CDECL);
-	as_engine->RegisterGlobalFunction("void BunnySector_DrawSectorFloorOrCeiling(s16 sectorNumber, bool floor )", asFUNCTION(BunnySector_DrawSectorFloorOrCeiling), asCALL_CDECL);
+	as_engine->RegisterGlobalFunction("void BunnySector_StartFloorCeilingDrawing()", asGLFunctionLink(BunnySector_StartFloorCeilingDrawing), asGLFunctionCall);
+	as_engine->RegisterGlobalFunction("void BunnySector_DrawSectorFloorOrCeiling(s16 sectorNumber, bool floor )", asGLFunctionLink(BunnySector_DrawSectorFloorOrCeiling), asGLFunctionCall);
 
-	as_engine->RegisterGlobalFunction("void BunnySector_StartMapDrawing()", asFUNCTION(BunnySector_StartMapDrawing), asCALL_CDECL);
-	as_engine->RegisterGlobalFunction("void BunnySector_DrawMapActorsForPlayer(int playerIndex)", asFUNCTION(BunnySector_DrawMapActorsForPlayer), asCALL_CDECL);
+	as_engine->RegisterGlobalFunction("void BunnySector_StartMapDrawing()", asGLFunctionLink(BunnySector_StartMapDrawing), asGLFunctionCall);
+	as_engine->RegisterGlobalFunction("void BunnySector_DrawMapActorsForPlayer(int playerIndex)", asGLFunctionLink(BunnySector_DrawMapActorsForPlayer), asGLFunctionCall);
 
-	as_engine->RegisterGlobalFunction("void BunnySector_EndMapDrawing()", asFUNCTION(BunnySector_EndMapDrawing), asCALL_CDECL);
+	as_engine->RegisterGlobalFunction("void BunnySector_EndMapDrawing()", asGLFunctionLink(BunnySector_EndMapDrawing), asGLFunctionCall);
 
-	as_engine->RegisterGlobalFunction("void BunnySector_Setup3D(float aspectView, float aspectCamera)", asFUNCTION(BunnySector_Setup3D), asCALL_CDECL);
+	as_engine->RegisterGlobalFunction("void BunnySector_Setup3D(float aspectView, float aspectCamera)", asGLFunctionLink(BunnySector_Setup3D), asGLFunctionCall);
 
-	as_engine->RegisterGlobalFunction("void BunnySector_AlignCameraToPlayer(int playerIndex)", asFUNCTION(BunnySector_AlignCameraToPlayer), asCALL_CDECL);
-	as_engine->RegisterGlobalFunction("void BunnySector_DrawWallF(float startx, float starty, float endx, float endy, float normalx, float normalz, s32 floory, s32 ceilingy, s16 picnum, s8 shade)", asFUNCTION(BunnySector_DrawWallF), asCALL_CDECL);
+	as_engine->RegisterGlobalFunction("void BunnySector_AlignCameraToPlayer(int playerIndex)", asGLFunctionLink(BunnySector_AlignCameraToPlayer), asGLFunctionCall);
+	as_engine->RegisterGlobalFunction("void BunnySector_DrawWallF(float startx, float starty, float endx, float endy, float normalx, float normalz, s32 floory, s32 ceilingy, s16 picnum, s8 shade)", asGLFunctionLink(BunnySector_DrawWallF), asGLFunctionCall);
 
 	// NOTE These are handles = pointers, not references to value objects
 
 	// Register Camera functions
-	as_engine->RegisterGlobalFunction("void BunnySector_DrawCameraInfo(float x, float y)", asFUNCTION(BunnySector_DrawCameraInfo), asCALL_CDECL);
+	as_engine->RegisterGlobalFunction("void BunnySector_DrawCameraInfo(float x, float y)", asGLFunctionLink(BunnySector_DrawCameraInfo), asGLFunctionCall);
 
-	as_engine->RegisterGlobalFunction("float BunnySector_GetOpenGLCameraVerticalFOVDeg()", asFUNCTION(BunnySector_GetOpenGLCameraVerticalFOVDeg), asCALL_CDECL);
-	as_engine->RegisterGlobalFunction("void BunnySector_SetOpenGLCameraVerticalFOVDeg(float degrees)",asFUNCTION(BunnySector_SetOpenGLCameraVerticalFOVDeg), asCALL_CDECL);
+	as_engine->RegisterGlobalFunction("float BunnySector_GetOpenGLCameraVerticalFOVDeg()", asGLFunctionLink(BunnySector_GetOpenGLCameraVerticalFOVDeg), asGLFunctionCall);
+	as_engine->RegisterGlobalFunction("void BunnySector_SetOpenGLCameraVerticalFOVDeg(float degrees)",asGLFunctionLink(BunnySector_SetOpenGLCameraVerticalFOVDeg), asGLFunctionCall);
 
 	as_engine->RegisterObjectType("BunnyV2", 0, asOBJ_REF|asOBJ_NOCOUNT);
 	as_engine->RegisterObjectProperty("BunnyV2", "float x", asOFFSET(BunnyV2, x));
@@ -199,18 +199,18 @@ void RegisterBunnySector(mgdl_AngelScript* angel)
 	as_engine->RegisterObjectMethod("Actor", "bool IsDoing(ActorActionBit actionBit)", asMETHOD(Actor,IsDoing), asCALL_THISCALL);
 
 	// ACTOR FUNCTIONS
-	as_engine->RegisterGlobalFunction("Actor@ BunnySector_GetActorByIndex(int actorIndex)", asFUNCTION(BunnySector_GetActorByIndex), asCALL_CDECL);
-	as_engine->RegisterGlobalFunction("Actor@ BunnySector_GetActorById(int actorIndex)", asFUNCTION(BunnySector_GetActorById), asCALL_CDECL);
-	as_engine->RegisterGlobalFunction("Actor@ BunnySector_GetPlayerActor(int playerIndex)", asFUNCTION(BunnySector_GetPlayerActor), asCALL_CDECL);
-	as_engine->RegisterGlobalFunction("void BunnySector_SetPlayerSpeeds(int playerIndex, float walkSpeedMultiplier, float turnSPeedMultiplier)", asFUNCTION(BunnySector_SetPlayerSpeeds), asCALL_CDECL);
-	as_engine->RegisterGlobalFunction("void BunnySector_SetPlayerDriveInput(int actorId, float forward, float strafe, float vertical, float turnYaw, float turnPitch)", asFUNCTION(BunnySector_SetPlayerDriveInput), asCALL_CDECL);
-	as_engine->RegisterGlobalFunction("int BunnySector_GetActorCollisionAmount(Actor@ actor)", asFUNCTION(BunnySector_GetActorCollisionAmount), asCALL_CDECL);
-	as_engine->RegisterGlobalFunction("Actor@ BunnySector_GetActorCollisionAt(Actor@ actor, int index)", asFUNCTION(BunnySector_GetActorCollisionAt), asCALL_CDECL);
-	as_engine->RegisterGlobalFunction("void BunnySector_DestroyActor(Actor@ actor)", asFUNCTION(BunnySector_DestroyActor), asCALL_CDECL);
+	as_engine->RegisterGlobalFunction("Actor@ BunnySector_GetActorByIndex(int actorIndex)", asGLFunctionLink(BunnySector_GetActorByIndex), asGLFunctionCall);
+	as_engine->RegisterGlobalFunction("Actor@ BunnySector_GetActorById(int actorIndex)", asGLFunctionLink(BunnySector_GetActorById), asGLFunctionCall);
+	as_engine->RegisterGlobalFunction("Actor@ BunnySector_GetPlayerActor(int playerIndex)", asGLFunctionLink(BunnySector_GetPlayerActor), asGLFunctionCall);
+	as_engine->RegisterGlobalFunction("void BunnySector_SetPlayerSpeeds(int playerIndex, float walkSpeedMultiplier, float turnSPeedMultiplier)", asGLFunctionLink(BunnySector_SetPlayerSpeeds), asGLFunctionCall);
+	as_engine->RegisterGlobalFunction("void BunnySector_SetPlayerDriveInput(int actorId, float forward, float strafe, float vertical, float turnYaw, float turnPitch)", asGLFunctionLink(BunnySector_SetPlayerDriveInput), asGLFunctionCall);
+	as_engine->RegisterGlobalFunction("int BunnySector_GetActorCollisionAmount(Actor@ actor)", asGLFunctionLink(BunnySector_GetActorCollisionAmount), asGLFunctionCall);
+	as_engine->RegisterGlobalFunction("Actor@ BunnySector_GetActorCollisionAt(Actor@ actor, int index)", asGLFunctionLink(BunnySector_GetActorCollisionAt), asGLFunctionCall);
+	as_engine->RegisterGlobalFunction("void BunnySector_DestroyActor(Actor@ actor)", asGLFunctionLink(BunnySector_DestroyActor), asGLFunctionCall);
 
 	// Player functions
-	as_engine->RegisterGlobalFunction("bool BunnySector_GivePlayerItem(int playerIndex, int itemType, int amount)", asFUNCTION(BunnySector_GivePlayerItem), asCALL_CDECL);
-	as_engine->RegisterGlobalFunction("int BunnySector_GetPlayerItemCount(int playerIndex, int itemType)", asFUNCTION(BunnySector_GetPlayerItemCount), asCALL_CDECL);
-	as_engine->RegisterGlobalFunction("void BunnySector_StartPlayerAction(int playerIndex, ActorActionBit actionBit)", asFUNCTION(BunnySector_StartPlayerAction), asCALL_CDECL);
-	as_engine->RegisterGlobalFunction("void BunnySector_StopPlayerAction(int playerIndex, ActorActionBit actionBit)", asFUNCTION(BunnySector_StopPlayerAction), asCALL_CDECL);
+	as_engine->RegisterGlobalFunction("bool BunnySector_GivePlayerItem(int playerIndex, int itemType, int amount)", asGLFunctionLink(BunnySector_GivePlayerItem), asGLFunctionCall);
+	as_engine->RegisterGlobalFunction("int BunnySector_GetPlayerItemCount(int playerIndex, int itemType)", asGLFunctionLink(BunnySector_GetPlayerItemCount), asGLFunctionCall);
+	as_engine->RegisterGlobalFunction("void BunnySector_StartPlayerAction(int playerIndex, ActorActionBit actionBit)", asGLFunctionLink(BunnySector_StartPlayerAction), asGLFunctionCall);
+	as_engine->RegisterGlobalFunction("void BunnySector_StopPlayerAction(int playerIndex, ActorActionBit actionBit)", asGLFunctionLink(BunnySector_StopPlayerAction), asGLFunctionCall);
 }

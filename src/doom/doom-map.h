@@ -72,6 +72,9 @@ public:
 
 	u32 MoveActorInMapImpl(Vector2 start, Vector2 end, float size, s16 sectorNumber, float elevationEnd, float maxElevationChange, float height, Actor* actor, Vector2* positionOut, s16* subSectorOut) override;
 
+	Rayhit CastRayInMap(Vector2 start, Vector2 direction, float elevation, float length, int startSubsector) override;
+	void TryUseWall(Actor* user, int wallIndex) override;
+
 	void StartLinedefAction(DoomLinedef* line, Actor* actor, bool crossed);
 
 	bool IsPointInsideWall(Vector2 point, Vector2 wallStart, Vector2 wallEnd) override;

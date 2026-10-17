@@ -2,6 +2,7 @@
 #include "opengl-render.h"
 #include "render-settings.h"
 #include <mgdl.h>
+#include <mgdl/mgdl-gradient.h>
 #include <mgdl/mgdl-memory.h>
 #include "../gameplay/actor.h"
 #include "../bunny-sector-math.h"
@@ -15,6 +16,10 @@
 
 // Used when drawing grass materials
 static ShellGrass* m_grass = nullptr;
+
+// Used when drawing skybox
+static Mesh* skyboxIcosa;
+static Gradient skyGradient;
 
 // Used to set normals when drawing floors and ceilings
 static GLfloat floorNormal[3];
@@ -108,7 +113,7 @@ MapMaterial* OpenGLRender_GetMaterialForMaterialId(MaterialId picnum)
             return material;
         }
     }
-    return nullptr;
+    return materialPtrArray[RENDERER_DEFAULT_MATERIAL_ID];
 }
 
 void OpenGLRender_SetShellGrass(ShellGrass* grass)
@@ -373,6 +378,15 @@ void OpenGLRender_Init()
             materialPtrArray[i] = nullptr;
         }
     }
+    if (skyboxIcosa == nullptr)
+    {
+        skyboxIcosa = Mesh_CreateIcosahedron(FlagColors);
+        skyGradient = Gradient_CreateEmpty(GradientVertical, GradientLoopRepeat);
+        Gradient_PushColor(&skyGradient, Debug_Black, 0.0f);
+        Gradient_PushColor(&skyGradient, Debug_Blue, 0.5f);
+        Gradient_PushColor(&skyGradient, Debug_LightBlue, 1.0f);
+        Mesh_SetColorsFromGradient(skyboxIcosa, &skyGradient);
+    }
 }
 
 void OpenGLRender_Deinit()
@@ -513,6 +527,12 @@ void OpenGLRender_DrawFloorOrCeiling(BunnySector_Map* map, int sectorIndex, u8 s
         normal = Vector3New(ceilingNormal[0], ceilingNormal[1], ceilingNormal[2]);
         glColor3f(color, color, color);
     }
+    if (material == nullptr)
+    {
+        // TODO Use the default material
+        glPopMatrix();
+        return;
+    }
 
     if (floor)
     {
@@ -651,6 +671,17 @@ void OpenGLRender_AnimateSprites()
         animationFrame++;
         animationTimer = 0.0f;
     }
+}
+
+void OpenGLRender_DrawSkybox(BunnySector_Map* map)
+{
+    float skyscale = 10.0f;
+    // TODO Read skybox texture or other properties from map
+        glPushMatrix();
+        glScalef(skyscale, skyscale, skyscale);
+        Mesh_DrawElements(skyboxIcosa, skyboxIcosa->indexCount);
+        glPopMatrix();
+        mgdl_glColor32(Debug_White);
 }
 
 void OpenGLRender_DrawDot(Vector2 point, float size, color32 color)

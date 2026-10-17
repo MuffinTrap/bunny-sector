@@ -8,7 +8,7 @@ struct Wall;
 struct Texture;
 class BunnySector_Map;
 
-#define RENDERER_PICNUM_DEFAULT 0
+#define RENDERER_DEFAULT_MATERIAL_ID 0
 
 #ifdef __cplusplus
 extern "C" {
@@ -48,6 +48,7 @@ void OpenGLRender_StartDrawingPolygons();
 	void OpenGLRender_DrawActors(BunnySector_Map* map, Vector2 cameraPosition);
 	void OpenGLRender_DrawSprite(Vector3 position, float width, float height, float spriteAngle, Vector2 playerPosition, SpriteAlignment alignment, SpritePivot pivot, s16 picnum, s8 brightnessOffset)
 ;
+	void OpenGLRender_DrawSkybox(BunnySector_Map* map);
 
 	void OpenGLRender_DrawQuad(Vector2 start, Vector2 end, Vector2 normalXZ, float floorY, float ceilingY, s16 picnum, s8 brightnessOffset, float uvScale);
 /**

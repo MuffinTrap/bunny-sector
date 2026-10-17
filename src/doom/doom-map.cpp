@@ -94,8 +94,6 @@ u8 DoomMap::GetSectorShade(int sectorIndex, bool floor)
 	return sectors[subsectors[sectorIndex].sector].lightlevel;
 }
 
-
-
 void DoomMap::AllocateNodes( int nodeAmount)
 {
 	this->nodeAmount = nodeAmount;
@@ -322,7 +320,27 @@ u32 DoomMap::MoveActorInMapImpl(Vector2 start, Vector2 end, float size, s16 sect
 			continue;
 		}
 
-        bool treatAsWall = (wall->neighbourSector < 0);
+		 // This is only true on Perimeter wall of map
+		 bool treatAsWall = (wall->neighbourSector < 0);
+
+		 if (treatAsWall == false)
+		 {
+			 DoomSidedef* side = nullptr;
+			 // NOTE If middle texture is set this is a wall
+			 DoomLinedef* linedef = &linedefs[wall->linedef];
+			 if (wall->lineSide == DOOM_SIDE_FRONT)
+			 {
+				 side = &sidedefs[linedef->sidefront];
+			 }
+			 if (wall->lineSide == DOOM_SIDE_BACK)
+			 {
+				 side = &sidedefs[linedef->sideback];
+			 }
+			 if (side != nullptr && side->texturemiddle >= 0)
+			 {
+				 treatAsWall = true;
+			 }
+		 }
 
         // Check if could change elevation
         if (treatAsWall == false)
@@ -463,6 +481,156 @@ u32 DoomMap::MoveActorInMapImpl(Vector2 start, Vector2 end, float size, s16 sect
     *positionOut = end;
     return moveResultBitfield;
 }
+
+// Basically same stuff as above
+Rayhit DoomMap::CastRayInMap(Vector2 start, Vector2 direction, float elevation, float length, int startSubsector)
+{
+	Vector2 end = Vector2Add(start, Vector2Scale(direction, length));
+	Rayhit hit;
+	hit.hit = false;
+	// TODO notice when ray cannot reach any walls
+
+	int subsector = startSubsector;
+	if (subsector < 0)
+	{
+		subsector = FindSubSectorV2(-1, start);
+	}
+	DoomSubSector* sector = &subsectors[subsector];
+	 for (s16 wi = 0; wi < sector->segmentAmount; wi++)
+	 {
+		 // Get wall start and end points
+		 // TODO make a function that gets the Start and Endpoint Vectors
+		 DoomSegment* wall = &segments[sector->firstSegment + wi];
+
+		 // NOTE Doom walls that don't have linedef are created just to
+		 // build subsectors. They can be ignored
+		 if (wall->linedef == DOOM_INVALID_LINEDEF)
+		 {
+			 continue;
+		 }
+
+		 // This is only true on Perimeter wall of map
+		 bool treatAsWall = (wall->neighbourSector < 0);
+
+		 if (treatAsWall == false)
+		 {
+			 DoomSidedef* side = nullptr;
+			 // NOTE If middle texture is set this is a wall
+			 DoomLinedef* linedef = &linedefs[wall->linedef];
+			 if (wall->lineSide == DOOM_SIDE_FRONT)
+			 {
+				 side = &sidedefs[linedef->sidefront];
+			 }
+			 if (wall->lineSide == DOOM_SIDE_BACK)
+			 {
+				 side = &sidedefs[linedef->sideback];
+			 }
+			 if (side != nullptr && side->texturemiddle >= 0)
+			 {
+				 treatAsWall = true;
+			 }
+		 }
+
+		 // Check if hits floor or ceiling
+		 if (treatAsWall == false)
+		 {
+			 s16 newSector = wall->neighbourSector;
+			 float neighborFloor = GetSectorFloory(newSector);
+			 float neighborCeiling = GetSectorCeilingy(newSector);
+			 if (neighborFloor >= neighborCeiling - 0.1f)
+			 {
+				 // Closed door
+				 treatAsWall = true;
+			 }
+			 else if (neighborFloor > elevation)
+			 {
+				 treatAsWall = true;
+			 }
+			 else
+			 {
+				 float neighborCeiling = GetSectorCeilingy(newSector);
+				 if (neighborCeiling < elevation)
+				 {
+					 treatAsWall = true;
+				 }
+			 }
+		 }
+		 // NOTE FLIP_THE_Y affects this code
+		 DoomVertex* w1 = &vertices[wall->v1];
+		 DoomSegment* wall2 = &segments[sector->firstSegment + ((wi + 1) % sector->segmentAmount)];
+		 DoomVertex* w2 = &vertices[wall2->v1];
+		 Vector2 wstart = Vector2New(w1->x, w1->y);
+		 Vector2 wend = Vector2New(w2->x, w2->y);
+		 if (treatAsWall)
+		 {
+			 // Check if ray ended on the other side
+			 bool endOtherSide = IsPointInsideWall(end, wstart, wend) == false;
+			 if (endOtherSide)
+			 {
+				 // Find the exact intersection point and slide player along the wall
+				 bool intersectFound =  FindIntersectionWithWall(start, end, wstart, wend, &hit.floorPosition);
+				 if (intersectFound)
+				 {
+					 hit.distanceTravelled = Vector2Length(Vector2Subtract(hit.floorPosition, start));
+					 if (hit.distanceTravelled <= length)
+					 {
+						hit.hit = true;
+						Vector2 normal = GetWallNormal(wstart, wend);
+						hit.wallNormal = normal;
+						hit.elevation = elevation;
+						hit.wallIndex = sector->firstSegment + wi;
+						return hit;
+					}
+
+				 }
+			 }
+		 } // if is wall
+		 else if (wall->neighbourSector >= 0)
+		 {
+			 // Is ray box overlapping this wall?
+			 bool isClose = IntersectBoxV(start, end, wstart, wend);
+			 bool crosses = false;
+
+			 if (isClose)
+			 {
+				 // Is player on the other side of it
+				 bool startThisSide = IsPointInsideWall(start, wstart, wend);
+				 bool endOtherSide = IsPointInsideWall(end, wstart, wend) == false;
+				 crosses = startThisSide && endOtherSide;
+			 }
+
+			 if (crosses)
+			 {
+				 // If is portal and end point is on the other side
+				 // continue ray in that sector
+				 Vector2 interPoint;
+				 bool intersectFound =  FindIntersectionWithWall(start, end, wstart, wend, &interPoint);
+				 if (intersectFound)
+				 {
+					Vector2 normal = GetWallNormal(wstart, wend);
+					start = Vector2Subtract(interPoint, normal);
+					return CastRayInMap(start, direction, elevation, length, -1);
+				 }
+			 }
+		 } // if is portal
+	 } // Wall loop
+	return hit;
+}
+
+void DoomMap::TryUseWall(Actor* user, int wallIndex)
+{
+	if (wallIndex >= 0 && wallIndex < segmentAmount)
+	{
+		DoomSegment* seg = &segments[wallIndex];
+		if (seg->linedef != DOOM_INVALID_LINEDEF)
+		{
+			DoomLinedef* linedef_front = &linedefs[seg->linedef];
+			StartLinedefAction(linedef_front, user, false);
+		}
+	}
+}
+
+
 
 void DoomMap::StartLinedefAction(DoomLinedef* linedef, Actor* actor, bool crossed)
 {

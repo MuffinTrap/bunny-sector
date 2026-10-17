@@ -1,6 +1,4 @@
 
-#if defined(USE_ANGEL_AS_SCRIPT)
-
 #include "mgdl.angel"
 #include "raymath.angel"
 #include "render_utils.cpp"
@@ -153,11 +151,11 @@ void angelscript_render()
 			RenderDoomMapLines(BunnySector_GetDoomMap());
 		}
 
-		RenderMiniMapDoom(BunnySector_GetDoomMap());
-		angelscript_render_player_info();
+		//RenderMiniMapDoom(BunnySector_GetDoomMap());
+		//angelscript_render_player_info();
 	}
 
-	DrawDebugs();
+	//DrawDebugs();
 
 	RENDER_2D_WALLS = false;
 	DEBUG_DRAW = false;
@@ -182,14 +180,3 @@ void angelscript_frame(float deltatime)
 
 	// Check game state
 }
-
-#endif
-# if defined(USE_ANGEL_AS_CPP)
-#include <mgdl.h>
-#include "angel.hpp"
-void angelscript_init() { int i = 0; Log_Info("Angel init\n"); }
-void angelscript_frame(float dt) {}
-void angelscript_quit() {}
-void angelscript_render() {}
-void angelscript_after_collision() {}
-#endif

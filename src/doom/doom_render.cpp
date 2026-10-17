@@ -685,6 +685,8 @@ void RenderDoomMap(DoomMap* map)
 
 	//printf("---- START FRAME -----\n");
 
+	// Draw Skybox gradient
+
 Actor* player = BunnySector_GetPlayerActor(0);
 	DoomNode* root = map->GetRootNode();
 	DrawNode(*map, *player, *root);

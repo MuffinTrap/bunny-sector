@@ -26,7 +26,7 @@ include $(DEVKITPPC)/wii_rules
 #---------------------------------------------------------------------------------
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
-SOURCES		:=	./ rocket scripts
+SOURCES		:=	src src/doom src/gameplay src/render src/map src/polypartition src/tinyxml2 src/verstable scripts
 DATA		:=	data
 TEXTURES	:=	
 INCLUDES	:=	include
@@ -99,28 +99,34 @@ export OFILES	:=	$(addsuffix .o,$(BINFILES)) \
 #---------------------------------------------------------------------------------
 # build a list of include paths
 #---------------------------------------------------------------------------------
+ANGELSCRIPT_SKD :=	/var/home/muffintrap/SSD/Dev/Wii/Libraries/AngelScript/sdk
 
 LIBOGC_INC	:=	$(DEVKITPRO)/libogc/include
 PORTLIBS_PPC_INC	:=	$(PORTLIBS_PATH)/ppc/include
 PORTLIBS_WII_INC	:=	$(PORTLIBS_PATH)/wii/include
 MGDL_INC		:=	$(DEVKITPRO)/../libmgdl/include
+ANGEL_INC	:=	$(ANGELSCRIPT_SDK)/angelscript/include
 export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
 					$(foreach dir,$(LIBDIRS),-I$(dir)) \
 					-I$(CURDIR)/$(BUILD) \
 					-I$(LIBOGC_INC) \
 					-I$(PORTLIBS_PPC_INC) \
 					-I$(PORTLIBS_WII_INC) \
-					-I$(MGDL_INC)
+					-I$(MGDL_INC) \
+					-I$(ANGEL_INC)
+
 #---------------------------------------------------------------------------------
 # build a list of library paths
 #---------------------------------------------------------------------------------
 LIBOGC_LIB	:=	$(DEVKITPRO)/libogc/lib/wii
 PORTLIBS_PPC_LIB	:=	$(DEVKITPRO)/portlibs/ppc/lib
 PORTLIBS_WII_LIB	:=	$(DEVKITPRO)/portlibs/wii/lib
+ANGEL_LIB	:=	$(ANGELSCRIPT_SKD)/angelscript/lib-wii
 export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib) \
 					-L$(LIBOGC_LIB) \
 					-L$(PORTLIBS_PPC_LIB) \
-					-L$(PORTLIBS_WII_LIB)
+					-L$(PORTLIBS_WII_LIB) \
+					-L$(ANGEL_LIB)
 
 export OUTPUT	:=	$(CURDIR)/$(TARGET)
 
@@ -131,6 +137,8 @@ all: $(BUILD)
 
 #---------------------------------------------------------------------------------
 $(BUILD):
+	@echo Angel: $(ANGELSCRIPT_SKD)
+	@echo $(INCLUDE)
 	@[ -d $@ ] || mkdir -p $@
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile_wii.mk
 	@mv $(OUTPUT).dol boot.dol

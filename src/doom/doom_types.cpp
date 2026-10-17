@@ -48,6 +48,8 @@ void DoomSector_Init(DoomSector* def)
 	def->textureceiling = -1;
 	def->texturefloor = -1;
 	def->usecase = sector_none;
+	def->textureceiling = -1;
+	def->texturefloor = -1;
 }
 
 void DoomSegment_Init(DoomSegment* def)

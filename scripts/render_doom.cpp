@@ -1,4 +1,3 @@
-#if defined(USE_ANGEL_AS_SCRIPT)
 bool RENDER_TOPDOWN = false;
 const int DOOM_SIDE_FRONT = 0;
 const int DOOM_SIDE_BACK = 0;
@@ -1109,4 +1108,3 @@ void RenderDoomMap(DoomMap@ map)
 	}
 }
 
-#endif

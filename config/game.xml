@@ -13,9 +13,9 @@ This file configures game wide settings and map order and parameters
 -->
 <root>
 	<game>
-		<name>Bunny Game</name>
+		<name>Dead Generator</name>
 		<map>
-			<file>assets/slade_test.wad</file>
+			<file>assets/ldmap.wad</file>
 			<number>1</number>
 		</map>
 	</game>

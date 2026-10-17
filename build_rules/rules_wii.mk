@@ -4,7 +4,7 @@ MGDL_DIR	=$(DEVKITPRO)/../libmgdl
 # Create a list of libraries that need to be linked
 # Link statically to mgdl and angelscript
 LDFLAGS += -L$(MGDL_DIR)/lib
-LDLIBS += -lmgdl -lopengx -lglut -lGLU -lvalloc -lwiiuse -lpng -lz -lfat -lbte -lasnd -logc -lm
+LDLIBS += -lmgdl -langelscript -lopengx -lglut -lGLU -lvalloc -lwiiuse -lpng -lz -lfat -lbte -lasnd -logc -lm
 PLATFORM_NAME=wii
 CXXFLAGS += -DMGDL_PLATFORM=\"Wii\"
 CXXFLAGS += -DMGDL_PLATFORM_WII
@@ -15,7 +15,7 @@ TARGET_POSTFIX +=
 
 # Add AngelScript library directory
 ifdef ANGEL
-LDFLAGS += -L$(ANGELSCRIPT_SDK)/angelscript/lib/$(PLATFORM_NAME)
+LDFLAGS += -L$(ANGELSCRIPT_SDK)/angelscript/lib-$(PLATFORM_NAME)
 endif
 
 # Name the compiler : named by DEVKITPRO

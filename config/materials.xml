@@ -9,27 +9,56 @@ This file configures the materials that are used to render everything.
 <materials>
 	<folder>assets</folder>
 	<material>
-		<name>CEIL5_1</name>
-		<texture>white_wall.png</texture>
+		<name>CNR_BL</name>
+		<texture>Concrete_01_Blue_1.png</texture>
 	</material>
 	<material>
-		<name>BROWN144</name>
-		<texture>dark_stone_floor.png</texture>
+		<name>CNR_FNC</name>
+		<texture>Concrete_01_Grey_2.png</texture>
 	</material>
 	<material>
-		<name>BIGDOOR2</name>
-		<texture>light_stone_floor.png</texture>
+		<name>CRPT_RED</name>
+		<texture>Pattern_01_Retro_Carpet_Red_1.png</texture>
 	</material>
 	<material>
-		<name>STEP2</name>
-		<texture>dark_stone_floor.png</texture>
+		<name>MTL_BLU1</name>
+	<texture>Metal_01_Blue_1.png</texture>
 	</material>
 	<material>
-		<name>FLAT18</name>
-		<texture>beige_ceiling.png</texture>
+		<name>MTL_BUT</name>
+		<texture>Metal_01_Grey_Buttons_1.png</texture>
 	</material>
 	<material>
-		<name>MFLR8_1</name>
-		<texture>beige_ceiling.png</texture>
+		<name>MTL_GR1</name>
+		<texture>Metal_04_Green_01.png</texture>
 	</material>
+	<material>
+		<name>MTL_RST1</name>
+		<texture>Metal_01_Grey_Rust_1.png</texture>
+	</material>
+	<material>
+		<name>MTL_PI2</name>
+		<texture>Metal_07_Panel_Pipes_2.png</texture>
+	</material>
+	<material>
+		<name>MTL_STRP</name>
+		<texture>Metal_07_Blue_6.png</texture>
+	</material>
+	<material>
+		<name>WL_RED</name>
+		<texture>Wall_01_Stucco_Red_1.png</texture>
+	</material>
+	<material>
+		<name>MTL_WLIN</name>
+		<texture>Metal_04_Green_10.png</texture>
+	</material>
+	<material>
+		<name>MTL_LIN4</name>
+		<texture>Metal_01_Grey_Lines_4.png</texture>
+	</material>
+	<material>
+		<name>FLAT14</name>
+		<texture>transparent.png</texture>
+	</material>
+
 </materials>

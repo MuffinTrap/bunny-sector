@@ -136,21 +136,14 @@ void BunnySector_SetRenderingCallback(asIScriptFunction* callbackFunction)
 
 void DoRenderCallback()
 {
-	// TODO hide here if calling angel or cpp
-#if defined(USE_ANGEL_AS_SCRIPT)
-	mgdl_RunAngelScriptFunction(angelContenxt, RenderingCallback);
-#else
-	angelscript_render();
-#endif
+	mgdl_PrepareAngelScriptFunctionCall(angelContenxt, RenderingCallback);
+	mgdl_CommitAngelScriptFunctionCall(angelContenxt, RenderingCallback);
 }
 
 void DoCollisionCallback()
 {
-#if defined(USE_ANGEL_AS_SCRIPT)
-			mgdl_RunAngelScriptFunction(angelContenxt, AfterCollisionCallback);
-#else
-			angelscript_after_collision();
-#endif
+	mgdl_PrepareAngelScriptFunctionCall(angelContenxt, AfterCollisionCallback);
+	mgdl_CommitAngelScriptFunctionCall(angelContenxt, AfterCollisionCallback);
 }
 
 void BunnySector_HandleDefaultCollisions()
@@ -288,6 +281,16 @@ void BunnySector_UpdateMapPtr(BunnySector_Map* map, float deltaTime)
 		for (int pi = 0; pi < activePlayerAmount; pi++)
 		{
 			players[pi].ReadInput(pi);
+			// Check if player is trying to use something
+			Actor* playerActor = map->GetActorByTypeAndIndex(actor_player, pi); // player0.lastActorSubSector); // Start search from where the actor was last time
+			if (playerActor->IsDoing(action_use))
+			{
+				Rayhit usehit = map->CastRayInMap(playerActor->position.vectorPosition, playerActor->moveDirection.vectorDirection, playerActor->height, playerActor->size, playerActor->subSectorNumber);
+				if (usehit.hit)
+				{
+					map->TryUseWall(playerActor, usehit.wallIndex);
+				}
+			}
 		}
 
 		deltaTime += leftOverTime;
@@ -301,6 +304,7 @@ void BunnySector_UpdateMapPtr(BunnySector_Map* map, float deltaTime)
 				players[pi].ApplyVerticalMove(playerActor, FIXED_STEP);
 				playerActor->actionFlags = players[pi].actionFlags;
 				players[pi].prevActorSubSectorNumber = playerActor->subSectorNumber;
+
 			}
 			map->MoveActors(FIXED_STEP);
 			map->SortMovedActors();
@@ -322,18 +326,30 @@ void BunnySector_UpdateMapPtr(BunnySector_Map* map, float deltaTime)
 	}
 }
 
-void BunnySector_DrawActiveMap()
+
+// NOTE
+// DRAWING FUNCTIONS
+
+void BunnySector_Setup3D(float viewAspect, float cameraAspect)
 {
-	float aspect = mgdl_GetScreenWidth()/mgdl_GetScreenHeight();
-	BunnySector_Setup3D(aspect, aspect);
-	for (int pi = 0; pi < activePlayerAmount; pi++)
-	{
-		BunnySector_AlignCameraToPlayer(0);
-		BunnySector_StartMapDrawing();
-		RenderDoomMap( (DoomMap*)game.GetActiveMap());
-		BunnySector_DrawMapActorsForPlayer(0);
-	}
-	BunnySector_EndMapDrawing();
+	s_aspectView = viewAspect;
+	s_aspectCamera = cameraAspect;
+	mgdl_glClearColor32(Debug_Black);
+
+	//mgdl_glSetTransparency(true);
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LEQUAL);
+	glDepthMask(GL_TRUE); //  is this needed?
+
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+	glShadeModel(GL_SMOOTH);
+
+	Viewport viewPort = mgdl_GetViewport();
+	glViewport(viewPort.left, viewPort.bottom, viewPort.width, viewPort.height);
+
+	RenderSettingsOpenGL_SetUnitToMeter(&defaultOpenGL, bunny_UnitsToMeter_horizontal, bunny_UnitsToMeter_vertical);
+	OpenGLRender_SetUnitsToMeter(bunny_UnitsToMeter_horizontal, bunny_UnitsToMeter_vertical);
 }
 
 void BunnySector_AlignCameraToPlayer(int playerIndex)
@@ -364,6 +380,61 @@ void BunnySector_AlignCameraToPlayer(int playerIndex)
 	Camera_Apply(playerCameras[playerIndex]); // Sets GL_MODELVIEW
 }
 
+void BunnySector_StartMapDrawing()
+{
+	OpenGLRender_StartDrawingPolygons();
+}
+void BunnySector_EndMapDrawing()
+{
+	OpenGLRender_EndDrawingPolygons();
+}
+
+void DrawSkyBox()
+{
+	Camera_SetPositionV(defaultCamera, Vector3Zero());
+	Camera_SetDirection(defaultCamera, mgdl_GetGLWorldForward());
+
+	Viewport viewPort = mgdl_GetViewport();
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	// TODO Amount of players changes the viewport / copy from ALASA
+	gluPerspective(defaultCamera->fovY,
+				  viewPort.width/viewPort.height,
+				   defaultCamera->nearZ,
+				defaultCamera->farZ);
+
+	Camera_Apply(defaultCamera);
+
+	// Don't write the Skybox to depth buffer so that everything is drawn on top
+	glDepthMask(GL_FALSE);
+	glDepthFunc(GL_ALWAYS);
+	glCullFace(GL_FRONT);
+	OpenGLRender_DrawSkybox(game.GetActiveMap());
+	glCullFace(GL_BACK);
+	glDepthFunc(GL_LEQUAL);
+	glDepthMask(GL_TRUE);
+
+
+}
+
+void BunnySector_DrawActiveMap()
+{
+	float aspect = mgdl_GetScreenWidth()/mgdl_GetScreenHeight();
+	BunnySector_Setup3D(aspect, aspect);
+	for (int pi = 0; pi < activePlayerAmount; pi++)
+	{
+		// Set camera to center for skybox
+		DrawSkyBox();
+
+		BunnySector_AlignCameraToPlayer(0);
+		BunnySector_StartMapDrawing();
+			RenderDoomMap( (DoomMap*)game.GetActiveMap());
+			BunnySector_DrawMapActorsForPlayer(0);
+		BunnySector_EndMapDrawing();
+	}
+}
+
+
 void BunnySector_DrawCameraInfo(float x, float y)
 {
 	y+=16;
@@ -374,27 +445,6 @@ void BunnySector_DrawCameraInfo(float x, float y)
 	mgdl_DrawTextFloat(zstr_from("Camera dy "), defaultCamera->direction.y, x, y+16+16, 8, Debug_Red);
 	mgdl_DrawTextFloat(zstr_from("Camera dz "), defaultCamera->direction.z, x, y+16+24, 8, Debug_Red);
 
-}
-void BunnySector_Setup3D(float viewAspect, float cameraAspect)
-{
-	s_aspectView = viewAspect;
-	s_aspectCamera = cameraAspect;
-	mgdl_glClearColor32(Debug_Black);
-
-	//mgdl_glSetTransparency(true);
-	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LEQUAL);
-	glDepthMask(GL_TRUE); //  is this needed?
-
-	glEnable(GL_CULL_FACE);
-	glCullFace(GL_BACK);
-	glShadeModel(GL_SMOOTH);
-
-	Viewport viewPort = mgdl_GetViewport();
-	glViewport(viewPort.left, viewPort.bottom, viewPort.width, viewPort.height);
-
-	RenderSettingsOpenGL_SetUnitToMeter(&defaultOpenGL, bunny_UnitsToMeter_horizontal, bunny_UnitsToMeter_vertical);
-	OpenGLRender_SetUnitsToMeter(bunny_UnitsToMeter_horizontal, bunny_UnitsToMeter_vertical);
 }
 
 float BunnySector_GetOpenGLCameraVerticalFOVDeg()
@@ -481,14 +531,6 @@ Actor* BunnySector_GetActorCollisionAt(Actor* actor, int index)
 	return actorPool.GetCollisionForActor(actor, index);
 }
 
-void BunnySector_StartMapDrawing()
-{
-OpenGLRender_StartDrawingPolygons();
-}
-void BunnySector_EndMapDrawing()
-{
-	OpenGLRender_EndDrawingPolygons();
-}
 
 void BunnySector_SetOpenGLUnitsToMeter(float horizontalScale, float verticalScale)
 {

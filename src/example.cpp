@@ -20,7 +20,6 @@ void Example::AngelInit()
 {
     bool initOk = false;
     // AngelScript
-#if defined(USE_ANGEL_AS_SCRIPT)
     angelContext = mgdl_InitAngelScript();
     if (angelContext != nullptr)
     {
@@ -28,19 +27,19 @@ void Example::AngelInit()
 
         if (mgdl_LoadAngelScriptFiles(angelContext, "scripts/angel.cpp", "scripts", "example"))
         {
+            angelInitFunc = mgdl_FindAngelScriptFunction(angelContext, "void angelscript_init()");
             initOk = true;
         }
     }
-#elif defined(USE_ANGEL_AS_CPP)
-    angelContext = mgdl_InitAngelCpp(&angelscript_init, &angelscript_frame, &angelscript_quit);
-#endif
 
 	// This must be after loading the files, because the function is in there
 	if (BunnySector_Init(angelContext))
 	{
 			// This will call bunnysector functions
-			mgdl_RunAngelScriptInit(angelContext);
 			initOk = true;
+            mgdl_PrepareAngelScriptFunctionCall(angelContext, angelInitFunc);
+            mgdl_CommitAngelScriptFunctionCall(angelContext, angelInitFunc);
+            Log_Info("Init Done!\n");
     }
     mgdl_assert_print(initOk, "BunnySector Init failed");
 }

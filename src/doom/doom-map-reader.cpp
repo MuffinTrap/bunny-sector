@@ -75,6 +75,56 @@ static DoomMap* map;
 #define COOP "coop"
 #define FRIEND "friend"
 
+struct SectorCounter
+{
+	int number;
+	int score;
+};
+
+static const int COUNTER_AMOUNT = 16;
+static SectorCounter sectorCounterArray[COUNTER_AMOUNT];
+static void ResetSectorCounterArray()
+{
+	for (int i = 0; i < COUNTER_AMOUNT; i++)
+	{
+		sectorCounterArray[i].number =-1;
+		sectorCounterArray[i].score =0;
+	}
+}
+static void AddPointForSector(int sectorNumber)
+{
+	for (int i = 0; i < COUNTER_AMOUNT; i++)
+	{
+		if (sectorCounterArray[i].number ==-1)
+		{
+			sectorCounterArray[i].number = sectorNumber;
+			sectorCounterArray[i].score = 1;
+			break;
+		}
+		else if (sectorCounterArray[i].number == sectorNumber)
+		{
+			sectorCounterArray[i].score += 1;
+		}
+	}
+}
+static int GetSectorWinner()
+{
+	int hiscore = -1;
+	int winner = -1;
+	for (int i = 0; i < COUNTER_AMOUNT; i++)
+	{
+		if (sectorCounterArray[i].number != -1)
+		{
+			if (sectorCounterArray[i].score > hiscore)
+			{
+				hiscore = sectorCounterArray[i].score;
+				winner = sectorCounterArray[i].number;
+			}
+		}
+	}
+	return winner;
+}
+
 static void RewindToFileStart(FILE* fileptr)
 {
 	rewind(fileptr);
@@ -827,6 +877,7 @@ static int FindDoorOpenHeight(DoomMap* map, int sectorIndex)
 
 		u32 NumNodes = ReadDWORD();
 		printf("NumNodes : %d\n", NumNodes);
+		mgdl_assert_print(NumNodes > 0, "Doom map must have at least 1 node\n");
 		map->AllocateNodes( NumNodes);
 		for (int ni = 0; ni < NumNodes; ni++)
 		{
@@ -944,15 +995,30 @@ static int FindDoorOpenHeight(DoomMap* map, int sectorIndex)
 		{
 			DoomSubSector* sub = &map->subsectors[ssi];
 			bool sectorSet = false;
+			ResetSectorCounterArray();
 			for (int segi = 0; segi < sub->segmentAmount; segi++)
 			{
 				DoomSegment *seg = &map->segments[sub->firstSegment + segi];
 				// NOTE Only looking at the first is incorrect, since portals can point either way
-				DoomLinedef *linedef = &map->linedefs[seg->linedef];
-				bool isPortal = (linedef->sidefront >= 0 && linedef->sideback >=0);
+				if (seg->linedef == DOOM_INVALID_LINEDEF)
+				{
+					continue;
+				}
 
-				// Find first that is not portal
-				if (!isPortal)
+				DoomLinedef *linedef = &map->linedefs[seg->linedef];
+
+				bool isPortal = (linedef->sidefront >= 0 && linedef->sideback >=0);
+				if (isPortal)
+				{
+					// Was only portals. This is a pit or pedestral. All portals should have one side in common
+					// Hold a popularity contest
+					DoomSidedef *sidedef_f = &map->sidedefs[linedef->sidefront];
+					DoomSidedef *sidedef_b = &map->sidedefs[linedef->sideback];
+
+					AddPointForSector(sidedef_f->sector);
+					AddPointForSector(sidedef_b->sector);
+				}
+				else
 				{
 					if (seg->lineSide == DOOM_SIDE_FRONT)
 					{
@@ -961,31 +1027,22 @@ static int FindDoorOpenHeight(DoomMap* map, int sectorIndex)
 						sectorSet = true;
 						break;
 					}
+					else if (seg->lineSide == DOOM_SIDE_BACK)
+					{
+						DoomSidedef *sidedef = &map->sidedefs[linedef->sideback];
+						sub->sector = sidedef->sector;
+						sectorSet = true;
+						break;
+					}
 				}
-			}
-			if (sectorSet == false)
+			} // loop segments
+			if (!sectorSet)
 			{
-				// Was only portals. This is a pit or pedestral. All portals should have one side in common
-				// Take first two and find the common sector
-				DoomSegment *seg_0 = &map->segments[sub->firstSegment + 0];
-				DoomSegment *seg_1 = &map->segments[sub->firstSegment + 1];
-				DoomLinedef *linedef_0 = &map->linedefs[seg_0->linedef];
-				DoomLinedef *linedef_1 = &map->linedefs[seg_1->linedef];
-				DoomSidedef *sidedef_0f = &map->sidedefs[linedef_0->sidefront];
-				DoomSidedef *sidedef_0b = &map->sidedefs[linedef_0->sideback];
-				DoomSidedef *sidedef_1f = &map->sidedefs[linedef_1->sidefront];
-				DoomSidedef *sidedef_1b = &map->sidedefs[linedef_1->sideback];
-				if (sidedef_0f->sector == sidedef_1f->sector)
-				{
-					sub->sector = sidedef_0f->sector;
-				}
-				else if (sidedef_0b->sector == sidedef_1b->sector)
-				{
-					sub->sector = sidedef_0b->sector;
-				}
+			 	sub->sector = GetSectorWinner();
 			}
+			mgdl_assert_print(sub->sector >= 0, "Did not find connected sector for subsector!\n");
 			printf("Subsector %d linked to sector %d\n", ssi, sub->sector);
-		}
+		} // loop subsectors
 
 		// Find neighbourSector values
 		for (int ssi = 0; ssi < map->subSectorAmount; ssi++)
@@ -1057,7 +1114,7 @@ static int FindDoorOpenHeight(DoomMap* map, int sectorIndex)
 		for (int li = 0; li < map->lineAmount; li++ )
 		{
 			DoomLinedef* line = &map->linedefs[li];
-			if (line->special >= 0)
+			if (line->special > 0)
 			{
 				if (line->special == special_door_close
 					|| line->special == special_door_open
