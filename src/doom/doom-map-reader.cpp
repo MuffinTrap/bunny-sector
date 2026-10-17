@@ -219,6 +219,8 @@ static bool line_has(const char* keyword)
 static void read_line()
 {
 	fgets(lineBuffer, LINEWIDTH, mapfile);
+	lineBuffer[LINEWIDTH-1] = '\0';
+	printf("Line buffer: '%s'\n", lineBuffer);
 }
 static bool read_chars_until(const char* keyword)
 {
@@ -710,6 +712,8 @@ static int FindDoorOpenHeight(DoomMap* map, int sectorIndex)
 		StartReadingFile(mapfile);
 		// Parsing
 		bool counting = true;
+		
+		
 
 		// Read two times. First for counting and then for reading
 		while(true)
@@ -725,6 +729,7 @@ static int FindDoorOpenHeight(DoomMap* map, int sectorIndex)
 
 			// Start from top
 			rewind(mapfile);
+			read_chars_until("zdoom");
 			while(feof(mapfile) == false)
 			{
 				read_line();

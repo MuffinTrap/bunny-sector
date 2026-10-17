@@ -57,3 +57,6 @@ export/
 
 # Kate meta files
 *.kate-swp
+
+# Plasma folder colors
+.directory

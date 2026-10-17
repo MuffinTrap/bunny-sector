@@ -135,6 +135,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\scripts\angel.cpp" />
+    <ClCompile Include="..\scripts\render_doom.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\scripts\render_utils.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\src\bunny-sector-config.cpp" />
     <ClCompile Include="..\src\bunny-sector-game.cpp" />
     <ClCompile Include="..\src\bunny-sector-items.cpp" />
@@ -225,6 +231,14 @@
     <Xml Include="..\config\players.xml">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
     </Xml>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\scripts\mgdl.angel">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="..\scripts\raymath.angel">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
