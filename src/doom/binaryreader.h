@@ -1,6 +1,7 @@
 #pragma once
 #include <mgdl/mgdl-types.h>
-#include "../doom/doom_types.h"
+#include "doom-lump-info.h"
+#include "doom_types.h"
 
 // Reads binary info from a file
 #ifdef __cplusplus
@@ -10,6 +11,7 @@ extern "C" {
 
 bool OpenBinary(const char* filename);
 void StartReadingFile(FILE* fileptr);
+void SetActiveLumpInfo(DoomLumpInfo* activeLump);
 
 s16 ReadInt16();
 s16 ReadSWORD();
@@ -24,6 +26,8 @@ u32 ReadDWORD();
 
 s8  ReadSByte();
 u8  ReadByte();
+
+void ReadChars(int amount, char* arrayOut);
 
 Fixed16 ReadFixed();
 
