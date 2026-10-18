@@ -4,6 +4,7 @@
 #include <stdio.h>
 
 static FILE* openFile = nullptr;
+static DoomLumpInfo* activeLump;
 static s8 buffer[4];
 
 void StartReadingFile(FILE* fileptr)
@@ -26,9 +27,41 @@ bool CloseBinary()
     return false;
 }
 
+void SetActiveLumpInfo(DoomLumpInfo* info)
+{
+    activeLump = info;
+    fseek(openFile, activeLump->offset, SEEK_SET);
+}
+
+void FileRead(void* destination, sizetype dataSize, sizetype itemCount, FILE* filePtr)
+{
+    if (activeLump != nullptr)
+    {
+        sizetype cursor = ftell(openFile);
+        sizetype end = activeLump->offset + activeLump->size;
+        if (cursor + (dataSize*itemCount) <= end)
+        {
+            fread(destination, dataSize, itemCount, filePtr);
+        }
+        else
+        {
+            Log_ErrorF("Reading %d bytes past active lump\n", ((cursor + (dataSize*itemCount)) - end));
+        }
+    }
+    else
+    {
+        fread(destination, dataSize, itemCount, filePtr);
+    }
+}
+
+void ReadChars(int amount, char* arrayOut)
+{
+    FileRead(arrayOut, 1, amount, openFile);
+}
+
 s16 ReadInt16()
 {
-    fread(buffer, sizeof(s16), 1, openFile);
+    FileRead(buffer, sizeof(s16), 1, openFile);
 #   ifdef GEKKO
     RevBytes(buffer, sizeof(s16));
 #   endif
@@ -37,7 +70,7 @@ s16 ReadInt16()
 }
 u16 ReadUInt16()
 {
-    fread(buffer, sizeof(u16), 1, openFile);
+    FileRead(buffer, sizeof(u16), 1, openFile);
 #   ifdef GEKKO
     RevBytes(buffer, sizeof(u16));
 #   endif
@@ -46,7 +79,7 @@ u16 ReadUInt16()
 }
 s32 ReadInt32()
 {
-    fread(buffer, sizeof(s32), 1, openFile);
+    FileRead(buffer, sizeof(s32), 1, openFile);
 #   ifdef GEKKO
     RevBytes(buffer, sizeof(s32));
 #   endif
@@ -55,7 +88,7 @@ s32 ReadInt32()
 }
 u32 ReadUInt32()
 {
-    fread(buffer, sizeof(u32), 1, openFile);
+    FileRead(buffer, sizeof(u32), 1, openFile);
 #   ifdef GEKKO
     RevBytes(buffer, sizeof(u32));
 #   endif
@@ -65,13 +98,13 @@ u32 ReadUInt32()
 
 s8  ReadSByte()
 {
-    fread(buffer, sizeof(u8), 1, openFile);
+    FileRead(buffer, sizeof(u8), 1, openFile);
     u8 out = *(u8*)(buffer);
     return out;
 }
 u8  ReadByte()
 {
-    fread(buffer, sizeof(u8), 1, openFile);
+    FileRead(buffer, sizeof(u8), 1, openFile);
     u8 out = *(u8*)(buffer);
     return out;
 }
@@ -79,7 +112,7 @@ u8  ReadByte()
 // DOOM uses these. Stored in little endian
 s16 ReadSWORD()
 {
-    fread(buffer, sizeof(s16), 1, openFile);
+    FileRead(buffer, sizeof(s16), 1, openFile);
 #   ifdef GEKKO
     RevBytes(buffer, sizeof(s16));
 #   endif
@@ -88,7 +121,7 @@ s16 ReadSWORD()
 }
 
 u16 ReadWORD() {
-    fread(buffer, sizeof(u16), 1, openFile);
+    FileRead(buffer, sizeof(u16), 1, openFile);
 #   ifdef GEKKO
     RevBytes(buffer, sizeof(u16));
 #   endif
@@ -96,7 +129,7 @@ u16 ReadWORD() {
     return out;
 }
 u32 ReadDWORD() {
-    fread(buffer, sizeof(u32), 1, openFile);
+    FileRead(buffer, sizeof(u32), 1, openFile);
 #   ifdef GEKKO
     RevBytes(buffer, sizeof(u32));
 #   endif

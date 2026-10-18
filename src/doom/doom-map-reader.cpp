@@ -1,6 +1,7 @@
 #include "doom-map-reader.h"
 #include "../bunny-sector_main.h"
-#include "../map/binaryreader.h"
+#include "binaryreader.h"
+#include "doom-wad-reader.h"
 #include <stdio.h>
 
 static FILE* mapfile = nullptr;
@@ -224,14 +225,14 @@ static void read_line()
 }
 static bool read_chars_until(const char* keyword)
 {
-	printf("Reading chars until %s\n", keyword);
+	Log_InfoF("Reading chars until %s\n", keyword);
 	bool allfound = false;
 	while(feof(mapfile) == false)
 	{
 		char c = advance();
 		if (c == keyword[0])
 		{
-			printf("Found first: %c at %ld\n", c, ftell(mapfile));
+			Log_InfoF("Found first: %c at %ld\n", c, ftell(mapfile));
 			int wlen = strlen(keyword);
 			int found = 1;
 			for (int i = 1; i < wlen; i++)
@@ -239,12 +240,12 @@ static bool read_chars_until(const char* keyword)
 				c = advance();
 				if (c == keyword[i])
 				{
-					printf("Found %d/%d : %c\n", i ,wlen, c);
+					Log_InfoF("Found %d/%d : %c\n", i ,wlen, c);
 					found++;
 					if (found == wlen)
 					{
 						allfound = true;
-						printf("Found the keyword\n");
+						Log_InfoF("Found the keyword\n");
 						break;
 					}
 				}
@@ -320,7 +321,7 @@ static MaterialId readTextureId()
 
 	zstr textureName = zstr_from_len(textureNameBuffer, index);
 	MaterialId tid = BunnySector_GetMaterialId(&textureName);
-	printf("Doom map has texture %s mapped to id %d\n", zstr_cstr(&textureName), tid);
+	Log_InfoF("Doom map has texture %s mapped to id %d\n", zstr_cstr(&textureName), tid);
 	zstr_free(&textureName);
 	return tid;
 }
@@ -696,11 +697,13 @@ static int FindDoorOpenHeight(DoomMap* map, int sectorIndex)
 
     BunnySector_Map* Doom_ReadMapFromFile(const char* mapfilename)
 	{
+
 		mapfile = fopen(mapfilename, "r");
 		if (mapfile == NULL)
 		{
 			return nullptr;
 		}
+		WADReader wadRead(mapfile);
 
 		BunnySector_Map* BunnyMap = nullptr;
 
@@ -710,6 +713,13 @@ static int FindDoorOpenHeight(DoomMap* map, int sectorIndex)
 
 
 		StartReadingFile(mapfile);
+
+		// Read the textmap lump
+		DoomLumpInfo* TEXTMAP = wadRead.GetTableItem("TEXTMAP");
+		mgdl_assert_print(TEXTMAP != nullptr, "No TEXTMAP lump found\n");
+		DoomLumpInfo* ZNODES = wadRead.GetTableItem("ZNODES");
+		mgdl_assert_print(ZNODES != nullptr, "No ZNODES lump found\n");
+
 		// Parsing
 		bool counting = true;
 		
@@ -720,6 +730,8 @@ static int FindDoorOpenHeight(DoomMap* map, int sectorIndex)
 		{
 			// On first pass need to calculate amounts for allocation
 			// Second pass these are indices
+			SetActiveLumpInfo(TEXTMAP);
+			// TODO Add guard not to read too much
 
 			thingAmount = 0;
 			vertexAmount = 0;
@@ -728,8 +740,7 @@ static int FindDoorOpenHeight(DoomMap* map, int sectorIndex)
 			sectorAmount = 0;
 
 			// Start from top
-			rewind(mapfile);
-			read_chars_until("zdoom");
+
 			while(feof(mapfile) == false)
 			{
 				read_line();
@@ -800,14 +811,13 @@ static int FindDoorOpenHeight(DoomMap* map, int sectorIndex)
 			// File was read
 			if (counting)
 			{
-				printf("Counting done\n");
+				Log_InfoF("TEXTMAP Counting done\n");
 				// Read additional vertex amount for nodes
-				rewind(mapfile);
-				printf("Cursor at %ld\n", ftell(mapfile));
+				SetActiveLumpInfo(ZNODES);
 				read_chars_until("XGLN");
 				u32 OrgVerts = ReadDWORD();
 				u32 NewVertes = ReadDWORD();
-				printf("Adding %d new vertices for nodes\n", NewVertes);
+				Log_InfoF("Adding %d new vertices for nodes\n", NewVertes);
 
 				BunnyMap = new DoomMap();// (BunnySector_Map*)mgdl_AllocateGeneralMemory(sizeof(BunnySector_Map));
 				map = (DoomMap*)BunnyMap;
@@ -819,52 +829,52 @@ static int FindDoorOpenHeight(DoomMap* map, int sectorIndex)
 
 			else
 			{
-				printf("Reading done\n");
-				printf("Cursor at %ld\n", ftell(mapfile));
+				Log_Info("TEXTMAP Reading done\n");
 				// All data read
 				break;
 			}
 		} // Counting and reading done
 
 
-		rewind(mapfile);
 
-		printf("Before nodes Cursor at %ld\n", ftell(mapfile));
+		Log_Info("Reading Z nodes\n");
 		// Read the nodes
 		// TODO read bit by bit
+
+		SetActiveLumpInfo(ZNODES);
 		read_chars_until("XGLN");
 		u32 OrgVerts = ReadDWORD();
-		printf("OrgVerts %d\n", OrgVerts);
+		Log_InfoF("OrgVerts %d\n", OrgVerts);
 		u32 NewVertes = ReadDWORD();
 
-		printf("NewVerts %d \n", NewVertes);
+		Log_InfoF("NewVerts %d \n", NewVertes);
 		for (int ni = 0; ni < NewVertes; ni++)
 		{
 			// TODO Fixed integers
 			Fixed16 x = ReadFixed();
 			Fixed16 y = ReadFixed();
 
-			printf("Vert %d at (%d.%d, %d.%d)\n", ni, x.whole, x.fract,  y.whole, y.fract);
+			Log_InfoF("Vert %d at (%d.%d, %d.%d)\n", ni, x.whole, x.fract,  y.whole, y.fract);
 			map->vertices[vertexAmount].x = x.whole;
 			map->vertices[vertexAmount].y = y.whole;
 			vertexAmount++;
 		}
 		u32 NumSubsectors = ReadDWORD();
 		map->AllocateSubsectors( NumSubsectors);
-		printf("NumSubsectors %d\n", NumSubsectors);
+		Log_InfoF("NumSubsectors %d\n", NumSubsectors);
 		int segmentsRead = 0;
 		for (int ni = 0; ni < NumSubsectors; ni++)
 		{
 			u32 NumSegs = ReadDWORD();
 			map->subsectors[ni].firstSegment = segmentsRead;;
 			map->subsectors[ni].segmentAmount = NumSegs;
-			printf("Subsector %d Segments; %d : First segment %d\n", ni, NumSegs, segmentsRead);
+			Log_InfoF("Subsector %d Segments; %d : First segment %d\n", ni, NumSegs, segmentsRead);
 			segmentsRead += NumSegs;
 		}
 
 		u32 NumSegs = ReadDWORD();
 		mgdl_assert_test(NumSegs == segmentsRead);
-		printf("NumSeg %d\n", NumSegs);
+		Log_InfoF("NumSeg %d\n", NumSegs);
 		map->AllocateSegments( NumSegs);
 		for (int si = 0; si < map->segmentAmount; si++)
 		{
@@ -872,7 +882,7 @@ static int FindDoorOpenHeight(DoomMap* map, int sectorIndex)
 			u32 partner = ReadDWORD(); // Segment index
 			u16 line = ReadWORD(); // Linedef index
 			u8 side = ReadByte(); // Linedef side
-			printf("Seg %d: V1 %d partner %d line %d side %d\n", si, v1, partner, line, side);
+			Log_InfoF("Seg %d: V1 %d partner %d line %d side %d\n", si, v1, partner, line, side);
 
 			map->segments[si].v1 = v1;
 			map->segments[si].partnerSegment = partner;
@@ -881,12 +891,12 @@ static int FindDoorOpenHeight(DoomMap* map, int sectorIndex)
 		}
 
 		u32 NumNodes = ReadDWORD();
-		printf("NumNodes : %d\n", NumNodes);
+		Log_InfoF("NumNodes : %d\n", NumNodes);
 		mgdl_assert_print(NumNodes > 0, "Doom map must have at least 1 node\n");
 		map->AllocateNodes( NumNodes);
 		for (int ni = 0; ni < NumNodes; ni++)
 		{
-			printf("Node %d\n", ni);
+			Log_InfoF("Node %d\n", ni);
 			// The line that splits the node
 			s16 x = ReadSWORD();
 			s16 y = ReadSWORD();
@@ -909,27 +919,27 @@ static int FindDoorOpenHeight(DoomMap* map, int sectorIndex)
 			u32 child0 = ReadDWORD();
 			u32 child1 = ReadDWORD();
 
-			printf("Child 0 %08.8x ", child0);
+			Log_InfoF("Child 0 %08.8x ", child0);
 			if (child0 & 0x80000000)
 			{
-				printf("is subsector: %d\n", child0 & 0x7FFFFFFF);
+				Log_InfoF("is subsector: %d\n", child0 & 0x7FFFFFFF);
 			}
 			else
 			{
-				printf("is node: %d\n", child0);
+				Log_InfoF("is node: %d\n", child0);
 			}
-			printf("Bounding box %d %d %d %d\n", Top0, Bottom0, Left0, Right0);
+			Log_InfoF("Bounding box %d %d %d %d\n", Top0, Bottom0, Left0, Right0);
 
-			printf("Child 1 %08.8x ", child1);
+			Log_InfoF("Child 1 %08.8x ", child1);
 			if (child1 & 0x80000000)
 			{
-				printf("is subsector: %d\n", child1 & 0x7FFFFFFF);
+				Log_InfoF("is subsector: %d\n", child1 & 0x7FFFFFFF);
 			}
 			else
 			{
-				printf("is node: %d\n", child1);
+				Log_InfoF("is node: %d\n", child1);
 			}
-			printf("Bounding box %d %d %d %d\n", Top1, Bottom1, Left1, Right1);
+			Log_InfoF("Bounding box %d %d %d %d\n", Top1, Bottom1, Left1, Right1);
 			DoomNode* n = &map->nodes[ni];
 			n->x = x;
 			n->y = y;
@@ -1046,7 +1056,7 @@ static int FindDoorOpenHeight(DoomMap* map, int sectorIndex)
 			 	sub->sector = GetSectorWinner();
 			}
 			mgdl_assert_print(sub->sector >= 0, "Did not find connected sector for subsector!\n");
-			printf("Subsector %d linked to sector %d\n", ssi, sub->sector);
+			Log_InfoF("Subsector %d linked to sector %d\n", ssi, sub->sector);
 		} // loop subsectors
 
 		// Find neighbourSector values
@@ -1092,7 +1102,7 @@ static int FindDoorOpenHeight(DoomMap* map, int sectorIndex)
 					seg->neighbourSector = -1;//DOOM_NO_LINE_NEIGHBOR;// TODO Figure this out
 				}
 
-				printf("Subsector %d segment %d neighbor is %d\n", ssi, sub->firstSegment + segi, seg->neighbourSector);
+				Log_InfoF("Subsector %d segment %d neighbor is %d\n", ssi, sub->firstSegment + segi, seg->neighbourSector);
 			}
 		}
 
