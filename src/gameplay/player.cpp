@@ -99,16 +99,17 @@ bool Player::ReadInput(int controllerIndex)
 
 
 	// Use button is A for now
-	if (mgdl_IsButtonDown(controllerIndex, ButtonA))
+	if (mgdl_IsButtonPressed(controllerIndex, ButtonA))
 	{
 		StartAction(action_use);
 	}
-	else if (mgdl_IsButtonReleased(controllerIndex, ButtonA))
+	else 
 	{
+		// Note do not keep this on
 		StopAction(action_use);
 	}
 
-	if (mgdl_IsButtonDown(controllerIndex, ButtonB))
+	if (mgdl_IsButtonPressed(controllerIndex, ButtonB))
 	{
 		StartAction(action_shoot);
 	}
@@ -117,7 +118,7 @@ bool Player::ReadInput(int controllerIndex)
 		StopAction(action_shoot);
 	}
 
-	if (mgdl_IsButtonDown(controllerIndex, ButtonC))
+	if (mgdl_IsButtonPressed(controllerIndex, ButtonC))
 	{
 		StartAction(action_jump);
 	}

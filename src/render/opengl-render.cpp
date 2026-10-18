@@ -1,9 +1,6 @@
 
 #include "opengl-render.h"
 #include "render-settings.h"
-#include <mgdl.h>
-#include <mgdl/mgdl-gradient.h>
-#include <mgdl/mgdl-memory.h>
 #include "../gameplay/actor.h"
 #include "../bunny-sector-math.h"
 #include "../tinyxml2/tinyxml2.h"

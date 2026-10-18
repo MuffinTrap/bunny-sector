@@ -6,6 +6,7 @@
 static FILE* openFile = nullptr;
 static DoomLumpInfo* activeLump;
 static s8 buffer[4];
+static bool readError = false;
 
 void StartReadingFile(FILE* fileptr)
 {
@@ -46,12 +47,18 @@ void FileRead(void* destination, sizetype dataSize, sizetype itemCount, FILE* fi
         else
         {
             Log_ErrorF("Reading %d bytes past active lump\n", ((cursor + (dataSize*itemCount)) - end));
+			readError = true;
         }
     }
     else
     {
         fread(destination, dataSize, itemCount, filePtr);
     }
+}
+
+bool GetReadError()
+{
+	return readError;
 }
 
 void ReadChars(int amount, char* arrayOut)

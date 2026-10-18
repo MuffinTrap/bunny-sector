@@ -32,6 +32,7 @@ void ReadChars(int amount, char* arrayOut);
 Fixed16 ReadFixed();
 
 bool CloseBinary();
+bool GetReadError();
 
 #ifdef __cplusplus
 }

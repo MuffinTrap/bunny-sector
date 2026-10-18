@@ -1,6 +1,8 @@
 // Only used when in Script mode.
 // When used as CPP the actual CPP function is called
 
+#if defined(STUPID_WINDOWS)
+
 void mgdl_DrawTextV(zstr text, Vector2 topleft, float fontSize, color32 color)
 {
 	mgdl_DrawText(text, topleft.x, topleft.y, fontSize, color);
@@ -34,4 +36,5 @@ Vector2 mgdl_GetJoystick(int controller, WiiJoystick joystick)
 	float y = mgdl_GetJoystickY(controller, joystick);
 	return Vector2New(x,y);
 }
+#endif
 

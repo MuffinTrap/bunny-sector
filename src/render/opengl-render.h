@@ -1,7 +1,5 @@
 #pragma once
-#include <mgdl/mgdl-types.h>
-#include <mgdl/mgdl-material.h>
-#include <mgdl/mgdl-color.h>
+#include <mgdl.h>
 #include "shell-grass.h"
 struct RenderSettingsOpenGL;
 struct Wall;

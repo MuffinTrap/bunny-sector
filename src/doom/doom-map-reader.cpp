@@ -220,8 +220,6 @@ static bool line_has(const char* keyword)
 static void read_line()
 {
 	fgets(lineBuffer, LINEWIDTH, mapfile);
-	lineBuffer[LINEWIDTH-1] = '\0';
-	printf("Line buffer: '%s'\n", lineBuffer);
 }
 static bool read_chars_until(const char* keyword)
 {
@@ -698,7 +696,9 @@ static int FindDoorOpenHeight(DoomMap* map, int sectorIndex)
     BunnySector_Map* Doom_ReadMapFromFile(const char* mapfilename)
 	{
 
-		mapfile = fopen(mapfilename, "r");
+	// DANGER
+	// NOTE Windows needs b otherwise it thinks it is UTF-16 or something
+		mapfile = fopen(mapfilename, "rb"); 
 		if (mapfile == NULL)
 		{
 			return nullptr;
@@ -896,6 +896,10 @@ static int FindDoorOpenHeight(DoomMap* map, int sectorIndex)
 		map->AllocateNodes( NumNodes);
 		for (int ni = 0; ni < NumNodes; ni++)
 		{
+			if (GetReadError())
+			{
+				break;
+			}
 			Log_InfoF("Node %d\n", ni);
 			// The line that splits the node
 			s16 x = ReadSWORD();
@@ -940,6 +944,10 @@ static int FindDoorOpenHeight(DoomMap* map, int sectorIndex)
 				Log_InfoF("is node: %d\n", child1);
 			}
 			Log_InfoF("Bounding box %d %d %d %d\n", Top1, Bottom1, Left1, Right1);
+			if (GetReadError())
+			{
+				break;
+			}
 			DoomNode* n = &map->nodes[ni];
 			n->x = x;
 			n->y = y;
@@ -960,6 +968,10 @@ static int FindDoorOpenHeight(DoomMap* map, int sectorIndex)
 			// Bit 31 : 0 node
 			n->children[0] = child0;
 			n->children[1] = child1;
+			if (GetReadError())
+			{
+				break;
+			}
 		}
 
 		fclose(mapfile);

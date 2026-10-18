@@ -1,4 +1,4 @@
-
+#if defined(STUPID_WINDOWS)
 #include "mgdl.angel"
 #include "raymath.angel"
 #include "render_utils.cpp"
@@ -180,3 +180,4 @@ void angelscript_frame(float deltatime)
 
 	// Check game state
 }
+#endif

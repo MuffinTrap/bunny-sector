@@ -150,9 +150,11 @@
     <ClCompile Include="..\src\bunny-sector-player.cpp" />
     <ClCompile Include="..\src\bunny-sector-types.cpp" />
     <ClCompile Include="..\src\bunny-sector_main.cpp" />
+    <ClCompile Include="..\src\doom\binaryreader.cpp" />
     <ClCompile Include="..\src\doom\block_segment.cpp" />
     <ClCompile Include="..\src\doom\doom-map-reader.cpp" />
     <ClCompile Include="..\src\doom\doom-map.cpp" />
+    <ClCompile Include="..\src\doom\doom-wad-reader.cpp" />
     <ClCompile Include="..\src\doom\doom_render.cpp" />
     <ClCompile Include="..\src\doom\doom_render_util.cpp" />
     <ClCompile Include="..\src\doom\doom_types.cpp" />
@@ -161,7 +163,6 @@
     <ClCompile Include="..\src\gameplay\actorpool.cpp" />
     <ClCompile Include="..\src\gameplay\player.cpp" />
     <ClCompile Include="..\src\main.cpp" />
-    <ClCompile Include="..\src\map\binaryreader.cpp" />
     <ClCompile Include="..\src\map\obj-export.cpp" />
     <ClCompile Include="..\src\map\polytesselator.cpp" />
     <ClCompile Include="..\src\map\tesselatorbuffer.cpp" />

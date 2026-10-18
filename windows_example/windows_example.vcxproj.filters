@@ -72,9 +72,6 @@
     <ClCompile Include="..\src\gameplay\player.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\map\binaryreader.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\map\obj-export.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -113,6 +110,12 @@
     </ClCompile>
     <ClCompile Include="..\scripts\render_utils.cpp">
       <Filter>Resource Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\doom\binaryreader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\doom\doom-wad-reader.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

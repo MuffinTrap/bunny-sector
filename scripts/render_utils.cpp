@@ -1,4 +1,4 @@
-
+#if defined(STUPID_WINDOWS)
 bool DEBUG_DRAW = true;
 bool DEBUG_LOG = false;
 bool RENDER_2D_WALLS = false;
@@ -996,3 +996,4 @@ void DrawWall2DFill(float ax, float ayt, float ayb, float az,
 	glEnd();
 }
 
+#endif
