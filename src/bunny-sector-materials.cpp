@@ -200,10 +200,34 @@ bool BunnySector::MaterialManager::ConnectTextureToMaterialIndex(int doomTexture
 
 			// TODO can be some other type too
 			mat->type = MapMaterialType::Material_Texture;
+			mat->source = Material_SourceFile;
 			return true;
 		}
 	}
 	return false;
+}
+
+bool BunnySector::MaterialManager::ConnectTextureDataToMaterialIndex(int doomTextureNameIndex, const char* texturename, const char* filename, sizetype offsetFromStart)
+{
+	if (doomTextureNameIndex >= 0 && doomTextureNameIndex < TEXTURE_NAME_AMOUNT)
+	{
+		// TODO Check for mipmaps
+		MapMaterial* mat = &mapMaterials[doomTextureNameIndex];
+		if (mat != nullptr)
+		{
+			// NOTE Texture is not loaded yet
+			mat->mgdlMaterial = Material_Load(texturename, nullptr, MaterialType::Diffuse);
+
+			// TODO can be some other type too
+			mat->type = MapMaterialType::Material_Texture;
+			mat->source = MapMaterialSource::Material_SourceFilePtr;
+			mat->filename = zstr_from(filename);
+			mat->offsetToFile = offsetFromStart;
+			return true;
+		}
+	}
+	return false;
+
 }
 
 
@@ -232,9 +256,18 @@ MaterialId BunnySector::MaterialManager::LoadMaterialByName(zstr* name)
 		{
 			return existing;
 		}
-		mgdl_BufferPrintf("%s/%s", zstr_cstr(&assetFolderName), zstr_cstr(&material->mgdlMaterial->name));
+
 		bool mipmapsOn = true;
-		TextureHandle textureH = AssetManager_LoadTexture(mgdl_GetPrintfBuffer(), mipmapsOn);
+		TextureHandle textureH = MGDL_INVALID_HANDLE;
+		if (material->source == MapMaterialSource::Material_SourceFile)
+		{
+			mgdl_BufferPrintf("%s/%s", zstr_cstr(&assetFolderName), zstr_cstr(&material->mgdlMaterial->name));
+			textureH = AssetManager_LoadTexture(mgdl_GetPrintfBuffer(), mipmapsOn);
+		}
+		else if (material->source == MapMaterialSource::Material_SourceFilePtr)
+		{
+			textureH = AssetManager_LoadTextureOffset(zstr_cstr(&material->filename), material->offsetToFile, zstr_cstr(&material->mgdlMaterial->name), mipmapsOn);
+		}
 		if (Handle_IsValid(textureH))
 		{
 			if (mipmapsOn)

@@ -1,10 +1,9 @@
 #include "doom-map-reader.h"
 #include "../bunny-sector_main.h"
+#include "../bunny-sector-materials.h"
 #include "binaryreader.h"
 #include "doom-wad-reader.h"
 #include <stdio.h>
-
-static FILE* mapfile = nullptr;
 
 static int thingAmount = 0;
 static int vertexAmount = 0;
@@ -126,330 +125,144 @@ static int GetSectorWinner()
 	return winner;
 }
 
-static void RewindToFileStart(FILE* fileptr)
+static void read_lines_until(BinaryReader& reader, const char* keyword)
 {
-	rewind(fileptr);
-}
-
-
-static bool isDigit(char c)
-{
-	return c >= '0' && c <= '9';
-}
-
-static char advance()
-{
-	char c = fgetc(mapfile);
-	return c;
-}
-
-static char peek()
-{
-	return fgetc(mapfile);
-}
-
-static bool match(char expected)
-{
-	if (advance() == expected)
+	while(reader.IsEOF() == false)
 	{
-		return true;
-	}
-	else
-	{
-		fseek(mapfile, ftell(mapfile)-1, SEEK_SET);
-		return false;
-	}
-}
-
-static int read_int()
-{
-
-	return 0;
-
-}
-
-static float read_float()
-{
-
-	return 0.0f;
-}
-
-static zstr read_str()
-{
-
-	int start = ftell(mapfile);
-	while( peek() != '"' && !feof(mapfile))
-	{
-		advance();
-	}
-	advance(); // closing "
-
-	int amount = ftell(mapfile) - start;
-	char* str = (char*)mgdl_AllocateGeneralMemory((amount + 1) * sizeof(char));
-
-	int readamount = fread(str, 1, amount, mapfile);
-	str[readamount] = '\0';
-	zstr s = zstr_from(str);
-	mgdl_FreeGeneralMemory(str);
-
-	return s;
-}
-
-
-static const int LINEWIDTH = 128;
-static char* lineBuffer;
-static const int IDWIDTH = 32;
-static char* identifierBuffer;
-static const int TEXTURENAMEWIDTH = 32;
-static char* textureNameBuffer;
-
-static bool line_startswith(const char* keyword)
-{
-	char* found_thing = strstr(lineBuffer, keyword);
-	// The thing that was found and was the first thing
-	return (found_thing != NULL && found_thing == lineBuffer);
-}
-
-static bool line_has(const char* keyword)
-{
-
-	char* found_thing = strstr(lineBuffer, keyword);
-	// The thing that was found
-	return (found_thing != NULL);
-}
-static void read_line()
-{
-	fgets(lineBuffer, LINEWIDTH, mapfile);
-}
-static bool read_chars_until(const char* keyword)
-{
-	Log_InfoF("Reading chars until %s\n", keyword);
-	bool allfound = false;
-	while(feof(mapfile) == false)
-	{
-		char c = advance();
-		if (c == keyword[0])
-		{
-			Log_InfoF("Found first: %c at %ld\n", c, ftell(mapfile));
-			int wlen = strlen(keyword);
-			int found = 1;
-			for (int i = 1; i < wlen; i++)
-			{
-				c = advance();
-				if (c == keyword[i])
-				{
-					Log_InfoF("Found %d/%d : %c\n", i ,wlen, c);
-					found++;
-					if (found == wlen)
-					{
-						allfound = true;
-						Log_InfoF("Found the keyword\n");
-						break;
-					}
-				}
-				else
-				{
-					break;
-				}
-			}
-		}
-		if (allfound)
-		{
-			break;
-		}
-	}
-	return allfound;
-}
-static void read_lines_until(const char* keyword)
-{
-	while(feof(mapfile) == false)
-	{
-		read_line();
-		if (line_has(keyword))
+		reader.ReadLine();
+		if (reader.LineHas(keyword))
 		{
 			break;
 		}
 	}
 }
 
-static Vector2 readVector2()
-{
-	float x, y;
-	fscanf(mapfile, "x = %f;", &x);
-	fscanf(mapfile, "y = %f;", &y);
-	return Vector2New(x, y);
-}
-static int readInt()
-{
-	int i;
-	sscanf(lineBuffer, "%s = %d;", identifierBuffer, &i);
-	return i;
-}
-static float readFloat()
-{
-	float i;
-	sscanf(lineBuffer, "%s = %f;", identifierBuffer, &i);
-	return i;
-}
-static bool readBool()
-{
-	return line_has("true");
-}
-static s8 readByte()
-{
-	int i;
-	sscanf(lineBuffer, "%s = %d;", identifierBuffer, &i);
-	return (s8)i;
-}
+static void read_thing(BinaryReader& reader) {
 
-static MaterialId readTextureId()
-{
-	sscanf(lineBuffer, "%s = \"%s\";", identifierBuffer, textureNameBuffer);
-
-	// Find the point where is "
-	int index = -1;
-	for (int i = 0; i < TEXTURENAMEWIDTH; i++)
-	{
-		if (textureNameBuffer[i] == '"')
-		{
-			index = i;
-			break;
-		}
-	}
-
-	zstr textureName = zstr_from_len(textureNameBuffer, index);
-	MaterialId tid = BunnySector_GetMaterialId(&textureName);
-	Log_InfoF("Doom map has texture %s mapped to id %d\n", zstr_cstr(&textureName), tid);
-	zstr_free(&textureName);
-	return tid;
-}
-
-static void read_thing() {
-
-	read_line();
-	if (line_has("{"))
+	reader.ReadLine();
+	if (reader.LineHas("{"))
 	{
 		DoomThing* t = &map->things[thingAmount];
 		DoomThing_Init(t);
 		while (true)
 		{
-			read_line();
-			if (line_startswith(X))
+			reader.ReadLine();
+			if (reader.LineStartsWith(X))
 			{
-				t->x = readFloat();
+				t->x = reader.ReadLineFloat();
 			}
-			else if (line_startswith(Y))
+			else if (reader.LineStartsWith(Y))
 			{
-				t->y = readFloat();
+				t->y = reader.ReadLineFloat();
 			}
-			else if (line_startswith(ID))
+			else if (reader.LineStartsWith(ID))
 			{
-				t->id = readInt();
+				t->id = reader.ReadLineInt();
 			}
-			else if (line_startswith(TYPE))
+			else if (reader.LineStartsWith(TYPE))
 			{
-				t->type = readInt();
+				t->type = reader.ReadLineInt();
 			}
-			else if (line_startswith(HEIGHT))
+			else if (reader.LineStartsWith(HEIGHT))
 			{
-				t->height = readFloat();
+				t->height = reader.ReadLineFloat();
 			}
-			else if (line_startswith(ANGLE))
+			else if (reader.LineStartsWith(ANGLE))
 			{
-				t->angleDeg = readFloat();
+				t->angleDeg = reader.ReadLineFloat();
 			}
-			else if (line_startswith(SPECIAL))
+			else if (reader.LineStartsWith(SPECIAL))
 			{
-				t->special = readInt();
+				t->special = reader.ReadLineInt();
 			}
-			else if (line_startswith(ARG0))
+			else if (reader.LineStartsWith(ARG0))
 			{
-				t->arg0 = readByte();
+				t->arg0 = reader.ReadLineByte();
 			}
-			else if (line_startswith(ARG1))
+			else if (reader.LineStartsWith(ARG1))
 			{
-				t->arg1 = readByte();
+				t->arg1 = reader.ReadLineByte();
 			}
-			else if (line_startswith(ARG2))
+			else if (reader.LineStartsWith(ARG2))
 			{
-				t->arg2 = readByte();
+				t->arg2 = reader.ReadLineByte();
 			}
-			else if (line_startswith(ARG3))
+			else if (reader.LineStartsWith(ARG3))
 			{
-				t->arg3 = readByte();
+				t->arg3 = reader.ReadLineByte();
 			}
-			else if (line_startswith(ARG4))
+			else if (reader.LineStartsWith(ARG4))
 			{
-				t->arg4 = readByte();
+				t->arg4 = reader.ReadLineByte();
 			}
 
 			// Flags
 
-			else if (line_startswith(SKILL1))
+			else if (reader.LineStartsWith(SKILL1))
 			{
-				if (readBool())
+				if (reader.ReadLineBool())
 				{
 					t->thing_flags = Flag_SetBit(t->thing_flags, thing_skill1);
 				}
 			}
-			else if (line_startswith(SKILL2))
+			else if (reader.LineStartsWith(SKILL2))
 			{
-				if (readBool())
+				if (reader.ReadLineBool())
 				{
 					t->thing_flags = Flag_SetBit(t->thing_flags, thing_skill2);
 				}
 			}
-			else if (line_startswith(SKILL3))
+			else if (reader.LineStartsWith(SKILL3))
 			{
-				if (readBool())
+				if (reader.ReadLineBool())
 				{
 					t->thing_flags = Flag_SetBit(t->thing_flags, thing_skill3);
 				}
 			}
-			else if (line_startswith(SKILL4))
+			else if (reader.LineStartsWith(SKILL4))
 			{
-				if (readBool())
+				if (reader.ReadLineBool())
 				{
 					t->thing_flags = Flag_SetBit(t->thing_flags, thing_skill4);
 				}
 			}
-			else if (line_startswith(AMBUSH))
+			else if (reader.LineStartsWith(AMBUSH))
 			{
-				if (readBool())
+				if (reader.ReadLineBool())
 				{
 					t->thing_flags = Flag_SetBit(t->thing_flags, thing_ambush);
 				}
 			}
-			else if (line_startswith(SINGLE))
+			else if (reader.LineStartsWith(SINGLE))
 			{
-				if (readBool())
+				if (reader.ReadLineBool())
 				{
 					t->thing_flags = Flag_SetBit(t->thing_flags, thing_single);
 				}
 			}
-			else if (line_startswith(DM))
+			else if (reader.LineStartsWith(DM))
 			{
-				if (readBool())
+				if (reader.ReadLineBool())
 				{
 					t->thing_flags = Flag_SetBit(t->thing_flags, thing_dm);
 				}
 			}
-			else if (line_startswith(COOP))
+			else if (reader.LineStartsWith(COOP))
 			{
-				if (readBool())
+				if (reader.ReadLineBool())
 				{
 					t->thing_flags = Flag_SetBit(t->thing_flags, thing_coop);
 				}
 			}
-			else if (line_startswith(FRIEND))
+			else if (reader.LineStartsWith(FRIEND))
 			{
-				if (readBool())
+				if (reader.ReadLineBool())
 				{
 					t->thing_flags = Flag_SetBit(t->thing_flags, thing_friend);
 				}
 			}
 
-			else if (line_has("}"))
+			else if (reader.LineHas("}"))
 			{
 				break;
 			}
@@ -457,24 +270,24 @@ static void read_thing() {
 		thingAmount += 1;
 	}
 }
-static void read_vertex() {
+static void read_vertex(BinaryReader& reader) {
 
-	read_line();
-	if (line_has("{"))
+	reader.ReadLine();
+	if (reader.LineHas("{"))
 	{
 		DoomVertex* t = &map->vertices[vertexAmount];
 		while (true)
 		{
-			read_line();
-			if (line_startswith(X))
+			reader.ReadLine();
+			if (reader.LineStartsWith(X))
 			{
-				t->x = readFloat();
+				t->x = reader.ReadLineFloat();
 			}
-			else if (line_startswith(Y))
+			else if (reader.LineStartsWith(Y))
 			{
-				t->y = readFloat();
+				t->y = reader.ReadLineFloat();
 			}
-			else if (line_has("}"))
+			else if (reader.LineHas("}"))
 			{
 				break;
 			}
@@ -483,89 +296,89 @@ static void read_vertex() {
 	}
 }
 
-static void read_linedef() {
+static void read_linedef(BinaryReader& reader) {
 
-	read_line();
-	if (line_has("{"))
+	reader.ReadLine();
+	if (reader.LineHas("{"))
 	{
 		DoomLinedef* t = &map->linedefs[linedefAmount];
 		DoomLinedef_Init(t);
 		while (true)
 		{
-			read_line();
-			if (line_startswith(ID))
+			reader.ReadLine();
+			if (reader.LineStartsWith(ID))
 			{
-				t->id = readInt();
+				t->id = reader.ReadLineInt();
 			}
-			if (line_startswith(V1))
+			if (reader.LineStartsWith(V1))
 			{
-				t->v1 = readInt();
+				t->v1 = reader.ReadLineInt();
 			}
-			else if (line_startswith(V2))
+			else if (reader.LineStartsWith(V2))
 			{
-				t->v2 = readInt();
+				t->v2 = reader.ReadLineInt();
 			}
-			else if (line_startswith(SPECIAL))
+			else if (reader.LineStartsWith(SPECIAL))
 			{
-				t->special = readInt();
+				t->special = reader.ReadLineInt();
 			}
-			else if (line_startswith(ARG0))
+			else if (reader.LineStartsWith(ARG0))
 			{
-				t->arg0 = readByte();
+				t->arg0 = reader.ReadLineByte();
 			}
-			else if (line_startswith(ARG1))
+			else if (reader.LineStartsWith(ARG1))
 			{
-				t->arg1 = readByte();
+				t->arg1 = reader.ReadLineByte();
 			}
-			else if (line_startswith(ARG2))
+			else if (reader.LineStartsWith(ARG2))
 			{
-				t->arg2 = readByte();
+				t->arg2 = reader.ReadLineByte();
 			}
-			else if (line_startswith(ARG3))
+			else if (reader.LineStartsWith(ARG3))
 			{
-				t->arg3 = readByte();
+				t->arg3 = reader.ReadLineByte();
 			}
-			else if (line_startswith(ARG4))
+			else if (reader.LineStartsWith(ARG4))
 			{
-				t->arg4 = readByte();
+				t->arg4 = reader.ReadLineByte();
 			}
-			else if (line_startswith(SIDEFRONT))
+			else if (reader.LineStartsWith(SIDEFRONT))
 			{
-				t->sidefront = readInt();
+				t->sidefront = reader.ReadLineInt();
 			}
-			else if (line_startswith(SIDEBACK))
+			else if (reader.LineStartsWith(SIDEBACK))
 			{
-				t->sideback = readInt();
+				t->sideback = reader.ReadLineInt();
 			}
-			else if (line_startswith(TWOSIDED))
+			else if (reader.LineStartsWith(TWOSIDED))
 			{
-				if (readBool())
+				if (reader.ReadLineBool())
 				{
 					t->linedef_flags = Flag_SetBit(t->linedef_flags, linedef_twosided);
 				}
 			}
-			else if (line_startswith(PLAYERCROSS))
+			else if (reader.LineStartsWith(PLAYERCROSS))
 			{
-				if (readBool())
+				if (reader.ReadLineBool())
 				{
 					t->linedef_flags = Flag_SetBit(t->linedef_flags, linedef_activate_player_cross);
 				}
 			}
-			else if (line_startswith(PLAYERPUSH))
+			else if (reader.LineStartsWith(PLAYERPUSH))
 			{
-				if (readBool())
+				if (reader.ReadLineBool())
 				{
 					t->linedef_flags = Flag_SetBit(t->linedef_flags, linedef_activate_player_push);
 				}
 			}
-			else if (line_startswith(PLAYERUSE))
+			else if (reader.LineStartsWith(PLAYERUSE))
 			{
-				if (readBool())
+				if (reader.ReadLineBool())
 				{
 					t->linedef_flags = Flag_SetBit(t->linedef_flags, linedef_activate_player_use);
 				}
 			}
-			else if (line_has("}"))
+			else if (reader.LineHas("}"))
 			{
 				break;
 			}
@@ -573,41 +386,41 @@ static void read_linedef() {
 		linedefAmount += 1;
 	}
 }
-static void read_sidedef()
+static void read_sidedef(BinaryReader& reader)
 {
-	read_line();
-	if (line_has("{"))
+	reader.ReadLine();
+	if (reader.LineHas("{"))
 	{
 		DoomSidedef* t = &map->sidedefs[sidedefAmount];
 		DoomSidedef_Init(t);
 		while (true)
 		{
-			read_line();
-			if (line_startswith(OFFSETX))
+			reader.ReadLine();
+			if (reader.LineStartsWith(OFFSETX))
 			{
-				t->offsetx = readInt();
+				t->offsetx = reader.ReadLineInt();
 			}
-			if (line_startswith(OFFSETY))
+			if (reader.LineStartsWith(OFFSETY))
 			{
-				t->offsety = readInt();
+				t->offsety = reader.ReadLineInt();
 			}
-			else if (line_startswith(TEXTURETOP))
+			else if (reader.LineStartsWith(TEXTURETOP))
 			{
-				t->texturetop = readTextureId();
+				t->texturetop = reader.ReadLineTextureId();
 			}
-			else if (line_startswith(TEXTUREBOTTOM))
+			else if (reader.LineStartsWith(TEXTUREBOTTOM))
 			{
-				t->texturebottom = readTextureId();
+				t->texturebottom = reader.ReadLineTextureId();
 			}
-			else if (line_startswith(TEXTUREMIDDLE))
+			else if (reader.LineStartsWith(TEXTUREMIDDLE))
 			{
-				t->texturemiddle = readTextureId();
+				t->texturemiddle = reader.ReadLineTextureId();
 			}
-			else if (line_startswith(SECTOR))
+			else if (reader.LineStartsWith(SECTOR))
 			{
-				t->sector = readInt();
+				t->sector = reader.ReadLineInt();
 			}
-			else if (line_has("}"))
+			else if (reader.LineHas(ENTITY_END))
 			{
 				break;
 			}
@@ -615,44 +428,44 @@ static void read_sidedef()
 		sidedefAmount += 1;
 	}
 }
-static void read_sector() {
-	read_line();
-	if (line_has("{"))
+static void read_sector(BinaryReader& reader) {
+	reader.ReadLine();
+	if (reader.LineHas("{"))
 	{
 		DoomSector* t = &map->sectors[sectorAmount];
 		DoomSector_Init(t);
 		while (true)
 		{
-			read_line();
-			if (line_startswith(HEIGHTFLOOR))
+			reader.ReadLine();
+			if (reader.LineStartsWith(HEIGHTFLOOR))
 			{
-				t->heightfloor = readInt();
+				t->heightfloor = reader.ReadLineInt();
 			}
-			if (line_startswith(HEIGHTCEILING))
+			if (reader.LineStartsWith(HEIGHTCEILING))
 			{
-				t->heightceiling = readInt();
+				t->heightceiling = reader.ReadLineInt();
 			}
-			else if (line_startswith(TEXTUREFLOOR))
+			else if (reader.LineStartsWith(TEXTUREFLOOR))
 			{
-				t->texturefloor = readTextureId();
+				t->texturefloor = reader.ReadLineTextureId();
 			}
-			else if (line_startswith(TEXTURECEILING))
+			else if (reader.LineStartsWith(TEXTURECEILING))
 			{
-				t->textureceiling = readTextureId();
+				t->textureceiling = reader.ReadLineTextureId();
 			}
-			else if (line_startswith(LIGHTLEVEL))
+			else if (reader.LineStartsWith(LIGHTLEVEL))
 			{
-				t->lightlevel = readByte();
+				t->lightlevel = reader.ReadLineByte();
 			}
-			else if (line_startswith(SPECIAL))
+			else if (reader.LineStartsWith(SPECIAL))
 			{
-				t->special = readInt();
+				t->special = reader.ReadLineInt();
 			}
-			else if (line_startswith(ID))
+			else if (reader.LineStartsWith(ID))
 			{
-				t->id = readInt();
+				t->id = reader.ReadLineInt();
 			}
-			else if (line_has("}"))
+			else if (reader.LineHas("}"))
 			{
 				break;
 			}
@@ -693,292 +506,47 @@ static int FindDoorOpenHeight(DoomMap* map, int sectorIndex)
 	return targetHeight;
 }
 
-    BunnySector_Map* Doom_ReadMapFromFile(const char* mapfilename)
+
+static void ReadAndLoadTextures(WADReader& wad, BinaryReader& reader, const char* wadFileName)
+{
+	DoomLumpInfo* textures = wad.FindTableItem("TEXTURES");
+	if (textures == nullptr)
 	{
-
-	// DANGER
-	// NOTE Windows needs b otherwise it thinks it is UTF-16 or something
-		mapfile = fopen(mapfilename, "rb"); 
-		if (mapfile == NULL)
+		return;
+	}
+	BunnySector::MaterialManager* matman = BunnySector_GetMaterialManager();
+	reader.SetActiveLumpInfo(textures);
+	while(reader.GetReadError() == false)
+	{
+		reader.ReadLine();
+		if (reader.LineStartsWith("Texture"))
 		{
-			return nullptr;
-		}
-		WADReader wadRead(mapfile);
+			// Read size
+			int w;
+			int h;
+			reader.ReadLineTextureSize(&w, &h);
+			read_lines_until(reader, ENTITY_END);
 
-		BunnySector_Map* BunnyMap = nullptr;
+			int textureName = matman->RecordMaterialName(reader.GetIdentifier());
+			Log_InfoF("Found texture %s, size (%d, %d) -> id %d\n", reader.GetIdentifier(), w, h, textureName);
 
-		lineBuffer = (char*)mgdl_AllocateGeneralMemory((LINEWIDTH + 1) * sizeof(char));
-		identifierBuffer = (char*)mgdl_AllocateGeneralMemory((IDWIDTH + 1) * sizeof(char));
-		textureNameBuffer = (char*)mgdl_AllocateGeneralMemory((TEXTURENAMEWIDTH + 1) * sizeof(char));
-
-
-		StartReadingFile(mapfile);
-
-		// Read the textmap lump
-		DoomLumpInfo* TEXTMAP = wadRead.GetTableItem("TEXTMAP");
-		mgdl_assert_print(TEXTMAP != nullptr, "No TEXTMAP lump found\n");
-		DoomLumpInfo* ZNODES = wadRead.GetTableItem("ZNODES");
-		mgdl_assert_print(ZNODES != nullptr, "No ZNODES lump found\n");
-
-		// Parsing
-		bool counting = true;
-		
-		
-
-		// Read two times. First for counting and then for reading
-		while(true)
-		{
-			// On first pass need to calculate amounts for allocation
-			// Second pass these are indices
-			SetActiveLumpInfo(TEXTMAP);
-			// TODO Add guard not to read too much
-
-			thingAmount = 0;
-			vertexAmount = 0;
-			linedefAmount = 0;
-			sidedefAmount = 0;
-			sectorAmount = 0;
-
-			// Start from top
-
-			while(feof(mapfile) == false)
+			// Jump to texture data lump
+			DoomLumpInfo* textureData = wad.FindTableItem(reader.GetIdentifier());
+			if (textureData)
 			{
-				read_line();
-				// look for keywords
-				if (line_startswith("thing"))
+				// Load as PNG and record
+				if (matman->ConnectTextureDataToMaterialIndex(textureName, reader.GetIdentifier(), wadFileName ,textureData->offset))
 				{
-					// Start reading thing
-					if (counting)
-					{
-						thingAmount += 1;
-						read_lines_until(ENTITY_END);
-					}
-					else
-					{
-						read_thing();
-					}
-				}
-				else if (line_startswith("vertex"))
-				{
-					if (counting)
-					{
-						vertexAmount += 1;
-						read_lines_until(ENTITY_END);
-					}
-					else
-					{
-						read_vertex();
-					}
-				}
-				else if (line_startswith("linedef"))
-				{
-					if (counting)
-					{
-						linedefAmount += 1;
-						read_lines_until(ENTITY_END);
-					}
-					else
-					{
-						read_linedef();
-					}
-				}
-				else if (line_startswith("sidedef"))
-				{
-					if (counting)
-					{
-						sidedefAmount += 1;
-						read_lines_until(ENTITY_END);
-					}
-					else
-					{
-						read_sidedef();
-					}
-				}
-				else if (line_startswith("sector"))
-				{
-					if (counting)
-					{
-						sectorAmount += 1;
-						read_lines_until(ENTITY_END);
-					}
-					else
-					{
-						read_sector();
-					}
+
 				}
 			}
-
-			// File was read
-			if (counting)
-			{
-				Log_InfoF("TEXTMAP Counting done\n");
-				// Read additional vertex amount for nodes
-				SetActiveLumpInfo(ZNODES);
-				read_chars_until("XGLN");
-				u32 OrgVerts = ReadDWORD();
-				u32 NewVertes = ReadDWORD();
-				Log_InfoF("Adding %d new vertices for nodes\n", NewVertes);
-
-				BunnyMap = new DoomMap();// (BunnySector_Map*)mgdl_AllocateGeneralMemory(sizeof(BunnySector_Map));
-				map = (DoomMap*)BunnyMap;
-
-				map->Allocate( thingAmount, sectorAmount, sidedefAmount, linedefAmount, vertexAmount + NewVertes);
-
-				counting = false;
-			}
-
-			else
-			{
-				Log_Info("TEXTMAP Reading done\n");
-				// All data read
-				break;
-			}
-		} // Counting and reading done
-
-
-
-		Log_Info("Reading Z nodes\n");
-		// Read the nodes
-		// TODO read bit by bit
-
-		SetActiveLumpInfo(ZNODES);
-		read_chars_until("XGLN");
-		u32 OrgVerts = ReadDWORD();
-		Log_InfoF("OrgVerts %d\n", OrgVerts);
-		u32 NewVertes = ReadDWORD();
-
-		Log_InfoF("NewVerts %d \n", NewVertes);
-		for (int ni = 0; ni < NewVertes; ni++)
-		{
-			// TODO Fixed integers
-			Fixed16 x = ReadFixed();
-			Fixed16 y = ReadFixed();
-
-			Log_InfoF("Vert %d at (%d.%d, %d.%d)\n", ni, x.whole, x.fract,  y.whole, y.fract);
-			map->vertices[vertexAmount].x = x.whole;
-			map->vertices[vertexAmount].y = y.whole;
-			vertexAmount++;
 		}
-		u32 NumSubsectors = ReadDWORD();
-		map->AllocateSubsectors( NumSubsectors);
-		Log_InfoF("NumSubsectors %d\n", NumSubsectors);
-		int segmentsRead = 0;
-		for (int ni = 0; ni < NumSubsectors; ni++)
-		{
-			u32 NumSegs = ReadDWORD();
-			map->subsectors[ni].firstSegment = segmentsRead;;
-			map->subsectors[ni].segmentAmount = NumSegs;
-			Log_InfoF("Subsector %d Segments; %d : First segment %d\n", ni, NumSegs, segmentsRead);
-			segmentsRead += NumSegs;
-		}
+	}
+}
 
-		u32 NumSegs = ReadDWORD();
-		mgdl_assert_test(NumSegs == segmentsRead);
-		Log_InfoF("NumSeg %d\n", NumSegs);
-		map->AllocateSegments( NumSegs);
-		for (int si = 0; si < map->segmentAmount; si++)
-		{
-			u32 v1 = ReadDWORD(); // Vertex index
-			u32 partner = ReadDWORD(); // Segment index
-			u16 line = ReadWORD(); // Linedef index
-			u8 side = ReadByte(); // Linedef side
-			Log_InfoF("Seg %d: V1 %d partner %d line %d side %d\n", si, v1, partner, line, side);
 
-			map->segments[si].v1 = v1;
-			map->segments[si].partnerSegment = partner;
-			map->segments[si].linedef = line;
-			map->segments[si].lineSide = side;
-		}
 
-		u32 NumNodes = ReadDWORD();
-		Log_InfoF("NumNodes : %d\n", NumNodes);
-		mgdl_assert_print(NumNodes > 0, "Doom map must have at least 1 node\n");
-		map->AllocateNodes( NumNodes);
-		for (int ni = 0; ni < NumNodes; ni++)
-		{
-			if (GetReadError())
-			{
-				break;
-			}
-			Log_InfoF("Node %d\n", ni);
-			// The line that splits the node
-			s16 x = ReadSWORD();
-			s16 y = ReadSWORD();
-			s16 dx = ReadSWORD();
-			s16 dy = ReadSWORD();
-
-			// Child 0 bounding box
-			s16 Top0 = ReadSWORD();
-			s16 Bottom0 = ReadSWORD();
-			s16 Left0 = ReadSWORD();
-			s16 Right0 = ReadSWORD();
-			// Child 1 bounding box
-			s16 Top1 = ReadSWORD();
-			s16 Bottom1 = ReadSWORD();
-			s16 Left1 = ReadSWORD();
-			s16 Right1 = ReadSWORD();
-
-			// Bit 31 : 1 subsector
-			// Bit 31 : 0 node
-			u32 child0 = ReadDWORD();
-			u32 child1 = ReadDWORD();
-
-			Log_InfoF("Child 0 %08.8x ", child0);
-			if (child0 & 0x80000000)
-			{
-				Log_InfoF("is subsector: %d\n", child0 & 0x7FFFFFFF);
-			}
-			else
-			{
-				Log_InfoF("is node: %d\n", child0);
-			}
-			Log_InfoF("Bounding box %d %d %d %d\n", Top0, Bottom0, Left0, Right0);
-
-			Log_InfoF("Child 1 %08.8x ", child1);
-			if (child1 & 0x80000000)
-			{
-				Log_InfoF("is subsector: %d\n", child1 & 0x7FFFFFFF);
-			}
-			else
-			{
-				Log_InfoF("is node: %d\n", child1);
-			}
-			Log_InfoF("Bounding box %d %d %d %d\n", Top1, Bottom1, Left1, Right1);
-			if (GetReadError())
-			{
-				break;
-			}
-			DoomNode* n = &map->nodes[ni];
-			n->x = x;
-			n->y = y;
-			n->dx = dx;
-			n->dy = dy;
-
-			n->bbox0[BB_TOP] = Top0;
-			n->bbox0[BB_BOT] = Bottom0;
-			n->bbox0[BB_LFT] = Left0;
-			n->bbox0[BB_RGT] = Right0;
-			// Child 1 bounding box
-			n->bbox1[BB_TOP] = Top1;
-			n->bbox1[BB_BOT] = Bottom1;
-			n->bbox1[BB_LFT] = Left1;
-			n->bbox1[BB_RGT] = Right1;
-
-			// Bit 31 : 1 subsector
-			// Bit 31 : 0 node
-			n->children[0] = child0;
-			n->children[1] = child1;
-			if (GetReadError())
-			{
-				break;
-			}
-		}
-
-		fclose(mapfile);
-
-		mgdl_FreeGeneralMemory(lineBuffer);
-		mgdl_FreeGeneralMemory(identifierBuffer);
-		mgdl_FreeGeneralMemory(textureNameBuffer);
+static void CalculateGameplayInfo(DoomMap* map){
 
 		// NOTE DANGER
 		// SLADE stores maps with Y increasing up.
@@ -997,7 +565,7 @@ static int FindDoorOpenHeight(DoomMap* map, int sectorIndex)
 				map->vertices[i].y *= -1.0f;
 			}
 
-			for (int ni = 0; ni < NumNodes; ni++)
+			for (int ni = 0; ni < map->nodeAmount; ni++)
 			{
 				// Bounding box top and bottom change places
 				int btop0 = map->nodes[ni].bbox0[BB_TOP];
@@ -1189,14 +757,15 @@ static int FindDoorOpenHeight(DoomMap* map, int sectorIndex)
 
     // Build other information needed
     // Build other data needed by game
-    for (int si = 0; si < BunnyMap->GetSectorAmount(); si++)
+    for (int si = 0; si < map->GetSectorAmount(); si++)
     {
         Vector2 minp = Vector2New(32000, 32000);
         Vector2 maxp = Vector2New(-32000, -32000);
-        int sectorwallnum = BunnyMap->GetWallAmountInSector(si);
+		DoomSubSector* sub = &map->subsectors[si];
+        int sectorwallnum = map->GetWallAmountInSector(si);
         for (s16 wi = 0; wi < sectorwallnum; wi++)
         {
-            Vector2 w = BunnyMap->GetWallVertexInSector(si, wi);
+            Vector2 w = map->GetWallVertexInSector(si, wi);
             minp.x = minF(w.x, minp.x);
             minp.y = minF(w.y, minp.y);
             maxp.x = maxF(w.x, maxp.x);
@@ -1222,8 +791,280 @@ static int FindDoorOpenHeight(DoomMap* map, int sectorIndex)
             map->highY = sector->heightceiling;
         }
     }
+}
+
+    BunnySector_Map* Doom_ReadMapFromFile(const char* mapfilename)
+	{
+
+	// DANGER
+	// NOTE Windows needs b otherwise it thinks it is UTF-16 or something
+		BinaryReader reader(mapfilename);
+		if (reader.FileIsValid() == false)
+		{
+			return nullptr;
+		}
+		WADReader wadRead(&reader);
+
+		// Loads textures so that they know their position in the wad file for loading them in later
+		ReadAndLoadTextures(wadRead, reader, mapfilename);
+
+		BunnySector_Map* BunnyMap = nullptr;
+
+		// Read the textmap lump
+		DoomLumpInfo* TEXTMAP = wadRead.FindTableItem("TEXTMAP");
+		mgdl_assert_print(TEXTMAP != nullptr, "No TEXTMAP lump found\n");
+		DoomLumpInfo* ZNODES = wadRead.FindTableItem("ZNODES");
+		mgdl_assert_print(ZNODES != nullptr, "No ZNODES lump found\n");
+
+		// Parsing
+		bool counting = true;
+		
+		
+
+		// Read two times. First for counting and then for reading
+		while(true)
+		{
+			// On first pass need to calculate amounts for allocation
+			// Second pass these are indices
+			reader.SetActiveLumpInfo(TEXTMAP);
+			// TODO Add guard not to read too much
+
+			thingAmount = 0;
+			vertexAmount = 0;
+			linedefAmount = 0;
+			sidedefAmount = 0;
+			sectorAmount = 0;
+
+			// Start from top
+
+			while(reader.IsEOF() == false)
+			{
+				reader.ReadLine();
+				// look for keywords
+				if (reader.LineStartsWith("thing"))
+				{
+					// Start reading thing
+					if (counting)
+					{
+						thingAmount += 1;
+						read_lines_until(reader, ENTITY_END);
+					}
+					else
+					{
+						read_thing(reader);
+					}
+				}
+				else if (reader.LineStartsWith("vertex"))
+				{
+					if (counting)
+					{
+						vertexAmount += 1;
+						read_lines_until(reader, ENTITY_END);
+					}
+					else
+					{
+						read_vertex(reader);
+					}
+				}
+				else if (reader.LineStartsWith("linedef"))
+				{
+					if (counting)
+					{
+						linedefAmount += 1;
+						read_lines_until(reader, ENTITY_END);
+					}
+					else
+					{
+						read_linedef(reader);
+					}
+				}
+				else if (reader.LineStartsWith("sidedef"))
+				{
+					if (counting)
+					{
+						sidedefAmount += 1;
+						read_lines_until(reader, ENTITY_END);
+					}
+					else
+					{
+						read_sidedef(reader);
+					}
+				}
+				else if (reader.LineStartsWith("sector"))
+				{
+					if (counting)
+					{
+						sectorAmount += 1;
+						read_lines_until(reader, ENTITY_END);
+					}
+					else
+					{
+						read_sector(reader);
+					}
+				}
+			}
+
+			// File was read
+			if (counting)
+			{
+				Log_InfoF("TEXTMAP Counting done\n");
+				// Read additional vertex amount for nodes
+				reader.SetActiveLumpInfo(ZNODES);
+				reader.ReadUntilString("XGLN");
+				u32 OrgVerts = reader.ReadDWORD();
+				u32 NewVertes = reader.ReadDWORD();
+				Log_InfoF("Adding %d new vertices for nodes\n", NewVertes);
+
+				BunnyMap = new DoomMap();// (BunnySector_Map*)mgdl_AllocateGeneralMemory(sizeof(BunnySector_Map));
+				map = (DoomMap*)BunnyMap;
+
+				map->Allocate( thingAmount, sectorAmount, sidedefAmount, linedefAmount, vertexAmount + NewVertes);
+
+				counting = false;
+			}
+
+			else
+			{
+				Log_Info("TEXTMAP Reading done\n");
+				// All data read
+				break;
+			}
+		} // Counting and reading done
 
 
+
+		Log_Info("Reading Z nodes\n");
+		// Read the nodes
+		// TODO read bit by bit
+
+		reader.SetActiveLumpInfo(ZNODES);
+		reader.ReadUntilString("XGLN");
+		u32 OrgVerts = reader.ReadDWORD();
+		Log_InfoF("OrgVerts %d\n", OrgVerts);
+		u32 NewVertes = reader.ReadDWORD();
+
+		Log_InfoF("NewVerts %d \n", NewVertes);
+		for (int ni = 0; ni < NewVertes; ni++)
+		{
+			// TODO Fixed integers
+			Fixed16 x = reader.ReadFixed();
+			Fixed16 y = reader.ReadFixed();
+
+			Log_InfoF("Vert %d at (%d.%d, %d.%d)\n", ni, x.whole, x.fract,  y.whole, y.fract);
+			map->vertices[vertexAmount].x = x.whole;
+			map->vertices[vertexAmount].y = y.whole;
+			vertexAmount++;
+		}
+		u32 NumSubsectors = reader.ReadDWORD();
+		map->AllocateSubsectors( NumSubsectors);
+		Log_InfoF("NumSubsectors %d\n", NumSubsectors);
+		int segmentsRead = 0;
+		for (int ni = 0; ni < NumSubsectors; ni++)
+		{
+			u32 NumSegs = reader.ReadDWORD();
+			map->subsectors[ni].firstSegment = segmentsRead;;
+			map->subsectors[ni].segmentAmount = NumSegs;
+			Log_InfoF("Subsector %d Segments; %d : First segment %d\n", ni, NumSegs, segmentsRead);
+			segmentsRead += NumSegs;
+		}
+
+		u32 NumSegs = reader.ReadDWORD();
+		mgdl_assert_test(NumSegs == segmentsRead);
+		Log_InfoF("NumSeg %d\n", NumSegs);
+		map->AllocateSegments( NumSegs);
+		for (int si = 0; si < map->segmentAmount; si++)
+		{
+			u32 v1 = reader.ReadDWORD(); // Vertex index
+			u32 partner = reader.ReadDWORD(); // Segment index
+			u16 line = reader.ReadWORD(); // Linedef index
+			u8 side = reader.ReadByte(); // Linedef side
+			Log_InfoF("Seg %d: V1 %d partner %d line %d side %d\n", si, v1, partner, line, side);
+
+			map->segments[si].v1 = v1;
+			map->segments[si].partnerSegment = partner;
+			map->segments[si].linedef = line;
+			map->segments[si].lineSide = side;
+		}
+
+		u32 NumNodes = reader.ReadDWORD();
+		Log_InfoF("NumNodes : %d\n", NumNodes);
+		mgdl_assert_print(NumNodes > 0, "Doom map must have at least 1 node\n");
+		map->AllocateNodes( NumNodes);
+		for (int ni = 0; ni < NumNodes; ni++)
+		{
+			if (reader.GetReadError())
+			{
+				break;
+			}
+			Log_InfoF("Node %d\n", ni);
+			// The line that splits the node
+			s16 x = reader.ReadSWORD();
+			s16 y = reader.ReadSWORD();
+			s16 dx = reader.ReadSWORD();
+			s16 dy = reader.ReadSWORD();
+
+			// Child 0 bounding box
+			s16 Top0 = reader.ReadSWORD();
+			s16 Bottom0 = reader.ReadSWORD();
+			s16 Left0 = reader.ReadSWORD();
+			s16 Right0 = reader.ReadSWORD();
+			// Child 1 bounding box
+			s16 Top1 = reader.ReadSWORD();
+			s16 Bottom1 = reader.ReadSWORD();
+			s16 Left1 = reader.ReadSWORD();
+			s16 Right1 = reader.ReadSWORD();
+
+			// Bit 31 : 1 subsector
+			// Bit 31 : 0 node
+			u32 child0 = reader.ReadDWORD();
+			u32 child1 = reader.ReadDWORD();
+
+			Log_InfoF("Child 0 %08.8x ", child0);
+			if (child0 & 0x80000000)
+			{
+				Log_InfoF("is subsector: %d\n", child0 & 0x7FFFFFFF);
+			}
+			else
+			{
+				Log_InfoF("is node: %d\n", child0);
+			}
+			Log_InfoF("Bounding box %d %d %d %d\n", Top0, Bottom0, Left0, Right0);
+
+			Log_InfoF("Child 1 %08.8x ", child1);
+			if (child1 & 0x80000000)
+			{
+				Log_InfoF("is subsector: %d\n", child1 & 0x7FFFFFFF);
+			}
+			else
+			{
+				Log_InfoF("is node: %d\n", child1);
+			}
+			Log_InfoF("Bounding box %d %d %d %d\n", Top1, Bottom1, Left1, Right1);
+
+			DoomNode* n = &map->nodes[ni];
+			n->x = x;
+			n->y = y;
+			n->dx = dx;
+			n->dy = dy;
+
+			n->bbox0[BB_TOP] = Top0;
+			n->bbox0[BB_BOT] = Bottom0;
+			n->bbox0[BB_LFT] = Left0;
+			n->bbox0[BB_RGT] = Right0;
+			// Child 1 bounding box
+			n->bbox1[BB_TOP] = Top1;
+			n->bbox1[BB_BOT] = Bottom1;
+			n->bbox1[BB_LFT] = Left1;
+			n->bbox1[BB_RGT] = Right1;
+
+			// Bit 31 : 1 subsector
+			// Bit 31 : 0 node
+			n->children[0] = child0;
+			n->children[1] = child1;
+		}
+
+
+		CalculateGameplayInfo(map);
 
 		return BunnyMap;
 	}

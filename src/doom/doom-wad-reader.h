@@ -3,9 +3,9 @@
 class WADReader
 {
 public:
-	WADReader(FILE* wadFilePtr);
+	WADReader(BinaryReader* reader);
 	~WADReader();
-	DoomLumpInfo* GetTableItem(const char* name);
+	DoomLumpInfo* FindTableItem(const char* name);
 
 	zstr wadFilename;
 	u32 lumpAmount;

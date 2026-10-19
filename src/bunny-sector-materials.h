@@ -1,5 +1,6 @@
 #pragma once
 #include "bunny-sector-types.h"
+#include <stdio.h>
 
 namespace BunnySector
 {
@@ -33,6 +34,8 @@ class MaterialManager
 		 * @returns True if index was valid and material was modified
 		 */
 		bool ConnectTextureToMaterialIndex(int doomTextureNameIndex, const char* texture);
+
+		bool ConnectTextureDataToMaterialIndex(int doomTextureNameIndex, const char* texturename, const char* filename, sizetype offsetFromStart);
 
 		MaterialId LoadMaterialByName(zstr* name);
 };

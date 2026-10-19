@@ -21,6 +21,7 @@ extern "C" {
 	*/
     BunnySector_Map* Doom_ReadMapFromFile(const char* mapfilename);
 
+
 #ifdef __cplusplus
 }
 #endif

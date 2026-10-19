@@ -72,11 +72,23 @@ enum MapMaterialType
 };
 typedef enum MapMaterialType MapMaterialType;
 
+enum MapMaterialSource
+{
+	Material_SourceFile,
+	Material_SourceFilePtr
+};
+typedef enum MapMaterialSource MapMaterialSource;
+
 // Extension of normal material
 struct MapMaterial
 {
 	Material* mgdlMaterial;
 	MapMaterialType type;
+	MapMaterialSource source;
+
+	// Only used if from source
+	zstr filename;
+	sizetype offsetToFile;
 
 	union MaterialData
 	{

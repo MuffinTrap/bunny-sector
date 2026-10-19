@@ -6,17 +6,16 @@
 #include <mgdl.h>
 
 
-WADReader::WADReader(FILE* wadFILEPtr)
+WADReader::WADReader(BinaryReader* reader)
 {
 	// Read the header
-	if (wadFILEPtr != nullptr)
+	if (reader != nullptr)
 	{
 		char identification[4];
-		StartReadingFile(wadFILEPtr);
-		ReadChars(4, identification); // PWAD or IWAD
+		reader->ReadChars(4, identification); // PWAD or IWAD
 		zstr idstr = zstr_from_len(identification, 4);
-		lumpAmount = ReadUInt32();
-		infoTableOffset = ReadUInt32();
+		lumpAmount = reader->ReadUInt32();
+		infoTableOffset = reader->ReadUInt32();
 
 		Log_InfoF("Wad file.Id %s Lumps %d Infotable at %d\n", zstr_cstr(&idstr), lumpAmount, infoTableOffset);
 
@@ -26,10 +25,10 @@ WADReader::WADReader(FILE* wadFILEPtr)
 		infoTable = new DoomLumpInfo[lumpAmount];
 		for (int i = 0; i < lumpAmount; i++)
 		{
-			fseek(wadFILEPtr, infoTableOffset + i * 16, SEEK_SET);
-			infoTable[i].offset = ReadUInt32();
-			infoTable[i].size = ReadUInt32();
-			ReadChars(8, lumpName);
+			reader->Seek(infoTableOffset + i * 16);
+			infoTable[i].offset = reader->ReadUInt32();
+			infoTable[i].size = reader->ReadUInt32();
+			reader->ReadChars(8, lumpName);
 			infoTable[i].name = zstr_from_len(lumpName, 8);
 		}
 
@@ -49,7 +48,7 @@ WADReader::~WADReader()
 }
 
 
-DoomLumpInfo * WADReader::GetTableItem(const char* name)
+DoomLumpInfo * WADReader::FindTableItem(const char* name)
 {
 	DoomLumpInfo* found = nullptr;
 	zstr targetName = zstr_from_len(name, 8); // NOTE Must be equal length for comparison to work

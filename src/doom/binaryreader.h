@@ -4,36 +4,64 @@
 #include "doom_types.h"
 
 // Reads binary info from a file
-#ifdef __cplusplus
-extern "C" {
-#endif
+class BinaryReader
+{
+public:
+	BinaryReader(const char* filename);
+	~BinaryReader();
+	void SetActiveLumpInfo(DoomLumpInfo* activeLump);
 
+	s16 ReadInt16();
+	s16 ReadSWORD();
 
-bool OpenBinary(const char* filename);
-void StartReadingFile(FILE* fileptr);
-void SetActiveLumpInfo(DoomLumpInfo* activeLump);
+	u16 ReadUInt16();
+	u16 ReadWORD();
 
-s16 ReadInt16();
-s16 ReadSWORD();
+	s32 ReadInt32();
 
-u16 ReadUInt16();
-u16 ReadWORD();
+	u32 ReadUInt32();
+	u32 ReadDWORD();
 
-s32 ReadInt32();
+	s8  ReadSByte();
+	u8  ReadByte();
 
-u32 ReadUInt32();
-u32 ReadDWORD();
+	char ReadChar();
 
-s8  ReadSByte();
-u8  ReadByte();
+	bool ReadUntilString(const char* string);
+	void ReadLine();
+	bool LineStartsWith(const char* keyword);
+	bool LineHas(const char* keyword);
+	int ReadLineInt();
+	float ReadLineFloat();
+	bool ReadLineBool();
+	s8 ReadLineByte();
+	MaterialId ReadLineTextureId();
+	void ReadLineTextureSize(int* wout, int* hout);
 
-void ReadChars(int amount, char* arrayOut);
+	void ReadChars(int amount, char* arrayOut);
 
-Fixed16 ReadFixed();
+	Fixed16 ReadFixed();
+	void Seek(sizetype offsetFromStart);
 
-bool CloseBinary();
-bool GetReadError();
+	bool GetReadError();
+	bool FileIsValid();
+	bool IsEOF();
+	const char* GetIdentifier();
+private:
+	bool OpenBinary(const char* filename);
+	void StartReadingFile(FILE* fileptr);
+	void FileRead(void* destination, sizetype dataSize, sizetype itemCount, FILE* filePtr);
+	bool CloseBinary();
 
-#ifdef __cplusplus
-}
-#endif
+	FILE* openFile = nullptr;
+	DoomLumpInfo* activeLump;
+	s8 buffer[4];
+	bool readError = false;
+
+	const int LINEWIDTH = 128;
+	char* lineBuffer;
+	const int IDWIDTH = 32;
+	char* identifierBuffer;
+	const int TEXTURENAMEWIDTH = 32;
+	char* textureNameBuffer;
+};
