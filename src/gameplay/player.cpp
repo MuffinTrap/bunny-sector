@@ -210,6 +210,8 @@ void Player::ApplyDrive(Actor* actor, float deltaTime)
 	{
 		moveVelocity += forwardDrive * moveAcceleration * deltaTime;
 		moveVelocity = clampF(moveVelocity, -moveSpeed, moveSpeed);
+
+		headBobValue = sinf(mgdl_GetElapsedSeconds() * headBobFreq) * headBobAmplitude;
 	}
 	else if (moveVelocity != 0)
 	{
@@ -264,7 +266,8 @@ void Player::ApplyDrive(Actor* actor, float deltaTime)
 Viewpoint Player::GetViewpoint(Actor* actor)
 {
 	Viewpoint v = actor->GetViewpoint();
-	v.position.y += standingHeight;
+	v.position.y += standingHeight + headBobValue;
+
 	return v;
 }
 

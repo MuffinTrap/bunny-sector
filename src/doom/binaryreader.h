@@ -37,6 +37,7 @@ public:
 	s8 ReadLineByte();
 	MaterialId ReadLineTextureId();
 	void ReadLineTextureSize(int* wout, int* hout);
+	zstr ReadLineStringBetween(char beginning, char end);
 
 	void ReadChars(int amount, char* arrayOut);
 

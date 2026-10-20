@@ -81,7 +81,7 @@ void BunnySector_Setup3D(float viewAspect, float cameraAspect);
 void BunnySector_AlignCameraToPlayer(int playerIndex);
 
 void BunnySector_StartMapDrawing();
-void BunnySector_DrawWallF(float startx, float startz, float endx, float endz, float normalx, float normalz, s32 floory, s32 ceilingy, s16 picnum, s8 shade);
+void BunnySector_DrawWallF(float startx, float startz, float endx, float endz, float normalx, float normalz, s32 floory, s32 ceilingy, s16 picnum, s8 shade, u32 linedef_flags);
 
 void BunnySector_StartFloorCeilingDrawing();
 void BunnySector_DrawSectorFloorOrCeiling(s16 sectorNumber, bool floor);

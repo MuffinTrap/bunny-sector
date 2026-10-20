@@ -64,6 +64,10 @@ public:
     float eyeHeightNormalized; ///< Eye height of active height
     int size; // Transferred to Actor
 
+    float headBobFreq;
+    float headBobAmplitude;
+    float headBobValue;
+
 
     // changed during gameplay
     float walkSpeedMultiplier; // Affects both moving and strafing

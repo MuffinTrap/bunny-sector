@@ -355,7 +355,7 @@ bool ProcessWall( Vector2 trans1, Vector2 trans2)
 
 void DrawNode(DoomMap& map, Actor& player, DoomNode& node);
 
-void DrawWall3D(Vector2 left, Vector2 right, s16 picnumMiddle, s16 picnumBottom, s16 picnumTop, s8 shade)
+void DrawWall3D(Vector2 left, Vector2 right, s16 picnumMiddle, s16 picnumBottom, s16 picnumTop, s8 shade, u32 linedef_flags)
 {
 
 	// TODO Cache these and submit all at once
@@ -371,7 +371,7 @@ void DrawWall3D(Vector2 left, Vector2 right, s16 picnumMiddle, s16 picnumBottom,
 		if (gp_SectorFloorY < gp_SectorNeighbourFloorY && picnumBottom >= 0)
 		{
 			//BunnySector_DrawWall(wall, end, floory, neighbor.floory, wall.picnum, wall.shade);
-			BunnySector_DrawWallF(left.x, left.y, right.x, right.y, wallNormal.x, wallNormal.y, gp_SectorFloorY, gp_SectorNeighbourFloorY,  picnumBottom, shade);
+			BunnySector_DrawWallF(left.x, left.y, right.x, right.y, wallNormal.x, wallNormal.y, gp_SectorFloorY, gp_SectorNeighbourFloorY,  picnumBottom, shade, linedef_flags);
 		}
 
 
@@ -381,22 +381,23 @@ void DrawWall3D(Vector2 left, Vector2 right, s16 picnumMiddle, s16 picnumBottom,
 		{
 			//Wall@ otherWall = BunnySector_GetWall(wall.nextwall);
 			//DrawQuad(startPoint, endPoint, wallNormal, neighbor.ceilingy, ceilingy, otherWall.picnum, otherWall.shade, 1.0f);
-			BunnySector_DrawWallF(left.x, left.y, right.x, right.y, wallNormal.x, wallNormal.y, gp_SectorNeighbourCeilingY, gp_SectorCeilingY, picnumTop, shade);
+			BunnySector_DrawWallF(left.x, left.y, right.x, right.y, wallNormal.x, wallNormal.y, gp_SectorNeighbourCeilingY, gp_SectorCeilingY, picnumTop, shade, linedef_flags);
 		}
 
 		if (picnumMiddle >= 0)
 		{
 			// TODO Masked portal from higher floor to lower ceiling
-			BunnySector_DrawWallF(left.x, left.y, right.x, right.y, wallNormal.x, wallNormal.y, MaxI(gp_SectorFloorY, gp_SectorNeighbourFloorY),
-			MinI(gp_SectorCeilingY, gp_SectorNeighbourCeilingY),
-			picnumMiddle, shade);
+			BunnySector_DrawWallF(left.x, left.y, right.x, right.y,
+								  wallNormal.x, wallNormal.y, MaxI(gp_SectorFloorY, gp_SectorNeighbourFloorY),
+									MinI(gp_SectorCeilingY, gp_SectorNeighbourCeilingY),
+									picnumMiddle, shade, linedef_flags);
 		}
 	}
 	else if (picnumMiddle >= 0)
 	{
 		//BunnySector_DrawWall(wall, end, floory, ceilingy, wall.picnum, wall.shade);
         //DrawQuad(startPoint, endPoint, wallNormal, floory, ceilingy, wall.picnum, wall.shade, 1.0f);
-		BunnySector_DrawWallF(left.x, left.y, right.x, right.y, wallNormal.x, wallNormal.y, gp_SectorFloorY, gp_SectorCeilingY, picnumMiddle, shade);
+		BunnySector_DrawWallF(left.x, left.y, right.x, right.y, wallNormal.x, wallNormal.y, gp_SectorFloorY, gp_SectorCeilingY, picnumMiddle, shade, linedef_flags);
 	}
 }
 
@@ -512,7 +513,7 @@ void DrawSubSector(DoomMap& map, Actor& player, DoomSubSector& sub, int sectorIn
 
 					// NOTE FLIP_THE_Y affets this call
 					//printf("---- Draw wall 3D %.1f %.1f\n", wall2.x, wall1.x);
-					DrawWall3D(wall1, wall2, sidedef.texturemiddle, sidedef.texturebottom, sidedef.texturetop, sector.lightlevel);
+					DrawWall3D(wall1, wall2, sidedef.texturemiddle, sidedef.texturebottom, sidedef.texturetop, sector.lightlevel, linedef.linedef_flags);
 				}
 			}
 		}

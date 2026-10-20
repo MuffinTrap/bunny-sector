@@ -465,20 +465,37 @@ MaterialId OpenGLRender_GetMapMaterialId(MapMaterial* material)
 
 /** TODO remove settings3D. Scale should be set globally already
  */
-void DrawQuad(Vector2 start, Vector2 end, const Vector2 normalXZ, s32 floorY, s32 ceilingY, s16 picnum, s8 brightnessOffset, float uvScale)
+void DrawQuad(Vector2 start, Vector2 end, const Vector2 normalXZ, s32 floorY, s32 ceilingY, s16 picnum, s8 brightnessOffset, u32 linedef_flags)
 {
     // Keep texture aspect 1:1 unless told otherwise
-    float width = Vector2Length( Vector2Subtract(end, start)) * uvScale;
-    float height = (ceilingY - floorY) * uvScale;
-
-    float aspect = width/height;
-    float tex_x1 = 0.0f;
-    float tex_x2 = aspect * height;
-    float tex_bottom = 0.0f;
-    float tex_top = 1.0 * height;
-    Vector3 normal = Vector3New(normalXZ.x, 0.0f, normalXZ.y);
+    float width = Vector2Length( Vector2Subtract(end, start));
+    float height = (ceilingY - floorY);
 
     MapMaterial* material = OpenGLRender_GetMaterialForMaterialId(picnum);
+
+    //float aspect = width/height;
+    float tex_x1 = 0.0f;
+
+    // If the wall is 128 wide and texture is too, this should be 1.0. If texture is 64, it should be 2
+    float tex_x2 = width / (float)material->mgdlMaterial->texture->width;
+
+    // SLADE draws the 1 at the top
+    // unless dontpegbottom is set
+    float vHeight = height / (float)material->mgdlMaterial->texture->height;
+    float tex_bottom = 0.0f;
+    float tex_top = 1.0f;
+    if (Flag_IsBitSet(linedef_flags, linedef_dontpegbottom))
+    {
+        tex_bottom = 0.0f;
+        tex_top = vHeight;
+    }
+    else
+    {
+        tex_bottom = 1.0f - vHeight;
+        tex_top = 1.0f;
+    }
+    Vector3 normal = Vector3New(normalXZ.x, 0.0f, normalXZ.y);
+
     ActivateVertexBuffer();
 
     BeginVertexBufferPolygon(normal, BrightnessOffsetToColor(brightnessOffset));
@@ -493,10 +510,10 @@ void DrawQuad(Vector2 start, Vector2 end, const Vector2 normalXZ, s32 floorY, s3
 
 }
 
-void OpenGLRender_DrawWallV(Vector2 start, Vector2 end, Vector2 normalXZ, s32 floorY, s32 ceilingY,  s16 picnum, s8 shade)
+void OpenGLRender_DrawWallV(Vector2 start, Vector2 end, Vector2 normalXZ, s32 floorY, s32 ceilingY,  s16 picnum, s8 shade, u32 linedef_flags)
 {
     // printf("DrawVallV %.2f %.2f -> %.2f %.2f, f : %d c: %d\n", start.x, start.y, end.x, end.y, floorY, ceilingY);
-    DrawQuad(start, end, normalXZ, floorY, ceilingY, picnum, shade, 1.0f/unitsPerMeterUV);
+    DrawQuad(start, end, normalXZ, floorY, ceilingY, picnum, shade, linedef_flags);
 }
 
 void OpenGLRender_DrawFloorOrCeiling(BunnySector_Map* map, int sectorIndex, u8 shade, float ycoord, MaterialId materialId, bool floor)

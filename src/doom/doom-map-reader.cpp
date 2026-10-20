@@ -357,6 +357,13 @@ static void read_linedef(BinaryReader& reader) {
 					t->linedef_flags = Flag_SetBit(t->linedef_flags, linedef_twosided);
 				}
 			}
+			else if (reader.LineStartsWith(DONTPEGBOTTOM))
+			{
+				if (reader.ReadLineBool())
+				{
+					t->linedef_flags = Flag_SetBit(t->linedef_flags, linedef_dontpegbottom);
+				}
+			}
 			else if (reader.LineStartsWith(PLAYERCROSS))
 			{
 				if (reader.ReadLineBool())
@@ -525,21 +532,22 @@ static void ReadAndLoadTextures(WADReader& wad, BinaryReader& reader, const char
 			int w;
 			int h;
 			reader.ReadLineTextureSize(&w, &h);
-			read_lines_until(reader, ENTITY_END);
+			zstr textureIdentiefier = reader.ReadLineStringBetween('"', '"');
 
-			int textureName = matman->RecordMaterialName(reader.GetIdentifier());
-			Log_InfoF("Found texture %s, size (%d, %d) -> id %d\n", reader.GetIdentifier(), w, h, textureName);
+			int textureName = matman->RecordMaterialName(zstr_cstr(&textureIdentiefier));
+			Log_InfoF("Found texture %s, size (%d, %d) -> id %d\n", zstr_cstr(&textureIdentiefier), w, h, textureName);
 
 			// Jump to texture data lump
-			DoomLumpInfo* textureData = wad.FindTableItem(reader.GetIdentifier());
+			DoomLumpInfo* textureData = wad.FindTableItem(zstr_cstr(&textureIdentiefier));
 			if (textureData)
 			{
 				// Load as PNG and record
-				if (matman->ConnectTextureDataToMaterialIndex(textureName, reader.GetIdentifier(), wadFileName ,textureData->offset))
+				if (matman->ConnectTextureDataToMaterialIndex(textureName, zstr_cstr(&textureIdentiefier), wadFileName ,textureData->offset))
 				{
-
+					// OK!
 				}
 			}
+			read_lines_until(reader, ENTITY_END);
 		}
 	}
 }
@@ -686,9 +694,11 @@ static void CalculateGameplayInfo(DoomMap* map){
 			}
 		}
 
+		// DANGER
 		// Adjust the height and elevation values of all sectors and things
 		// In doom the height is not in same units as width and depth
 		//
+		/*
 		float heightConversion = (float)DOOM_UNITS_TO_METER_H / (float)DOOM_UNITS_TO_METER_V;
 
 		for (int si = 0; si < sectorAmount; si++)
@@ -702,6 +712,7 @@ static void CalculateGameplayInfo(DoomMap* map){
 			DoomThing* thing = &map->things[ti];
 			thing->height *= heightConversion;
 		}
+		*/
 
 		// TODO
 		// for sectors that are doors, calculate the ceilingheight for when the door is open

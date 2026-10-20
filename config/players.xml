@@ -27,6 +27,9 @@ If other players are configured they inherit from player 0
 
 	@climbheight [default: 0] How tall stairs the character can climb automatically
 
+	@headbobfreq [default 0.0] How quickly head bobs up and down
+	@headbobamplitude [default 0.0] How much head bobs up and down
+
 	@inventory [optional] This configures the player default items
 		@item This configures one item and amount in inventory
 			Item must have one of the following:
@@ -41,7 +44,7 @@ If other players are configured they inherit from player 0
 	<player>
 		<number>0</number>
 
-		<height>80</height>
+		<height>42</height>
 		<size>16</size>
 
 		<movespeed>128</movespeed>
@@ -51,5 +54,8 @@ If other players are configured they inherit from player 0
 		<turnspeed>720</turnspeed>
 		<turnacceleration>1024</turnacceleration>
 		<turnslowdown>1024</turnslowdown>
+
+	<headbobfreq>12.0</headbobfreq>
+	<headbobamplitude>4.0</headbobamplitude>
 	</player>
 </root>

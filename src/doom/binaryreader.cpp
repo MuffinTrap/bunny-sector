@@ -63,6 +63,7 @@ void BinaryReader::SetActiveLumpInfo(DoomLumpInfo* info)
 {
     activeLump = info;
     Seek(activeLump->offset);
+    readError = false;
 }
 
 void BinaryReader::FileRead(void* destination, sizetype dataSize, sizetype itemCount, FILE* filePtr)
@@ -106,6 +107,10 @@ const char * BinaryReader::GetIdentifier()
 void BinaryReader::ReadLine()
 {
     fgets(lineBuffer, LINEWIDTH, openFile);
+    if (ftell(openFile) > activeLump->offset + activeLump->size)
+    {
+        readError = true;
+    }
 }
 bool BinaryReader::LineHas(const char* keyword)
 {
@@ -160,7 +165,33 @@ MaterialId BinaryReader::ReadLineTextureId()
 }
 void BinaryReader::ReadLineTextureSize(int* wout, int* hout)
 {
-	sscanf(lineBuffer, "Texture %8s, %3d, %3d;", identifierBuffer, wout, hout);
+	sscanf(lineBuffer, "Texture %*8s, %3d, %3d;", wout, hout);
+}
+
+zstr BinaryReader::ReadLineStringBetween(char beginning, char end)
+{
+    int startIndex = -1;
+    int endIndex = -1;
+    for (int i = 0; i < LINEWIDTH; i++)
+    {
+        if (startIndex < 0 && lineBuffer[i] == beginning)
+        {
+            startIndex = i;
+            continue;
+        }
+        if (endIndex < 0 && lineBuffer[i] == end)
+        {
+            endIndex = i;
+            break;
+        }
+    }
+    if (startIndex >= 0 && endIndex > startIndex)
+    {
+        zstr_view lineView = zstr_view_from(lineBuffer);
+        zstr_view identiefierView = zstr_sub(lineView, startIndex + 1, endIndex - startIndex - 1);
+        return zstr_from_view(identiefierView);
+    }
+    return zstr_init();
 }
 
 

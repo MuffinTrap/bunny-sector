@@ -57,6 +57,8 @@ bool PlayerManager::ReadXML(const char* filename)
 		// Default values
 		prefab->turnSpeedMultiplier = 1.0f;
 		prefab->walkSpeedMultiplier = 1.0f;
+		prefab->headBobAmplitude = 0.0f;
+		prefab->headBobFreq = 0.0f;
 
 		if (XML_ReadChildInt(playerElement, "height", &prefab->standingHeight) == false)
 		{
@@ -130,6 +132,16 @@ bool PlayerManager::ReadXML(const char* filename)
 		if (XML_ReadChildInt(playerElement, "climbheight", &prefab->climbHeight) == false)
 		{
 			prefab->climbHeight= 0; // Cannot climb
+		}
+
+		// HEAD BOB
+		if (XML_ReadChildFloat(playerElement, "headbobfreq", &prefab->headBobFreq) == false)
+		{
+			prefab->strafeSpeed = prefab->moveSpeed;
+		}
+		if (XML_ReadChildFloat(playerElement, "headbobamplitude", &prefab->headBobAmplitude) == false)
+		{
+			prefab->strafeAcceleration = prefab->strafeSpeed;
 		}
 
 		// INVENTORY

@@ -178,7 +178,7 @@ void BunnySector_StartMap(int playerAmount)
 		activePlayerAmount = playerAmount;
 
 		RenderSettingsOpenGL_SetUnitToMeter(&defaultOpenGL, DOOM_UNITS_TO_METER, DOOM_UNITS_TO_METER);
-		BunnySector_SetOpenGLUnitsToMeter(DOOM_UNITS_TO_METER, DOOM_UNITS_TO_METER);
+		BunnySector_SetOpenGLUnitsToMeter(DOOM_UNITS_TO_METER, DOOM_UNITS_TO_METER_V);
 		actorPool.Clear();
 		map->SetActorPool(&actorPool);
 		map->CreateActors();
@@ -372,8 +372,9 @@ void BunnySector_AlignCameraToPlayer(int playerIndex)
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	// TODO Amount of players changes the viewport / copy from ALASA
+	// Skew the aspect just a bit to get the doom rendering
 	gluPerspective(defaultCamera->fovY,
-				  viewPort.width/viewPort.height,
+				  (viewPort.width/viewPort.height),
 				   defaultCamera->nearZ,
 				defaultCamera->farZ);
 
@@ -538,9 +539,9 @@ void BunnySector_SetOpenGLUnitsToMeter(float horizontalScale, float verticalScal
 	bunny_UnitsToMeter_vertical = verticalScale;
 }
 
-void BunnySector_DrawWallF(float startx, float startz, float endx, float endz, float normalx, float normalz, s32 floory, s32 ceilingy, s16 picnum, s8 shade)
+void BunnySector_DrawWallF(float startx, float startz, float endx, float endz, float normalx, float normalz, s32 floory, s32 ceilingy, s16 picnum, s8 shade, u32 linedef_flags)
 {
-	OpenGLRender_DrawWallV(Vector2New(startx, startz), Vector2New(endx, endz), Vector2New(normalx, normalz), floory, ceilingy, picnum, shade);
+	OpenGLRender_DrawWallV(Vector2New(startx, startz), Vector2New(endx, endz), Vector2New(normalx, normalz), floory, ceilingy, picnum, shade, linedef_flags);
 }
 
 void BunnySector_StartFloorCeilingDrawing()

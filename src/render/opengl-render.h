@@ -41,7 +41,7 @@ void OpenGLRender_SetShellGrass(ShellGrass* grass);
  */
 void OpenGLRender_StartDrawingPolygons();
 
-	void OpenGLRender_DrawWallV(Vector2 start, Vector2 end, Vector2 normalXZ, s32 floorY, s32 ceilingY, s16 picnum, s8 shade);
+	void OpenGLRender_DrawWallV(Vector2 start, Vector2 end, Vector2 normalXZ, s32 floorY, s32 ceilingY, s16 picnum, s8 shade, u32 linedef_flags);
 
 	void OpenGLRender_DrawActors(BunnySector_Map* map, Vector2 cameraPosition);
 	void OpenGLRender_DrawSprite(Vector3 position, float width, float height, float spriteAngle, Vector2 playerPosition, SpriteAlignment alignment, SpritePivot pivot, s16 picnum, s8 brightnessOffset)
