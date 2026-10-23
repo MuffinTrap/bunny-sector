@@ -10,6 +10,17 @@ struct MapInfo
 	zstr filename;
 	int number;
 	int gravity;
+	bool useFog;
+	int fogDensity;
+	color32 fogColor;
+	float fogNear;
+	float fogFar;
+
+	bool useSkybox;
+	color32 skyZenithColor;
+	color32 skyHorizonColor;
+	color32 skyNadirColor;
+
 	BunnySector_Map* mapPtr;
 };
 
@@ -36,6 +47,7 @@ public:
 	zstr name;
 
 	MapInfo* mapInfoArray = nullptr;
+
 
 	int activeMapIndex = -1;
 	const float MAP_AMOUNT = 4;

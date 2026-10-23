@@ -2,6 +2,7 @@
 #include <mgdl.h>
 #include "../bunny-sector-types.h"
 
+
 #define DOOM_UNITS_TO_METER 32.0f
 #define DOOM_UNITS_TO_METER_H 32.0f // NOTE only used in map loading
 #define DOOM_UNITS_TO_METER_V 22.0f // NOTE this is only used in map loading
@@ -460,8 +461,11 @@ public:
 float DoomSpeedToUnits(int doomSpeed);
 
 #define NAMED_DOOM_TYPE_AMOUNT 6
+
+void InitDoomTypeNames();
+void SetDoomTypeCustomName(DOOM_EDITOR_NUMBER typenumber, zstr customName);
+
 const char* DoomTypeToStringChar(DOOM_EDITOR_NUMBER typeNumber);
 zstr* DoomTypeToStringZstr(DOOM_EDITOR_NUMBER typeNumber);
 DOOM_EDITOR_NUMBER NameToDoomEditorNumberChar(const char* name);
-
 

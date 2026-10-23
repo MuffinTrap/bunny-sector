@@ -20,6 +20,7 @@ BunnySector::ItemManager::ItemManager()
 	ItemPrefabs = (Actor*)mgdl_AllocateGeneralMemory(sizeof(Actor) * PrefabAmount);
 	type_item_map_init(&ItemConfigs);
 	nextPrefabIndex = 0;
+	
 }
 
 BunnySector::ItemManager::~ItemManager()
@@ -131,14 +132,19 @@ bool BunnySector::ItemManager::LoadXML(const char* filename)
 				if (!found)
 				{
 					Log_ErrorF("Item name %s did not match any DOOM type name\n", nameElement->GetText());
-					continue;
+					break;
 				}
 			}
 			else
 			{
-			Log_Error("Item has no number or name\n");
-				continue;
+				Log_Error("Item has no number or name\n");
+				break;
 			}
+		}
+		tinyxml2::XMLElement* customNameElement = itemElement->FirstChildElement("customname");
+		if (customNameElement)
+		{
+			SetDoomTypeCustomName((DOOM_EDITOR_NUMBER)prefab->typeNumber, zstr_from(customNameElement->GetText()));
 		}
 
 		tinyxml2::XMLElement* textureElement = itemElement->FirstChildElement("texture");

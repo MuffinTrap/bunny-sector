@@ -17,6 +17,7 @@ static ShellGrass* m_grass = nullptr;
 // Used when drawing skybox
 static Mesh* skyboxIcosa;
 static Gradient skyGradient;
+static bool skyboxEnabled = false;
 
 // Used to set normals when drawing floors and ceilings
 static GLfloat floorNormal[3];
@@ -70,6 +71,72 @@ static float unitsPerMeterUV = 112.0f; // Note this depends on texture dimension
 // NOTE New way to tesselate
 PolyTesselator* polytess;
  // #define TESS_DEBUG
+
+
+
+FogParameters fog;
+
+void OpenGLRender_SetFogEnabled(bool enabled)
+{
+    if (enabled)
+    {
+        glEnable(GL_FOG);
+        glFogi(GL_FOG_MODE, GL_EXP);
+    }
+    else
+    {
+        glDisable(GL_FOG);
+    }
+}
+
+void OpenGLRender_SetFogLimits(float start, float end)
+{
+
+    glFogf(GL_FOG_START, start);
+    glFogf(GL_FOG_END, end);
+}
+
+void OpenGLRender_SetFogColor(color32 color)
+{
+    static float colorRGBA[4];
+    fog.color = color;
+    
+    RGBAf foggis =  Color_HexToFloats(fog.color);
+    colorRGBA[0] = foggis.red;
+    colorRGBA[1] = foggis.green;
+    colorRGBA[2] = foggis.blue;
+    colorRGBA[3] = foggis.alpha;
+    // TODO Make RGBAf an union that can be given to gl
+    glFogfv(GL_FOG_COLOR, colorRGBA);
+}
+void OpenGLRender_SetFogDensityPercent(int opacity)
+{
+    glFogf(GL_FOG_DENSITY, (float)opacity / 100.0f);
+}
+
+void OpenGLRender_SetSkyboxEnabled(bool enabled)
+{
+    skyboxEnabled = enabled;
+    if (skyboxIcosa == nullptr)
+    {
+        skyboxIcosa = Mesh_CreateIcosahedron(FlagColors);
+        
+    }
+}
+void OpenGLRender_SetSkyboxColors(color32 zenith, color32 horizon, color32 nadir)
+{
+    skyGradient = Gradient_CreateEmpty(GradientVertical, GradientLoopRepeat);
+    Gradient_PushColor(&skyGradient, nadir, 0.0f);
+    Gradient_PushColor(&skyGradient, nadir, 0.25f);
+    Gradient_PushColor(&skyGradient, horizon, 0.5f);
+    Gradient_PushColor(&skyGradient, zenith, 0.75f);
+    Gradient_PushColor(&skyGradient, zenith, 1.0f);
+    if (skyboxIcosa != nullptr)
+    {
+        Mesh_SetColorsFromGradient(skyboxIcosa, &skyGradient);
+    }
+}
+
 
 void OpenGLRender_SetUnitsToMeter(float unitsToMeterHorizontal, float unitsToMeterVertical)
 {
@@ -375,15 +442,7 @@ void OpenGLRender_Init()
             materialPtrArray[i] = nullptr;
         }
     }
-    if (skyboxIcosa == nullptr)
-    {
-        skyboxIcosa = Mesh_CreateIcosahedron(FlagColors);
-        skyGradient = Gradient_CreateEmpty(GradientVertical, GradientLoopRepeat);
-        Gradient_PushColor(&skyGradient, Debug_Black, 0.0f);
-        Gradient_PushColor(&skyGradient, Debug_Blue, 0.5f);
-        Gradient_PushColor(&skyGradient, Debug_LightBlue, 1.0f);
-        Mesh_SetColorsFromGradient(skyboxIcosa, &skyGradient);
-    }
+    
 }
 
 void OpenGLRender_Deinit()

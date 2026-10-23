@@ -16,6 +16,8 @@ Game::Game()
 			mapInfoArray[i].gravity = 8024;
 			mapInfoArray[i].name = zstr_init();
 			mapInfoArray[i].number = -1;
+			mapInfoArray[i].useFog = false;
+			mapInfoArray[i].useSkybox = false;
 			mapInfoArray[i].mapPtr = nullptr;
 		}
 	}
@@ -74,13 +76,15 @@ bool Game::ReadXML(const char* filename)
 			mapInfoArray[mapIndex].filename = zstr_init();
 		}
 
-		bool gotnumber = XML_ReadChildInt(mapElement, "number", &mapInfoArray[mapIndex].number);
+		MapInfo& info = mapInfoArray[mapIndex];
+
+		bool gotnumber = XML_ReadChildInt(mapElement, "number", &info.number);
 		if (gotnumber)
 		{
-			if (mapInfoArray[mapIndex].number <= 0)
+			if (info.number <= 0)
 			{
 				Log_ErrorF("Invalid number specified for map %d Must be 1+ \n", mapIndex);;
-				mapInfoArray[mapIndex].number = 0;
+				info.number = 0;
 			}
 		}
 		if (gotnumber == false)
@@ -91,14 +95,80 @@ bool Game::ReadXML(const char* filename)
 		const char* mapname = XML_ReadChildString(mapElement, "name");
 		if (mapname != nullptr)
 		{
-			mapInfoArray[mapIndex].name = zstr_from(mapname);
+			info.name = zstr_from(mapname);
 		}
 		else
 		{
-			mapInfoArray[mapIndex].name = zstr_from(mgdl_BufferPrintf("map %d", mapInfoArray[mapIndex].number));
+			info.name = zstr_from(mgdl_BufferPrintf("map %d", mapInfoArray[mapIndex].number));
 		}
 
-		XML_ReadChildInt(mapElement, "gravity", &mapInfoArray[mapIndex].gravity);
+		XML_ReadChildInt(mapElement, "gravity", &info.gravity);
+
+		tinyxml2::XMLElement* fogElement = mapElement->FirstChildElement("fog");
+		if (fogElement)
+		{
+			info.useFog = true;
+			u32 col;
+			if (XML_ReadChildUInt(fogElement, "color", &col))
+			{
+				info.fogColor = (color32)col;
+			}
+			else
+			{
+				Log_ErrorF("Map %d fog color is missing\n", mapIndex); 
+			}
+			if (!XML_ReadChildFloat(fogElement, "far", &info.fogFar))
+			{
+				Log_ErrorF("Map %d fog far is missing\n", mapIndex);
+			}
+
+			if (!XML_ReadChildFloat(fogElement, "near", &info.fogNear))
+			{
+				Log_ErrorF("Map %d fog near is missing\n", mapIndex);
+			}
+
+			if (!XML_ReadChildInt(fogElement, "density", &info.fogDensity))
+			{
+				Log_ErrorF("Map %d fog density is missing\n", mapIndex);
+			}
+		}
+		tinyxml2::XMLElement* skyboxElement = mapElement->FirstChildElement("skybox");
+		if (fogElement)
+		{
+			info.useSkybox = true;
+			u32 zcol;
+			u32 ncol;
+			u32 hcol;
+			if (XML_ReadChildUInt(skyboxElement, "zenith", &zcol))
+			{
+				info.skyZenithColor = (color32)zcol;
+			}
+			else
+			{
+				Log_ErrorF("Map %d skybox zenith color is missing\n", mapIndex);
+				info.skyZenithColor = Debug_Black;
+			}
+
+			if (XML_ReadChildUInt(skyboxElement, "nadir", &ncol))
+			{
+				info.skyNadirColor = (color32)ncol;
+			}
+			else
+			{
+				Log_ErrorF("Map %d skybox nadir color is missing\n", mapIndex);
+				info.skyNadirColor = Debug_Black;
+			}
+
+			if (XML_ReadChildUInt(skyboxElement, "horizon", &hcol))
+			{
+				info.skyHorizonColor = (color32)hcol;
+			}
+			else
+			{
+				Log_ErrorF("Map %d skybox horizon color is missing\n", mapIndex);
+				info.skyHorizonColor = Debug_Black;
+			}
+		}
 
 		mapElement = mapElement->NextSiblingElement("map");
 		mapIndex += 1;
@@ -177,7 +247,7 @@ bool Game::LoadMap(int mapNumber)
 					return false;
 				}
 				loaded->m_type = maptype;
-				loaded->PrintInfo();
+				// loaded->PrintInfo();
 			}
 			if (loaded != nullptr)
 			{
@@ -185,6 +255,20 @@ bool Game::LoadMap(int mapNumber)
 				OpenGLRender_CreateFloorBuffers(loaded);
 
 				map->mapPtr = loaded;
+				// Copy all info 
+				MapInfo& info = mapInfoArray[i];
+				
+				map->mapPtr->useFog = info.useFog;
+				map->mapPtr->fogColor = info.fogColor;
+				map->mapPtr->fogNear = info.fogNear;
+				map->mapPtr->fogFar = info.fogFar;
+				map->mapPtr->fogDensity = info.fogDensity;
+
+				map->mapPtr->useSkybox = info.useSkybox;
+				map->mapPtr->skyHorizonColor = info.skyHorizonColor;
+				map->mapPtr->skyNadirColor = info.skyNadirColor;
+				map->mapPtr->skyZenithColor = info.skyZenithColor;
+				
 				activeMapIndex = i;
 				return true;
 			}

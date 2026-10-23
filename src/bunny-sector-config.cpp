@@ -43,6 +43,16 @@ bool XML_ReadChildInt(tinyxml2::XMLElement* parent, const char* tag, int* valueO
 	}
 	return false;
 }
+bool XML_ReadChildUInt(tinyxml2::XMLElement* parent, const char* tag, u32* valueOut)
+{
+	tinyxml2::XMLElement* intElement = parent->FirstChildElement(tag);
+	if (intElement)
+	{
+		intElement->QueryUnsignedText(valueOut);
+		return true;
+	}
+	return false;
+}
 bool XML_ReadChildFloat(tinyxml2::XMLElement* parent, const char* tag, float* valueOut)
 {
 	tinyxml2::XMLElement* floatElement = parent->FirstChildElement(tag);

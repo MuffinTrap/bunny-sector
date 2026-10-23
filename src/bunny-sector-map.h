@@ -126,5 +126,15 @@ public:
 	zstr mapname;
 	int number;
 	int gravity;
+	bool useFog;
+	int fogDensity;
+	color32 fogColor;
+	float fogNear;
+	float fogFar;
+
+	bool useSkybox;
+	color32 skyZenithColor;
+	color32 skyHorizonColor;
+	color32 skyNadirColor;
 };
 

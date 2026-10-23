@@ -10,6 +10,15 @@ This file configures game wide settings and map order and parameters
 		@number Number of the map, minimum is 1
 		@name [optional] Name of the map
 		@gravity [default: 8024] How fast things accelerate downwards if they are in air
+		@fog [optional] This begins a section about fog in this map
+			@density This is the density of fog from 1 to 100
+			@color This is the color of the fog as hex value, eg 0xFF0000FF for red 
+			@far The max distance visible in the fog, after this it is all fog
+			@near The distance at which fog starts, befor this all is clear
+		@skybox [optional] This begins a section about skybox colors in this map
+			@zenith This is the hexademical color at the top of sky
+			@horizon This is the hex color at the horizon line
+			@nadir This is the hex color at the bottom of sky 
 -->
 <root>
 	<game>
@@ -17,6 +26,17 @@ This file configures game wide settings and map order and parameters
 		<map>
 			<file>assets/ldmap.wad</file>
 			<number>1</number>
+			<fog>
+				<density>20</density>
+				<near>2</near>
+				<far>100</far>
+				<color>0x0a0a0aff</color>
+			</fog>
+			<skybox>
+				<zenith>0x0000ffff</zenith>
+				<horizon>0xccccccff</horizon>
+				<nadir>0x111111ff</nadir>
+			</skybox>
 		</map>
 	</game>
 </root>

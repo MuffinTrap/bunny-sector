@@ -129,7 +129,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Dev\Wii\Libraries\sdk\angelscript\lib;C:\Dev\Wii\mtek-gdl\windows_mgdl\x64\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Dev\Wii\Projects\bunny-sector\windows_example\x64\Release;C:\Dev\Wii\Libraries\sdk\angelscript\lib;C:\Dev\Wii\mtek-gdl\windows_mgdl\x64\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>windows_mgdl.lib;opengl32.lib;glu32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>

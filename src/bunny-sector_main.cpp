@@ -28,6 +28,9 @@
 #	include "../scripts/angel.hpp"
 #endif
 
+
+
+
 static BunnySector::MaterialManager* materialManager;
 static BunnySector::ItemManager* itemManager;
 static PlayerManager* playerManager;
@@ -55,6 +58,34 @@ static mgdl_AngelScript* angelContenxt;
 
 static float bunny_UnitsToMeter_horizontal = 1.0f;
 static float bunny_UnitsToMeter_vertical = 1.0f;
+
+static bool DEBUG_MENU = true;
+Menu* debugMenu;
+static bool debugMenuVisible = false;
+
+static void DrawDebugMenu()
+{
+	mgdl_InitOrthoProjection(1.0f);
+	Menu_ReadDefaultInputs(debugMenu);
+	Menu_Start(debugMenu, 0, 0, 64);
+	Menu_Toggle(debugMenu, "DEBUG", &debugMenuVisible);
+
+	if (debugMenuVisible)
+	{
+
+	}
+	if (Menu_Button(debugMenu, "Reload player xml"))
+	{
+		// TODO
+	}
+	// Reload Map config but not map itself
+
+	// 
+}
+
+
+
+
 
 static void s_AlignCameraToViewpoint(Viewpoint* info, Camera* camera)
 {
@@ -101,6 +132,7 @@ bool BunnySector_Init(mgdl_AngelScript* angel)
 	materialManager = new BunnySector::MaterialManager();
 	bool materialsloaded = materialManager->ReadXML("config/materials.xml");
 
+	InitDoomTypeNames(); // Item Manager can modify these
 	itemManager = new BunnySector::ItemManager();
 	bool itemsloaded = itemManager->LoadXML("config/items.xml");
 
@@ -125,6 +157,11 @@ bool BunnySector_Init(mgdl_AngelScript* angel)
 
 	// Read game configuration
 	bool gameloaded = game.ReadXML("config/game.xml");
+
+	if (DEBUG_MENU)
+	{
+		debugMenu = Menu_CreateDefault();
+	}
 
 	return (materialsloaded && itemsloaded && playersloaded && gameloaded);
 }
@@ -179,6 +216,27 @@ void BunnySector_StartMap(int playerAmount)
 
 		RenderSettingsOpenGL_SetUnitToMeter(&defaultOpenGL, DOOM_UNITS_TO_METER, DOOM_UNITS_TO_METER);
 		BunnySector_SetOpenGLUnitsToMeter(DOOM_UNITS_TO_METER, DOOM_UNITS_TO_METER_V);
+
+		if (map->useFog)
+		{
+			OpenGLRender_SetFogEnabled(true);
+			OpenGLRender_SetFogColor(map->fogColor);
+			OpenGLRender_SetFogLimits(map->fogNear, map->fogFar);
+			OpenGLRender_SetFogDensityPercent(map->fogDensity);
+		}
+		else
+		{
+			OpenGLRender_SetFogEnabled(false);
+		}
+		if (map->useSkybox)
+		{
+			OpenGLRender_SetSkyboxEnabled(true);
+			OpenGLRender_SetSkyboxColors(map->skyZenithColor, map->skyHorizonColor, map->skyNadirColor);
+		}
+		else
+		{
+			OpenGLRender_SetSkyboxEnabled(true);
+		}
 		actorPool.Clear();
 		map->SetActorPool(&actorPool);
 		map->CreateActors();
@@ -271,7 +329,14 @@ void BunnySector_Update(float deltaTime)
 
 	// Draw after updating
 	DoRenderCallback();
+
+	// Draw Debug menu on top of everything
+	if (DEBUG_MENU)
+	{
+		DrawDebugMenu();
+	}
 }
+
 
 void BunnySector_UpdateMapPtr(BunnySector_Map* map, float deltaTime)
 {

@@ -644,7 +644,7 @@ static void CalculateGameplayInfo(DoomMap* map){
 			 	sub->sector = GetSectorWinner();
 			}
 			mgdl_assert_print(sub->sector >= 0, "Did not find connected sector for subsector!\n");
-			Log_InfoF("Subsector %d linked to sector %d\n", ssi, sub->sector);
+			// Log_InfoF("Subsector %d linked to sector %d\n", ssi, sub->sector);
 		} // loop subsectors
 
 		// Find neighbourSector values
@@ -690,7 +690,7 @@ static void CalculateGameplayInfo(DoomMap* map){
 					seg->neighbourSector = -1;//DOOM_NO_LINE_NEIGHBOR;// TODO Figure this out
 				}
 
-				Log_InfoF("Subsector %d segment %d neighbor is %d\n", ssi, sub->firstSegment + segi, seg->neighbourSector);
+				// Log_InfoF("Subsector %d segment %d neighbor is %d\n", ssi, sub->firstSegment + segi, seg->neighbourSector);
 			}
 		}
 
@@ -918,13 +918,13 @@ static void CalculateGameplayInfo(DoomMap* map){
 			// File was read
 			if (counting)
 			{
-				Log_InfoF("TEXTMAP Counting done\n");
+				// Log_InfoF("TEXTMAP Counting done\n");
 				// Read additional vertex amount for nodes
 				reader.SetActiveLumpInfo(ZNODES);
 				reader.ReadUntilString("XGLN");
 				u32 OrgVerts = reader.ReadDWORD();
 				u32 NewVertes = reader.ReadDWORD();
-				Log_InfoF("Adding %d new vertices for nodes\n", NewVertes);
+				// Log_InfoF("Adding %d new vertices for nodes\n", NewVertes);
 
 				BunnyMap = new DoomMap();// (BunnySector_Map*)mgdl_AllocateGeneralMemory(sizeof(BunnySector_Map));
 				map = (DoomMap*)BunnyMap;
@@ -936,7 +936,7 @@ static void CalculateGameplayInfo(DoomMap* map){
 
 			else
 			{
-				Log_Info("TEXTMAP Reading done\n");
+				// Log_Info("TEXTMAP Reading done\n");
 				// All data read
 				break;
 			}
@@ -944,14 +944,14 @@ static void CalculateGameplayInfo(DoomMap* map){
 
 
 
-		Log_Info("Reading Z nodes\n");
+		// Log_Info("Reading Z nodes\n");
 		// Read the nodes
 		// TODO read bit by bit
 
 		reader.SetActiveLumpInfo(ZNODES);
 		reader.ReadUntilString("XGLN");
 		u32 OrgVerts = reader.ReadDWORD();
-		Log_InfoF("OrgVerts %d\n", OrgVerts);
+		// Log_InfoF("OrgVerts %d\n", OrgVerts);
 		u32 NewVertes = reader.ReadDWORD();
 
 		Log_InfoF("NewVerts %d \n", NewVertes);
@@ -961,7 +961,7 @@ static void CalculateGameplayInfo(DoomMap* map){
 			Fixed16 x = reader.ReadFixed();
 			Fixed16 y = reader.ReadFixed();
 
-			Log_InfoF("Vert %d at (%d.%d, %d.%d)\n", ni, x.whole, x.fract,  y.whole, y.fract);
+			// Log_InfoF("Vert %d at (%d.%d, %d.%d)\n", ni, x.whole, x.fract,  y.whole, y.fract);
 			map->vertices[vertexAmount].x = x.whole;
 			map->vertices[vertexAmount].y = y.whole;
 			vertexAmount++;
@@ -975,7 +975,7 @@ static void CalculateGameplayInfo(DoomMap* map){
 			u32 NumSegs = reader.ReadDWORD();
 			map->subsectors[ni].firstSegment = segmentsRead;;
 			map->subsectors[ni].segmentAmount = NumSegs;
-			Log_InfoF("Subsector %d Segments; %d : First segment %d\n", ni, NumSegs, segmentsRead);
+			// Log_InfoF("Subsector %d Segments; %d : First segment %d\n", ni, NumSegs, segmentsRead);
 			segmentsRead += NumSegs;
 		}
 
@@ -989,7 +989,7 @@ static void CalculateGameplayInfo(DoomMap* map){
 			u32 partner = reader.ReadDWORD(); // Segment index
 			u16 line = reader.ReadWORD(); // Linedef index
 			u8 side = reader.ReadByte(); // Linedef side
-			Log_InfoF("Seg %d: V1 %d partner %d line %d side %d\n", si, v1, partner, line, side);
+			// Log_InfoF("Seg %d: V1 %d partner %d line %d side %d\n", si, v1, partner, line, side);
 
 			map->segments[si].v1 = v1;
 			map->segments[si].partnerSegment = partner;
@@ -1007,7 +1007,7 @@ static void CalculateGameplayInfo(DoomMap* map){
 			{
 				break;
 			}
-			Log_InfoF("Node %d\n", ni);
+			// Log_InfoF("Node %d\n", ni);
 			// The line that splits the node
 			s16 x = reader.ReadSWORD();
 			s16 y = reader.ReadSWORD();
@@ -1030,27 +1030,27 @@ static void CalculateGameplayInfo(DoomMap* map){
 			u32 child0 = reader.ReadDWORD();
 			u32 child1 = reader.ReadDWORD();
 
-			Log_InfoF("Child 0 %08.8x ", child0);
+			// Log_InfoF("Child 0 %08.8x ", child0);
 			if (child0 & 0x80000000)
 			{
-				Log_InfoF("is subsector: %d\n", child0 & 0x7FFFFFFF);
+				// Log_InfoF("is subsector: %d\n", child0 & 0x7FFFFFFF);
 			}
 			else
 			{
-				Log_InfoF("is node: %d\n", child0);
+				// Log_InfoF("is node: %d\n", child0);
 			}
-			Log_InfoF("Bounding box %d %d %d %d\n", Top0, Bottom0, Left0, Right0);
+			// Log_InfoF("Bounding box %d %d %d %d\n", Top0, Bottom0, Left0, Right0);
 
-			Log_InfoF("Child 1 %08.8x ", child1);
+			// Log_InfoF("Child 1 %08.8x ", child1);
 			if (child1 & 0x80000000)
 			{
-				Log_InfoF("is subsector: %d\n", child1 & 0x7FFFFFFF);
+				// Log_InfoF("is subsector: %d\n", child1 & 0x7FFFFFFF);
 			}
 			else
 			{
-				Log_InfoF("is node: %d\n", child1);
+				// Log_InfoF("is node: %d\n", child1);
 			}
-			Log_InfoF("Bounding box %d %d %d %d\n", Top1, Bottom1, Left1, Right1);
+			// Log_InfoF("Bounding box %d %d %d %d\n", Top1, Bottom1, Left1, Right1);
 
 			DoomNode* n = &map->nodes[ni];
 			n->x = x;

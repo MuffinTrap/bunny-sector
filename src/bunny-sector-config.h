@@ -1,5 +1,6 @@
 #pragma once
 #include "tinyxml2/tinyxml2.h"
+#include <mgdl.h>
 
 class Player;
 
@@ -15,6 +16,7 @@ void BunnySector_LoadPlayerDefaults(Player* player, int playerIndex);
 
 // XML reading functions
 bool XML_ReadChildInt(tinyxml2::XMLElement*parent, const char* tag, int* valueOut);
+bool XML_ReadChildUInt(tinyxml2::XMLElement*parent, const char* tag, u32* valueOut);
 bool XML_ReadChildFloat(tinyxml2::XMLElement*parent, const char* tag, float* valueOut);
 const char* XML_ReadChildString(tinyxml2::XMLElement*parent, const char* tag);
 const char* XML_ReadChildString(tinyxml2::XMLElement*parent, const char* tag);

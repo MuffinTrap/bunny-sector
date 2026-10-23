@@ -8,6 +8,12 @@ class BunnySector_Map;
 
 #define RENDERER_DEFAULT_MATERIAL_ID 0
 
+struct FogParameters
+{
+	color32 color;
+	int intensityPercentage;
+};
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -72,7 +78,13 @@ void OpenGLRender_StartObjExport(BunnySector_Map* map, const char* filename, Ren
 void OpenGLRender_StartFillingWallBuffer(BunnySector_Map* map);
 void OpenGLRender_BufferWalls(BunnySector_Map* map);
 
+void OpenGLRender_SetFogEnabled(bool enabled);
+void OpenGLRender_SetFogLimits(float start, float end);
+void OpenGLRender_SetFogColor(color32 color);
+void OpenGLRender_SetFogDensityPercent(int opacity);
 
+void OpenGLRender_SetSkyboxEnabled(bool enabled);
+void OpenGLRender_SetSkyboxColors(color32 zenith, color32 horizon, color32 nadir);
 
 /**
  * @brief Sets up rendering state to draw floors and ceilings from a buffer
