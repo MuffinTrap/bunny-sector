@@ -86,7 +86,7 @@ float Math_DukeAngleToRad(s16 angleInt)
 
 Vector3 ScaleVector3ToOpenGL(Vector3 position, RenderSettingsOpenGL* settings3D)
 {
-	return Vector3Scale(position, settings3D->scaleXY.x);
+	return Vector3New(position.x * settings3D->scaleXY.x, position.y * settings3D->scaleXY.y, position.z * settings3D->scaleXY.x);
 }
 Vector2 ScaleVector2ToOpenGL(Vector2 position, RenderSettingsOpenGL* settings3D)
 {

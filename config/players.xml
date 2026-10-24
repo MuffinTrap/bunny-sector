@@ -51,6 +51,8 @@ If other players are configured they inherit from player 0
 		<moveacceleration>1600</moveacceleration>
 		<moveslowdown>1600</moveslowdown>
 
+		<climbheight>20</climbheight>
+
 		<turnspeed>720</turnspeed>
 		<turnacceleration>1024</turnacceleration>
 		<turnslowdown>1024</turnslowdown>

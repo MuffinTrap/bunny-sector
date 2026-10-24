@@ -26,6 +26,14 @@ void InitDoomTypeNames()
 	EdNumberToNameMap_insert(&defaultNames, (int)editorNumber_player_start_3, zstr_from("Player start #3"));
 	EdNumberToNameMap_insert(&defaultNames, (int)editorNumber_player_start_4, zstr_from("Player start #4"));
 	EdNumberToNameMap_insert(&defaultNames, (int)editorNumber_blue_card, zstr_from("BlueCard"));
+	EdNumberToNameMap_insert(&defaultNames, (int)editorNumber_yellow_card, zstr_from("YellowCard"));
+	EdNumberToNameMap_insert(&defaultNames, (int)editorNumber_red_card, zstr_from("RedCard"));
+
+	EdNumberToNameMap_insert(&defaultNames, (int)editorNumber_blue_skull_key, zstr_from("BlueSkull"));
+	EdNumberToNameMap_insert(&defaultNames, (int)editorNumber_yellow_skull_key, zstr_from("YellowSkull"));
+	EdNumberToNameMap_insert(&defaultNames, (int)editorNumber_red_skull_key, zstr_from("RedSkull"));
+
+	EdNumberToNameMap_insert(&defaultNames, (int)editorNumber_helper_dog, zstr_from("HelperDog"));
 
 	EdNumberToNameMap_init( &customNames );
 }

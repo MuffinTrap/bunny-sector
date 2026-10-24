@@ -257,7 +257,7 @@ MaterialId BunnySector::MaterialManager::LoadMaterialByName(zstr* name)
 			return existing;
 		}
 
-		bool mipmapsOn = true;
+		bool mipmapsOn = false; // NOTE Problem with textures on the wii :( when using mipmaps
 		TextureHandle textureH = MGDL_INVALID_HANDLE;
 		if (material->source == MapMaterialSource::Material_SourceFile)
 		{
@@ -273,6 +273,10 @@ MaterialId BunnySector::MaterialManager::LoadMaterialByName(zstr* name)
 			if (mipmapsOn)
 			{
 				mgdl_SetTextureFilterMin(textureH, TextureFilterModes::MipmapNearest);
+			}
+			else
+			{
+				mgdl_SetTextureFilterMin(textureH, TextureFilterModes::Nearest);
 			}
 			material->mgdlMaterial->texture = AssetManager_GetTexture(textureH);
 			return OpenGLRender_RegisterMapMaterial(material);

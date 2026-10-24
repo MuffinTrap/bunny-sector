@@ -59,6 +59,7 @@ bool PlayerManager::ReadXML(const char* filename)
 		prefab->walkSpeedMultiplier = 1.0f;
 		prefab->headBobAmplitude = 0.0f;
 		prefab->headBobFreq = 0.0f;
+		prefab->Init(playerNumber);
 
 		if (XML_ReadChildInt(playerElement, "height", &prefab->standingHeight) == false)
 		{
@@ -189,6 +190,7 @@ bool PlayerManager::LoadPlayer(Player* player, int playerNumber)
 		Log_ErrorF("Invalid player number, must be 1 to %d\n", BUNNY_SECTOR_MAX_PLAYERS);
 		return false;
 	}
+	player->Init(playerNumber);
 	// Copy from
 	if (prefabs[0].number == 0)
 	{

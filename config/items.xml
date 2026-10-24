@@ -10,6 +10,8 @@ The textures are looked from the same folder than material textures are. See @fo
 	@name This is the doom editor number name from https://zdoom.org/wiki/Standard_editor_numbers
 	@number This the doom editor number
 
+	@customname [optional] Overrides default name for messages and inventory
+
 	@texture This is the file name of the image to use as a texture.
 	@model [optional] This is the file name of the fbx file to load the mesh from.
 
@@ -32,11 +34,17 @@ The textures are looked from the same folder than material textures are. See @fo
 -->
 <items>
 	<folder>assets</folder>
-
 	<item>
 		<name>BlueCard</name>
-		<texture>BlueCard.png</texture>
-		<size>32</size>
-		<height>32</height>
+		<customname>Water Key</customname>
+	</item>
+	<item>
+		<name>YellowCard</name>
+		<customname>Pasta Key</customname>
+	<texture>ylw_key.png</texture>
+	</item>
+	<item>
+		<name>RedCard</name>
+		<customname>Flesh Key</customname>
 	</item>
 </items>

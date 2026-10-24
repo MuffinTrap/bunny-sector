@@ -139,7 +139,7 @@ enum DOOM_EDITOR_NUMBER
 	// Decorations
 	editorNumber_dead_marine = 15,
 	editorNumber_cyberdemon ,   //<< Enemy
-	editorNumber_cell_pack ,
+	editorNumber_cell_pack , // Energy pack
 
 	editorNumber_dead_zombie_man ,
 	editorNumber_dead_shotgun_guy ,
@@ -171,6 +171,8 @@ enum DOOM_EDITOR_NUMBER
 	editorNumber_blue_torch = 44,
 	editorNumber_green_torch,
 	editorNumber_red_torch,
+
+	editorNumber_helper_dog = 888,
 
 	// items and weapons
 

@@ -46,6 +46,8 @@ bool BunnySector::ItemManager::LoadItemToActor(Actor* actor, DOOM_EDITOR_NUMBER 
 			actor->texture = prefab->texture;
 			actor->size = prefab->size;
 			actor->height = prefab->height;
+			actor->renderHeight = 0;
+			actor->renderHeight = 0; // NOTE Avoid carbage values
 
 			MapMaterial* material = OpenGLRender_GetMaterialForMaterialId(prefab->texture);
 			if (material != nullptr)
@@ -54,9 +56,17 @@ bool BunnySector::ItemManager::LoadItemToActor(Actor* actor, DOOM_EDITOR_NUMBER 
 				{
 					actor->renderWidth = material->mgdlMaterial->texture->width;
 				}
+				else
+				{
+					actor->renderWidth = prefab->renderWidth;
+				}
 				if (prefab->renderHeight == 0)
 				{
 					actor->renderHeight = material->mgdlMaterial->texture->height;
+				}
+				else
+				{
+					actor->renderHeight = prefab->renderHeight;
 				}
 			}
 
@@ -106,7 +116,7 @@ bool BunnySector::ItemManager::LoadXML(const char* filename)
 		prefab->texture = 0;
 		prefab->size = 1;
 		prefab->height = 1;
-		prefab->renderHeight = 0;
+		prefab->renderHeight = 0; // NOTE These are set from texture
 		prefab->renderWidth = 0;
 
 		tinyxml2::XMLElement* numberElement = itemElement->FirstChildElement("number");

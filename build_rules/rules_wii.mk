@@ -14,9 +14,7 @@ CXXFLAGS += $(MACHDEP) # Add the MACHDEP from devkitppc/wii_rules
 TARGET_POSTFIX +=
 
 # Add AngelScript library directory
-ifdef ANGEL
-LDFLAGS += -L$(ANGELSCRIPT_SDK)/angelscript/lib-$(PLATFORM_NAME)
-endif
+LDFLAGS += -L$(ANGELSCRIPT_SDK)/angelscript/lib-wii
 
 # Name the compiler : named by DEVKITPRO
 # CXX = GCC

@@ -7,17 +7,21 @@
 
 BinaryReader::BinaryReader(const char* filename)
 {
+    activeLump = nullptr;
     readError = false;
     openFile = nullptr;
-    if (OpenBinary(filename) == false)
-    {
-        Log_ErrorF("Binary reader could not open file %s\n", filename);
-    }
-    else
+    lineBuffer = nullptr;
+    identifierBuffer = nullptr;
+    textureNameBuffer = nullptr;
+    if (OpenBinary(filename))
     {
 		lineBuffer = (char*)mgdl_AllocateGeneralMemory((LINEWIDTH + 1) * sizeof(char));
 		identifierBuffer = (char*)mgdl_AllocateGeneralMemory((IDWIDTH + 1) * sizeof(char));
 		textureNameBuffer = (char*)mgdl_AllocateGeneralMemory((TEXTURENAMEWIDTH + 1) * sizeof(char));
+    }
+    else
+    {
+        Log_ErrorF("Binary reader could not open file %s\n", filename);
     }
 }
 
@@ -207,7 +211,7 @@ bool BinaryReader::LineStartsWith(const char* keyword)
 
 void BinaryReader::ReadChars(int amount, char* arrayOut)
 {
-    FileRead(arrayOut, 1, amount, openFile);
+    FileRead(arrayOut, sizeof(char), amount, openFile);
 }
 
 s16 BinaryReader::ReadInt16()

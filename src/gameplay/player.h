@@ -54,8 +54,8 @@ public:
     int jumpAcceleration;
     float jumpDuration;
 
-    float verticalSpeedUp;
-    float verticalSpeedDown;
+    float verticalSpeedUp; // Limit
+    float verticalSpeedDown; // Limit
     float verticalAccelerationUp;
     float verticalAccelerationDown;
 

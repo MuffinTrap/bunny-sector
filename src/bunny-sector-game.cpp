@@ -268,6 +268,8 @@ bool Game::LoadMap(int mapNumber)
 				map->mapPtr->skyHorizonColor = info.skyHorizonColor;
 				map->mapPtr->skyNadirColor = info.skyNadirColor;
 				map->mapPtr->skyZenithColor = info.skyZenithColor;
+
+				map->mapPtr->gravity = info.gravity; // TODO FIX THIS MESS
 				
 				activeMapIndex = i;
 				return true;

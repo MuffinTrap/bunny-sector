@@ -23,6 +23,9 @@ void Player::Init(int playerNumber)
 	walkSpeedMultiplier = 1.0f;
 	turnSpeedMultiplier = 1.0f;
 
+	verticalSpeedUp = 280;
+	verticalSpeedDown = -280;
+
 	for (int i = 0; i < 32; i++)
 	{
 		inventory[i].itemType = editorNumber_none;
@@ -33,6 +36,8 @@ void Player::ConfigureActor(Actor* actor)
 	actor->size = size;
 	actor->height = standingHeight;
 	actor->climbHeight = climbHeight;
+	actor->verticalSpeedLimitDown = verticalSpeedDown;
+	actor->verticalSpeedLimitUp = verticalSpeedUp;
 }
 
 

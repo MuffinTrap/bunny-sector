@@ -59,17 +59,18 @@ void DoomMap::CreateActors()
 		// Should this thing spawn an actor?
 		DoomThing* t = &things[i];
 		Vector2 pos = Vector2New(t->x, t->y);
+		ActorType atype = actor_item; // NOTE Default
 		switch(t->type)
 		{
 			case editorNumber_player_start_1:
-				AddActor(actor_player, t->type, t->id, pos, t->angleDeg);
+				atype = actor_player;
 				playerCreated = true;
 				break;
 
 			case editorNumber_blue_card:
-				AddActor(actor_item, t->type, t->id, pos, t->angleDeg);
 				break;
 		}
+		AddActor(atype, t->type, t->id, pos, t->angleDeg);
 
 	}
 	mgdl_assert_print(playerCreated, "No player created for Doom Map");
@@ -645,12 +646,26 @@ void DoomMap::StartLinedefAction(DoomLinedef* linedef, Actor* actor, bool crosse
 			// Does the door need a key?
 			int lockArg = linedef->arg3;
 			int playerIndex = actor->idNumber;
+
+			int blukey = BunnySector_GetPlayerItemCount(playerIndex, editorNumber_blue_card);
+			int redkey = BunnySector_GetPlayerItemCount(playerIndex, editorNumber_red_card);
+			int yellowkey = BunnySector_GetPlayerItemCount(playerIndex, editorNumber_yellow_card);
+
+			int bluskullkey = BunnySector_GetPlayerItemCount(playerIndex, editorNumber_blue_skull_key);
+			int redskullkey = BunnySector_GetPlayerItemCount(playerIndex, editorNumber_red_skull_key);
+			int yellowskullkey = BunnySector_GetPlayerItemCount(playerIndex, editorNumber_yellow_skull_key);
 			// Does player have this key or is key needed at all?
 			if (
 				(lockArg == Lock_none)
-				|| (lockArg == Lock_blue_key_card && BunnySector_GetPlayerItemCount(playerIndex, editorNumber_blue_card))
-				|| (lockArg == Lock_red_key_card && BunnySector_GetPlayerItemCount(playerIndex, editorNumber_red_card))
-				|| (lockArg == Lock_yellow_key_card && BunnySector_GetPlayerItemCount(playerIndex, editorNumber_yellow_card)))
+				|| (lockArg == Lock_blue_key_card && blukey)
+				|| (lockArg == Lock_red_key_card && redkey)
+				|| (lockArg == Lock_yellow_key_card && yellowkey)
+
+				|| (lockArg == Lock_yellow_skull_key && yellowskullkey)
+				|| (lockArg == Lock_red_skull_key && redskullkey)
+				|| (lockArg == Lock_blue_skull_key && bluskullkey)
+
+				|| (lockArg == Lock_all_keys && blukey && redkey && yellowkey && redskullkey && bluskullkey && yellowskullkey))
 				// TODO Skull keys
 			{
 				StartAction(linedef);

@@ -214,7 +214,7 @@ void BunnySector_StartMap(int playerAmount)
 	{
 		activePlayerAmount = playerAmount;
 
-		RenderSettingsOpenGL_SetUnitToMeter(&defaultOpenGL, DOOM_UNITS_TO_METER, DOOM_UNITS_TO_METER);
+		RenderSettingsOpenGL_SetUnitToMeter(&defaultOpenGL, DOOM_UNITS_TO_METER, DOOM_UNITS_TO_METER_V);
 		BunnySector_SetOpenGLUnitsToMeter(DOOM_UNITS_TO_METER, DOOM_UNITS_TO_METER_V);
 
 		if (map->useFog)

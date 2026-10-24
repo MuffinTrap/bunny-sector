@@ -48,7 +48,7 @@ void BunnySector_Map::MoveActorInMap(float deltaTime, Actor* inoutActor)
 	// Keep actor above floor and under the ceiling
     float minY = GetFloory(subSectorOut);
     float maxY = GetCeilingy(subSectorOut) - inoutActor->height;
-    if (elevationEnd < minY)
+    if (elevationEnd <= minY)
     {
         resultFlags = Flag_SetBit(resultFlags, Move_OnGround);
     }
