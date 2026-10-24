@@ -18,7 +18,7 @@ The textures are looked from the same folder than material textures are. See @fo
 	@size [default: 1] Size of the collision box
 	@height [default: 1] Height of the collision box
 
-	@renderwidth [optional] Size when drawing. If not set, texture width is used
+	@renderwidth [optional] Size when drawing. If not set, texture width is used. If model, this is scale
 	@renderheight [optional] Size when drawing. If not set, texture height is used
 
 	The item can look different from different directions
@@ -46,5 +46,15 @@ The textures are looked from the same folder than material textures are. See @fo
 	<item>
 		<name>RedCard</name>
 		<customname>Flesh Key</customname>
+		<texture>red_key.png</texture>
+	</item>
+
+	<!--Powerpack is macaroni status -->
+	<item>
+		<name>CellPack</name>
+		<texture>Macaroni_texture.png</texture>
+		<model>assets/Macaroni_01.fbx</model>
+		<renderheight>80</renderheight>
+		<renderwidth>80</renderwidth>
 	</item>
 </items>

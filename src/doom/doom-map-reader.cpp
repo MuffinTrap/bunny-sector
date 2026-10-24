@@ -75,6 +75,10 @@ static DoomMap* map;
 #define COOP "coop"
 #define FRIEND "friend"
 
+// Sector properties
+#define XSCALECEILING "xscaleceiling"
+#define YSCALECEILING "yscaleceiling"
+
 struct SectorCounter
 {
 	int number;
@@ -462,7 +466,15 @@ static void read_sector(BinaryReader& reader) {
 			}
 			else if (reader.LineStartsWith(LIGHTLEVEL))
 			{
-				t->lightlevel = reader.ReadLineByte();
+				t->lightlevel = reader.ReadLineUByte();
+			}
+			else if (reader.LineStartsWith(XSCALECEILING))
+			{
+				t->xscaleceiling = reader.ReadLineFloat();
+			}
+			else if (reader.LineStartsWith(YSCALECEILING))
+			{
+				t->yscaleceiling = reader.ReadLineFloat();
 			}
 			else if (reader.LineStartsWith(SPECIAL))
 			{
@@ -529,9 +541,12 @@ static void ReadAndLoadTextures(WADReader& wad, BinaryReader& reader, const char
 		if (reader.LineStartsWith("Texture"))
 		{
 			// Read size
-			int w;
-			int h;
-			reader.ReadLineTextureSize(&w, &h);
+			int w = 0;
+			int h = 0;
+			if (reader.ReadLineTextureSize(&w, &h) == false)
+			{
+				// NOTE How do we know if it is text or binary?
+			}
 			zstr textureIdentiefier = reader.ReadLineStringBetween('"', '"');
 
 			int textureName = matman->RecordMaterialName(zstr_cstr(&textureIdentiefier));

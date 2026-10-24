@@ -45,6 +45,7 @@ void Actor::Init()
 	actionFlags = 0;
 
 	texture = -1;
+	model = MGDL_INVALID_HANDLE;
 }
 
 Viewpoint Actor::GetViewpoint()

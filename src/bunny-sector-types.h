@@ -94,14 +94,12 @@ struct MapMaterial
 	{
 		s32 functionName; // If type is function, frame index if type is Animated sprite
 		s32 spriteFrame;
-		Mesh* meshPtr;		// If type is SpriteModel
 	};
 
 	union MaterialParameter
 	{
 		float grassLength; // If type is grass
 		float frameDuration; // If type is Animated sprite
-		float meshScale; // If type is Sprite Mesh
 	};
 
 	MaterialData data;

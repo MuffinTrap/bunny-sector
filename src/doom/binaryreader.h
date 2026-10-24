@@ -35,8 +35,9 @@ public:
 	float ReadLineFloat();
 	bool ReadLineBool();
 	s8 ReadLineByte();
+	u8 ReadLineUByte();
 	MaterialId ReadLineTextureId();
-	void ReadLineTextureSize(int* wout, int* hout);
+	bool ReadLineTextureSize(int* wout, int* hout);
 	zstr ReadLineStringBetween(char beginning, char end);
 
 	void ReadChars(int amount, char* arrayOut);

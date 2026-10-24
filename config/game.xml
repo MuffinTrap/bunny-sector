@@ -27,9 +27,9 @@ This file configures game wide settings and map order and parameters
 			<file>assets/hotel_valju.wad</file>
 			<number>1</number>
 			<fog>
-				<density>20</density>
-				<near>2</near>
-				<far>100</far>
+				<density>10</density>
+				<near>10</near>
+				<far>150</far>
 				<color>0x0a0a0aff</color>
 			</fog>
 			<skybox>

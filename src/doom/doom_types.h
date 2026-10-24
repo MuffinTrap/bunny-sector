@@ -347,6 +347,8 @@ struct DoomSector
 	MaterialId texturefloor;
 	MaterialId textureceiling;
 	u8 lightlevel;
+	float xscaleceiling; // NOTE Divide by this amount
+	float yscaleceiling;
 	int special;
 	int id; // Tag
 

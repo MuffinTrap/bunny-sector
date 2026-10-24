@@ -34,6 +34,7 @@ void InitDoomTypeNames()
 	EdNumberToNameMap_insert(&defaultNames, (int)editorNumber_red_skull_key, zstr_from("RedSkull"));
 
 	EdNumberToNameMap_insert(&defaultNames, (int)editorNumber_helper_dog, zstr_from("HelperDog"));
+	EdNumberToNameMap_insert(&defaultNames, (int)editorNumber_cell_pack, zstr_from("CellPack"));
 
 	EdNumberToNameMap_init( &customNames );
 }
@@ -150,6 +151,8 @@ void DoomSector_Init(DoomSector* def)
 	def->usecase = sector_none;
 	def->textureceiling = -1;
 	def->texturefloor = -1;
+	def->xscaleceiling = 1.0f;
+	def->yscaleceiling = 1.0f;
 }
 
 void DoomSegment_Init(DoomSegment* def)

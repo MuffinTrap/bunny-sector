@@ -146,6 +146,13 @@ s8 BinaryReader::ReadLineByte()
 	return (s8)i;
 }
 
+u8 BinaryReader::ReadLineUByte()
+{
+	u32 i;
+	sscanf(lineBuffer, "%s = %u;", identifierBuffer, &i);
+	return (u8)i;
+}
+
 MaterialId BinaryReader::ReadLineTextureId()
 {
 	sscanf(lineBuffer, "%s = \"%s\";", identifierBuffer, textureNameBuffer);
@@ -163,13 +170,15 @@ MaterialId BinaryReader::ReadLineTextureId()
 
 	zstr textureName = zstr_from_len(textureNameBuffer, index);
 	MaterialId tid = BunnySector_GetMaterialId(&textureName);
-	Log_InfoF("Doom map has texture %s mapped to id %d\n", zstr_cstr(&textureName), tid);
+	// Log_InfoF("Doom map has texture %s mapped to id %d\n", zstr_cstr(&textureName), tid);
 	zstr_free(&textureName);
 	return tid;
 }
-void BinaryReader::ReadLineTextureSize(int* wout, int* hout)
+bool BinaryReader::ReadLineTextureSize(int* wout, int* hout)
 {
-	sscanf(lineBuffer, "Texture %*8s, %3d, %3d;", wout, hout);
+	int read = sscanf(lineBuffer, "Texture %*8s, %3d, %3d;", wout, hout);
+    // This is binary format?
+    return read == 3;
 }
 
 zstr BinaryReader::ReadLineStringBetween(char beginning, char end)

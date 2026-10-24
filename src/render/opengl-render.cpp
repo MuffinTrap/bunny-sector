@@ -205,12 +205,12 @@ void OpenGLRender_Line3(Vector3 start, Vector3 end)
 /**
  * @brief Changes Duke shade value to grayscale
  * brightness. Used to color the vertices
- * @param brightnessOffset Positive values are darker. 32 is black. -1 is brighter but smaller values have no meaning
+ * @param brightnessOffset 0 is black, 255 is full white
  */
-static float BrightnessOffsetToColor(s8 brightnessOffset)
+static float BrightnessToColor(u8 lightlevel)
 {
-    static const float brightnessStep = 1.0f/32.0f;
-    return clampF( (1.0f - (brightnessOffset * brightnessStep)), 0.0f, 1.0f);
+    static const float brightnessStep = 1.0/255.0f;
+    return clampF( ((lightlevel* brightnessStep)), 0.0f, 1.0f);
 }
 
 /**
@@ -314,20 +314,22 @@ static void BufferVertex(const float x, const float y, const float z, const floa
     }
 }
 
-void DrawMeshOnSprite(MapMaterial* material, Vector3 position, float angleYRadians)
+void DrawMeshOnSprite(Actor* actor, MapMaterial* material, Vector3 position, float angleYRadians)
 {
-    Mesh* mesh = material->data.meshPtr;
+    Model* mod = AssetManager_GetModel(actor->model);
+    Mesh* mesh = mod->m_mesh;
+    float yplus = (mesh->maxPoint.y - mesh->minPoint.y)/2.0f;
     Material_Apply(material->mgdlMaterial);
     glPushMatrix();
         glTranslatef(position.x, position.y, position.z);
-        glRotatef(Rad2Deg(angleYRadians), WORLD_UP.x, WORLD_UP.y, WORLD_UP.z);
+        glRotatef(Rad2Deg(angleYRadians) * mgdl_GetElapsedSeconds()/10.0f, WORLD_UP.x, WORLD_UP.y, WORLD_UP.z);
         float antiScaleH = unitsPerMeterHorizontal;
-        float antiScaleV = unitsPerMeterVertical; // TODO Just one?
-        glScalef(antiScaleH, antiScaleH, antiScaleH);
+        float antiScaleV = unitsPerMeterVertical;
+        glScalef(antiScaleH, antiScaleV, antiScaleH);
         glPushMatrix();
-            float ms = material->parameter.meshScale;
-            glScalef(ms, ms, ms);
-            Mesh_DrawArrays(mesh);
+            glTranslatef(0.0f, yplus * actor->renderHeight, 0.0f);
+            glScalef(actor->renderWidth, actor->renderHeight, actor->renderWidth);
+            Mesh_DrawElements(mesh, mesh->indexCount);
         glPopMatrix();
     glPopMatrix();
 
@@ -376,14 +378,23 @@ void OpenGLRender_DrawActors(BunnySector_Map* map, Vector2 cameraPosition)
         }
         // TODO don't draw player for himself
 
-        // Draw a sprite representing this actor
-        OpenGLRender_DrawSprite(
-            Vector3New( actor->position.vectorPosition.x, actor->elevation, actor->position.vectorPosition.y),
-                                actor->renderWidth, actor->renderHeight,
-                                actor->yawRad, cameraPosition,
-                                SpriteAlignment::Sprite_FACE, Sprite_PivotFoot,
-                                actor->texture, // TODO Depends on facing
-                                0); // Get from sector
+        if (Handle_IsValid(actor->model))
+        {
+            MapMaterial* material = OpenGLRender_GetMaterialForMaterialId(actor->texture);
+            Viewpoint vp = actor->GetViewpoint();
+            DrawMeshOnSprite(actor, material, vp.position, actor->yawRad);
+        }
+        else
+        {
+            // Draw a sprite representing this actor
+            OpenGLRender_DrawSprite(
+                Vector3New( actor->position.vectorPosition.x, actor->elevation, actor->position.vectorPosition.y),
+                                    actor->renderWidth, actor->renderHeight,
+                                    actor->yawRad, cameraPosition,
+                                    SpriteAlignment::Sprite_FACE, Sprite_PivotFoot,
+                                    actor->texture, // TODO Depends on facing
+                                    0); // Get from sector
+        }
     }
 }
 
@@ -524,7 +535,7 @@ MaterialId OpenGLRender_GetMapMaterialId(MapMaterial* material)
 
 /** TODO remove settings3D. Scale should be set globally already
  */
-void DrawQuad(Vector2 start, Vector2 end, const Vector2 normalXZ, s32 floorY, s32 ceilingY, s16 picnum, s8 brightnessOffset, u32 linedef_flags)
+void DrawQuad(Vector2 start, Vector2 end, const Vector2 normalXZ, s32 floorY, s32 ceilingY, s16 picnum, u8 brightnessOffset, u32 linedef_flags)
 {
     // Keep texture aspect 1:1 unless told otherwise
     float width = Vector2Length( Vector2Subtract(end, start));
@@ -557,7 +568,7 @@ void DrawQuad(Vector2 start, Vector2 end, const Vector2 normalXZ, s32 floorY, s3
 
     ActivateVertexBuffer();
 
-    BeginVertexBufferPolygon(normal, BrightnessOffsetToColor(brightnessOffset));
+    BeginVertexBufferPolygon(normal, BrightnessToColor(brightnessOffset));
 
         // Build Triangles for wall
         BufferVertex(start.x, (float)floorY, start.y, tex_x1, tex_bottom); // 0
@@ -569,10 +580,10 @@ void DrawQuad(Vector2 start, Vector2 end, const Vector2 normalXZ, s32 floorY, s3
 
 }
 
-void OpenGLRender_DrawWallV(Vector2 start, Vector2 end, Vector2 normalXZ, s32 floorY, s32 ceilingY,  s16 picnum, s8 shade, u32 linedef_flags)
+void OpenGLRender_DrawWallV(Vector2 start, Vector2 end, Vector2 normalXZ, s32 floorY, s32 ceilingY,  s16 picnum, u8 lightlevel, u32 linedef_flags)
 {
     // printf("DrawVallV %.2f %.2f -> %.2f %.2f, f : %d c: %d\n", start.x, start.y, end.x, end.y, floorY, ceilingY);
-    DrawQuad(start, end, normalXZ, floorY, ceilingY, picnum, shade, linedef_flags);
+    DrawQuad(start, end, normalXZ, floorY, ceilingY, picnum, lightlevel, linedef_flags);
 }
 
 void OpenGLRender_DrawFloorOrCeiling(BunnySector_Map* map, int sectorIndex, u8 shade, float ycoord, MaterialId materialId, bool floor)
@@ -585,7 +596,7 @@ void OpenGLRender_DrawFloorOrCeiling(BunnySector_Map* map, int sectorIndex, u8 s
     if (floor)
     {
         glTranslatef(0.0f, ycoord, 0.0f);
-        float color = BrightnessOffsetToColor(shade);
+        float color = BrightnessToColor(shade);
         material = OpenGLRender_GetMaterialForMaterialId(materialId);
         glNormal3f(floorNormal[0], floorNormal[1], floorNormal[2]);
         normal = Vector3New(floorNormal[0], floorNormal[1], floorNormal[2]);
@@ -594,7 +605,7 @@ void OpenGLRender_DrawFloorOrCeiling(BunnySector_Map* map, int sectorIndex, u8 s
     else
     {
         glTranslatef(0.0f, ycoord, 0.0f);
-        float color = BrightnessOffsetToColor(shade);
+        float color = BrightnessToColor(shade);
         material = OpenGLRender_GetMaterialForMaterialId(materialId);
         glNormal3f(ceilingNormal[0], ceilingNormal[1], ceilingNormal[2]);
         normal = Vector3New(ceilingNormal[0], ceilingNormal[1], ceilingNormal[2]);
@@ -635,7 +646,7 @@ void OpenGLRender_DrawFloorOrCeiling(BunnySector_Map* map, int sectorIndex, u8 s
 // TODO Precalcuate different pivots and aligments
 // Only change UV when rendering
 // Use Ambient light to do brightness on the whole sector simultaneously
-void OpenGLRender_DrawSprite(Vector3 position, float width, float height, float spriteAngle, Vector2 playerPosition, SpriteAlignment alignment, SpritePivot pivot, s16 picnum, s8 brightnessOffset)
+void OpenGLRender_DrawSprite(Vector3 position, float width, float height, float spriteAngle, Vector2 playerPosition, SpriteAlignment alignment, SpritePivot pivot, s16 picnum, u8 lightlevel)
 {
     if (picnum < 0)
     {
@@ -643,11 +654,6 @@ void OpenGLRender_DrawSprite(Vector3 position, float width, float height, float 
     }
 
     MapMaterial* material = OpenGLRender_GetMaterialForMaterialId(picnum);
-    if (material->type == Material_SpriteModel)
-    {
-        DrawMeshOnSprite(material, position, spriteAngle);
-        return;
-    }
 
     glPushMatrix();
         glTranslatef(position.x, position.y, position.z);
@@ -722,7 +728,7 @@ void OpenGLRender_DrawSprite(Vector3 position, float width, float height, float 
             }
         }
 
-        BeginVertexBufferPolygon(spriteForward, BrightnessOffsetToColor(brightnessOffset));
+        BeginVertexBufferPolygon(spriteForward, BrightnessToColor(lightlevel));
 
         float U = 1.0f;
         float V = 1.0f;

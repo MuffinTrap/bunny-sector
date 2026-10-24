@@ -2,6 +2,7 @@
 #include "gameplay/actor.h"
 #include "tinyxml2/tinyxml2.h"
 #include "bunny-sector-materials.h"
+#include "bunny-sector-config.h"
 #include "bunny-sector_main.h"
 #include "render/opengl-render.h"
 
@@ -48,9 +49,15 @@ bool BunnySector::ItemManager::LoadItemToActor(Actor* actor, DOOM_EDITOR_NUMBER 
 			actor->height = prefab->height;
 			actor->renderHeight = 0;
 			actor->renderHeight = 0; // NOTE Avoid carbage values
+			actor->model = prefab->model;
 
 			MapMaterial* material = OpenGLRender_GetMaterialForMaterialId(prefab->texture);
-			if (material != nullptr)
+			if (Handle_IsValid(actor->model))
+			{
+				actor->renderWidth = prefab->renderWidth;
+				actor->renderHeight = prefab->renderHeight;
+			}
+			else if (material != nullptr)
 			{
 				if (prefab->renderWidth == 0)
 				{
@@ -186,6 +193,17 @@ bool BunnySector::ItemManager::LoadXML(const char* filename)
 			Log_InfoF("item %d has size and height %d, %d\n", itemIndex, sizeOut, heightOut);
 			prefab->size = sizeOut;
 			prefab->height = heightOut;
+		}
+
+		XML_ReadChildInt(itemElement, "renderwidth", &prefab->renderWidth);
+		XML_ReadChildInt(itemElement, "renderwidth", &prefab->renderHeight);
+
+
+		tinyxml2::XMLElement* modelElement = itemElement->FirstChildElement("model");
+		if (modelElement)
+		{
+			// This item is a model, try getting it from asset manager
+			prefab->model = AssetManager_LoadModel(modelElement->GetText());
 		}
 
 		type_item_map_insert(&ItemConfigs, (DOOM_EDITOR_NUMBER)prefab->typeNumber, nextPrefabIndex);

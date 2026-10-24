@@ -28,6 +28,7 @@ public:
     ActorType actorType;
     int typeNumber; //< DOOM editor number
     MaterialId texture;
+    ModelHandle model;
 
     // Position in map units
     union ActorPosition
