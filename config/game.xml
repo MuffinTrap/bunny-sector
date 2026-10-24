@@ -24,7 +24,7 @@ This file configures game wide settings and map order and parameters
 	<game>
 		<name>Dead Generator</name>
 		<map>
-			<file>assets/ldmap.wad</file>
+			<file>assets/hotel_valju.wad</file>
 			<number>1</number>
 			<fog>
 				<density>20</density>

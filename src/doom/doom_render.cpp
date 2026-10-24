@@ -475,6 +475,11 @@ void DrawSubSector(DoomMap& map, Actor& player, DoomSubSector& sub, int sectorIn
 					frontSide = linedef.sideback;
 					backSide = linedef.sidefront;
 				}
+				if (frontSide < 0)
+				{
+					// Error
+					continue;
+				}
 
 				DoomSidedef& sidedef = map.sidedefs[frontSide];
 
