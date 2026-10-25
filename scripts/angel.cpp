@@ -21,7 +21,7 @@ void angelscript_init()
 	BunnySector_SetRenderingCallback(angelscript_render);
 
 	// Match 2D render to OpenGL render
-	RenderInit(BunnySector_GetOpenGLCameraVerticalFOVDeg());
+	//RenderInit(BunnySector_GetOpenGLCameraVerticalFOVDeg());
 }
 
 void angelscript_quit()

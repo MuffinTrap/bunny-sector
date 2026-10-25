@@ -16,7 +16,8 @@ enum ActorType
 	actor_item,
     actor_projectile,
     actor_decoration,
-    actor_particle_emitter
+    actor_particle_emitter,
+	actor_none // Things that are not actors, such as sector special things
 };
 
 enum ActorActionBit
@@ -56,9 +57,10 @@ typedef enum MapUpdateResult MapUpdateResult;
 enum GameStatus
 {
 	status_menu,
-	status_player_alive,
+	status_map_preview,
+	status_map_playing,
 	status_player_dead,
-	status_exit_normal
+	status_map_exit_normal
 };
 typedef enum GameStatus GameStatus;
 
@@ -67,8 +69,6 @@ enum MapMaterialType
 	Material_Texture = 0, // Normal texture material
 	Material_Grass = 1,  // Draw multiple shells of grass
 	Material_Function = 2, // Use a custom function to draw on the area
-	Material_SpriteModel = 3, // Draw a mesh instead of a texture for a sprite
-	Material_SpriteAnimated = 4 // Animate a sprite sheet on sprite
 };
 typedef enum MapMaterialType MapMaterialType;
 

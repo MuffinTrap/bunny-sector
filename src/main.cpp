@@ -1,6 +1,8 @@
 #include <mgdl.h>
 #include "example.h"
 
+// BUNNY MAIN
+
 static Example example;
 
 void init()

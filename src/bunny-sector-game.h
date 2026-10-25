@@ -48,6 +48,13 @@ public:
 
 	MapInfo* mapInfoArray = nullptr;
 
+	Menu* menu;
+
+	// Main menu variables
+	color32 titleColor;
+	color32 mainBgColor;
+	TextureHandle mainBgTexture;
+
 
 	int activeMapIndex = -1;
 	const float MAP_AMOUNT = 4;

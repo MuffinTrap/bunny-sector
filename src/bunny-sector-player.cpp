@@ -2,6 +2,7 @@
 #include "bunny-sector-config.h"
 #include "gameplay/player.h"
 #include "tinyxml2/tinyxml2.h"
+#include "doom/doom-numbers.h"
 
 static Player prefabs[BUNNY_SECTOR_MAX_PLAYERS + 1]; // 0 is the default for all
 

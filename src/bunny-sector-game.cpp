@@ -6,6 +6,7 @@
 #include "render/opengl-render.h"
 #include <mgdl.h>
 
+
 Game::Game()
 {
 	if (mapInfoArray == nullptr)
@@ -23,6 +24,14 @@ Game::Game()
 	}
 	activeMapIndex = -1;
 	status = GameStatus::status_menu;
+
+	titleColor = Debug_Yellow;
+	mainBgColor = Debug_Blue;
+	mainBgTexture = MGDL_INVALID_HANDLE;
+
+	Texture* defaultFont = DefaultFont_GetDefaultFont();
+
+	menu = Menu_CreateWindowed(defaultFont, 8, 2, 20, 20, "Game");
 }
 
 bool Game::ReadXML(const char* filename)
@@ -55,6 +64,15 @@ bool Game::ReadXML(const char* filename)
 	else
 	{
 		name = zstr_from("Bunny Sector Game");
+	}
+
+	XML_ReadChildUInt(gameElement, "titlecolor", &titleColor);
+	XML_ReadChildUInt(gameElement, "mainbgcolor", &mainBgColor);
+
+	const char* texturename = XML_ReadChildString(gameElement, "mainbgtexture");
+	if (texturename != nullptr)
+	{
+		mainBgTexture = mgdl_LoadTexture(texturename, false);
 	}
 
 	int mapIndex = 0;
@@ -175,6 +193,7 @@ bool Game::ReadXML(const char* filename)
 	}
 
 
+	Menu_SetColors(menu, mainBgColor, titleColor, Debug_White);
 
 	return true;
 }
@@ -297,7 +316,7 @@ bool Game::StartActiveMap()
 {
 	if (activeMapIndex >= 0)
 	{
-		status = GameStatus::status_player_alive;
+		status = GameStatus::status_map_playing;
 		return true;
 	}
 	return false;
@@ -317,29 +336,41 @@ int Game::GetNextMapNumber(int currentNumber)
 }
 void Start2D()
 {
-	int screenWidth = mgdl_GetScreenWidth();
-	int screenHeight = mgdl_GetScreenHeight();
 	mgdl_InitOrthoProjection(1.0f);
-
-glPushMatrix();
-
-	float screen_half_width = screenWidth / 2.0f;
-	float screen_half_height = screenHeight / 2.0f;
-	glTranslatef(screen_half_width, screen_half_height, 0);
-
 }
 void End2D()
 {
-	glPopMatrix();
 
 }
+
+// This is the main menu that has options and so on
 bool Game::UpdateMenu()
 {
+	bool startPressed = false;
 	Start2D();
-	mgdl_DrawText("Menu", 10, 16, 32, Debug_LightYellow);
-	mgdl_DrawText("Press (A) to start", 10, 16 + 32, 16, Debug_LightBlue);
-	End2D();
-	return (mgdl_IsButtonPressed(0, ButtonA));
+	glPushMatrix();
+	glScalef(0.5f, 0.5f, 0.5f);
+	// TODO Get colors from game xml
+	/*
+	mgdl_DrawRectangle(0, 0, mgdl_GetScreenWidth(), mgdl_GetScreenHeight(), mainBgColor);
+	if (Handle_IsValid(mainBgTexture))
+	{
+		// Scale bg to fit screen
+		float scaleX = mgdl_GetTextureWidth(mainBgTexture) / mgdl_GetScreenWidth();
+		float scaleY = mgdl_GetTextureHeight(mainBgTexture) / mgdl_GetScreenHeight();
+		mgdl_DrawTextureEx(mainBgTexture, 0, 0, 0.0f, maxF(scaleX, scaleY));
+	}
+	*/
+	//mgdl_DrawText(zstr_cstr(&name), 10, 16, 32, titleColor);
+
+	Menu_ReadDefaultInputs(menu);
+	Menu_Start(menu, 100, mgdl_GetScreenHeight() - 16 - 32, 200);
+	Menu_Text(menu, zstr_cstr(&name));
+	startPressed  = Menu_Button(menu, "Start");
+	Menu_DrawCursor(menu);
+	glPopMatrix();
+
+	return startPressed;
 }
 
 bool Game::UpdateMapEndMenu()

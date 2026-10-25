@@ -1,4 +1,5 @@
 #include "doom-map.h"
+#include "doom-numbers.h"
 #include "../gameplay/actor.h"
 #include "../gameplay/actorpool.h"
 #include "../gameplay/player.h"
@@ -59,18 +60,12 @@ void DoomMap::CreateActors()
 		// Should this thing spawn an actor?
 		DoomThing* t = &things[i];
 		Vector2 pos = Vector2New(t->x, t->y);
-		ActorType atype = actor_item; // NOTE Default
-		switch(t->type)
-		{
-			case editorNumber_player_start_1:
-				atype = actor_player;
-				playerCreated = true;
-				break;
-
-			case editorNumber_blue_card:
-				break;
-		}
+		ActorType atype = GetActorTypeOfDoomType(DOOM_EDITOR_NUMBER(t->type));
 		AddActor(atype, t->type, t->id, pos, t->angleDeg);
+		if (atype == actor_player)
+		{
+			playerCreated = true;
+		}
 
 	}
 	mgdl_assert_print(playerCreated, "No player created for Doom Map");

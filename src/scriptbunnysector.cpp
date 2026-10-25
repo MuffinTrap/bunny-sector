@@ -117,9 +117,9 @@ void RegisterBunnySector(mgdl_AngelScript* angel)
 
 	as_engine->RegisterEnum("GameStatus");
 	as_engine->RegisterEnumValue("GameStatus", "status_menu",(int)status_menu);
-	as_engine->RegisterEnumValue("GameStatus", "status_player_alive",(int)status_player_alive);
+	as_engine->RegisterEnumValue("GameStatus", "status_player_alive",(int)status_map_playing);
 	as_engine->RegisterEnumValue("GameStatus", "status_player_dead", (int)status_player_dead);
-	as_engine->RegisterEnumValue("GameStatus", "status_exit_normal", (int)status_exit_normal);
+	as_engine->RegisterEnumValue("GameStatus", "status_exit_normal", (int)status_map_exit_normal);
 
 	as_engine->RegisterEnum("ActorType");
 	as_engine->RegisterEnumValue("ActorType", "actor_player", (int)actor_player);

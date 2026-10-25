@@ -2,6 +2,7 @@
 #include "actorpool.h"
 #include "actorcollision.h"
 #include "../bunny-sector-math.h"
+#include "../doom/doom-numbers.h"
 #include <mgdl.h>
 
 void ActorPool::Init(int poolCapacity)

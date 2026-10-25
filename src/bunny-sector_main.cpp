@@ -23,6 +23,7 @@
 
 #include "doom/doom-map-reader.h"
 #include "doom/doom_render.h"
+#include "doom/doom-numbers.h"
 
 #if defined(USE_ANGEL_AS_CPP)
 #	include "../scripts/angel.hpp"
@@ -67,7 +68,7 @@ static void DrawDebugMenu()
 {
 	mgdl_InitOrthoProjection(1.0f);
 	Menu_ReadDefaultInputs(debugMenu);
-	Menu_Start(debugMenu, 0, 0, 64);
+	Menu_Start(debugMenu, 0, mgdl_GetScreenHeight(), 64);
 	Menu_Toggle(debugMenu, "DEBUG", &debugMenuVisible);
 
 	if (debugMenuVisible)
@@ -297,7 +298,10 @@ void BunnySector_Update(float deltaTime)
 				}
 			}
 			break;
-		case status_player_alive:
+		case status_map_preview:
+			// TODO
+			break;
+		case status_map_playing:
 		{
 
 			BunnySector_Map* activeMap = game.GetActiveMap();
@@ -312,7 +316,7 @@ void BunnySector_Update(float deltaTime)
 		case status_player_dead:
 			// NOTE Draw something but don't unload the map, player might revive
 			break;
-		case status_exit_normal:
+		case status_map_exit_normal:
 			if (game.UpdateMapEndMenu())
 			{
 				int nextMapNumber = game.GetNextMapNumber(game.GetActiveMap()->number);
@@ -382,7 +386,7 @@ void BunnySector_UpdateMapPtr(BunnySector_Map* map, float deltaTime)
 			MapUpdateResult upresult = map->UpdateActions(FIXED_STEP); // This can spawn new actors
 			if (upresult)
 			{
-				game.status = status_exit_normal;
+				game.status = status_map_exit_normal;
 				// TODO What is the next map?
 			}
 			deltaTime -= FIXED_STEP;

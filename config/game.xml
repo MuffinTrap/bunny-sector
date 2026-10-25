@@ -3,6 +3,9 @@ This file configures game wide settings and map order and parameters
 
 @game This is the root tag
 	@name [default: "Bunny Sector"] Name of the game. Shown in main menu and window title
+	@titlecolor [default: yellow] Color of the name of the game in main menu
+	@mainbgcolor [default: blue] Color of the background in main menu
+	@mainbgtexture [optional] Texture to show on the background of main menu
 
 	Game must have at least one map
 	@map This configures a map
@@ -22,7 +25,10 @@ This file configures game wide settings and map order and parameters
 -->
 <root>
 	<game>
-		<name>Dead Generator</name>
+		<name>Hotel Everything</name>
+		<titlecolor>0xff44ccff</titlecolor>
+		<mainbgcolor>0x442244ff</mainbgcolor>
+
 		<map>
 			<file>assets/hotel_valju.wad</file>
 			<number>1</number>

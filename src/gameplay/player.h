@@ -2,6 +2,7 @@
 
 #include "../bunny-sector-types.h"
 #include "../doom/doom_types.h"
+#include "../doom/doom-numbers.h"
 
 class Actor;
 

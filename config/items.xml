@@ -21,6 +21,8 @@ The textures are looked from the same folder than material textures are. See @fo
 	@renderwidth [optional] Size when drawing. If not set, texture width is used. If model, this is scale
 	@renderheight [optional] Size when drawing. If not set, texture height is used
 
+	TODO option to disable picking item up and respawning it after pick/destroy
+
 	The item can look different from different directions
 	If no facings are configured the whole texture is used for all the facings
 	@facing This configures a facing
@@ -50,7 +52,7 @@ The textures are looked from the same folder than material textures are. See @fo
 		<texture>red_key.png</texture>
 	</item>
 
-	<!--Powerpack is macaroni status -->
+	<!--Powerpack is macaroni statue -->
 	<item>
 		<name>CellPack</name>
 		<texture>ylw_makr.png</texture>

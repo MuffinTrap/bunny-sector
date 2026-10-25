@@ -256,13 +256,6 @@ static void DrawBufferWithMaterial(MapMaterial* material, Vector3 normal, Buffer
             // TODO
 
             break;
-        case Material_SpriteModel:
-            // Not done here
-            break;
-        case Material_SpriteAnimated:
-            // Get UVs of frame
-
-            break;
         default:
             mgdl_assert_printf(false, "Invalid material type on material %s\n", zstr_cstr(&material->mgdlMaterial->name));
         break;
