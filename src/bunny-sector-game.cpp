@@ -29,9 +29,7 @@ Game::Game()
 	mainBgColor = Debug_Blue;
 	mainBgTexture = MGDL_INVALID_HANDLE;
 
-	Texture* defaultFont = DefaultFont_GetDefaultFont();
-
-	menu = Menu_CreateWindowed(defaultFont, 8, 2, 20, 20, "Game");
+	menu = Menu_Create(DefaultFont_GetDefaultFont(), 2.0f, 1.0f);//Menu_CreateWindowed(defaultFont, 8, // Text height 2, // Row height em 80,  // Width of menu 256,  // Height of menu "Game");
 }
 
 bool Game::ReadXML(const char* filename)
@@ -193,7 +191,7 @@ bool Game::ReadXML(const char* filename)
 	}
 
 
-	Menu_SetColors(menu, mainBgColor, titleColor, Debug_White);
+	Menu_SetColors(menu, mainBgColor, titleColor, 0x00bfffFF);
 
 	return true;
 }
@@ -349,10 +347,8 @@ bool Game::UpdateMenu()
 	bool startPressed = false;
 	Start2D();
 	glPushMatrix();
-	glScalef(0.5f, 0.5f, 0.5f);
 	// TODO Get colors from game xml
-	/*
-	mgdl_DrawRectangle(0, 0, mgdl_GetScreenWidth(), mgdl_GetScreenHeight(), mainBgColor);
+	mgdl_DrawRectangle(0, mgdl_GetScreenHeight(), mgdl_GetScreenWidth(), mgdl_GetScreenHeight(), mainBgColor);
 	if (Handle_IsValid(mainBgTexture))
 	{
 		// Scale bg to fit screen
@@ -360,12 +356,10 @@ bool Game::UpdateMenu()
 		float scaleY = mgdl_GetTextureHeight(mainBgTexture) / mgdl_GetScreenHeight();
 		mgdl_DrawTextureEx(mainBgTexture, 0, 0, 0.0f, maxF(scaleX, scaleY));
 	}
-	*/
-	//mgdl_DrawText(zstr_cstr(&name), 10, 16, 32, titleColor);
+	mgdl_DrawText(zstr_cstr(&name), mgdl_GetScreenWidth()/2 - 32 * 7, mgdl_GetScreenHeight() - 32 * 3, 32, titleColor);
 
 	Menu_ReadDefaultInputs(menu);
-	Menu_Start(menu, 100, mgdl_GetScreenHeight() - 16 - 32, 200);
-	Menu_Text(menu, zstr_cstr(&name));
+	Menu_Start(menu, 100, mgdl_GetScreenHeight() - 16 - 32 * 5, 200);
 	startPressed  = Menu_Button(menu, "Start");
 	Menu_DrawCursor(menu);
 	glPopMatrix();

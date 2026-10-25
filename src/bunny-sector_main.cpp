@@ -35,7 +35,7 @@
 static BunnySector::MaterialManager* materialManager;
 static BunnySector::ItemManager* itemManager;
 static PlayerManager* playerManager;
-static Game game;
+static Game* game;
 
 static RenderSettingsOpenGL defaultOpenGL;
 
@@ -157,7 +157,8 @@ bool BunnySector_Init(mgdl_AngelScript* angel)
 	InitDoomRender(BunnySector_GetOpenGLCameraVerticalFOVDeg());
 
 	// Read game configuration
-	bool gameloaded = game.ReadXML("config/game.xml");
+	game = new Game();
+	bool gameloaded = game->ReadXML("config/game.xml");
 
 	if (DEBUG_MENU)
 	{
@@ -210,7 +211,7 @@ void BunnySector_SetAfterCollisionCallback(asIScriptFunction* callbackFunction)
 
 void BunnySector_StartMap(int playerAmount)
 {
-	BunnySector_Map* map = game.GetActiveMap();
+	BunnySector_Map* map = game->GetActiveMap();
 	if (map != nullptr)
 	{
 		activePlayerAmount = playerAmount;
@@ -256,7 +257,7 @@ void BunnySector_StartMap(int playerAmount)
 			s_AlignCameraToViewpoint(&playerViews[i], playerCameras[i]);
 		}
 
-		game.StartActiveMap();
+		game->StartActiveMap();
 	}
 }
 
@@ -269,28 +270,28 @@ bool s_aspectView = false;
 
 void BunnySector_SetGameStatus(GameStatus status)
 {
-	game.status = status;
+	game->status = status;
 }
 
 GameStatus BunnySector_GetGameStatus()
 {
-	return game.status;
+	return game->status;
 }
 
 void BunnySector_Update(float deltaTime)
 {
-	switch(game.status)
+	switch(game->status)
 	{
 		case status_menu:
-			if (game.UpdateMenu())
+			if (game->UpdateMenu())
 			{
-				if (game.LoadMap(game.GetFirstMapNumber()))
+				if (game->LoadMap(game->GetFirstMapNumber()))
 				{
 					// TODO Get player amount from game
 					BunnySector_StartMap(1); // NOTE Sets actor pool and creates players
 
 					// TODO Show map preview and name before starting
-					game.StartActiveMap();
+					game->StartActiveMap();
 				}
 				else
 				{
@@ -304,7 +305,7 @@ void BunnySector_Update(float deltaTime)
 		case status_map_playing:
 		{
 
-			BunnySector_Map* activeMap = game.GetActiveMap();
+			BunnySector_Map* activeMap = game->GetActiveMap();
 			if (activeMap != nullptr)
 			{
 				BunnySector_UpdateMapPtr(activeMap, deltaTime);
@@ -317,14 +318,14 @@ void BunnySector_Update(float deltaTime)
 			// NOTE Draw something but don't unload the map, player might revive
 			break;
 		case status_map_exit_normal:
-			if (game.UpdateMapEndMenu())
+			if (game->UpdateMapEndMenu())
 			{
-				int nextMapNumber = game.GetNextMapNumber(game.GetActiveMap()->number);
+				int nextMapNumber = game->GetNextMapNumber(game->GetActiveMap()->number);
 				if (nextMapNumber >= 0)
 				{
-					if (game.LoadMap(nextMapNumber))
+					if (game->LoadMap(nextMapNumber))
 					{
-						game.StartActiveMap();
+						game->StartActiveMap();
 					}
 				}
 			}
@@ -386,7 +387,7 @@ void BunnySector_UpdateMapPtr(BunnySector_Map* map, float deltaTime)
 			MapUpdateResult upresult = map->UpdateActions(FIXED_STEP); // This can spawn new actors
 			if (upresult)
 			{
-				game.status = status_map_exit_normal;
+				game->status = status_map_exit_normal;
 				// TODO What is the next map?
 			}
 			deltaTime -= FIXED_STEP;
@@ -425,7 +426,7 @@ void BunnySector_AlignCameraToPlayer(int playerIndex)
 {
 	// TODO Different viewports for each player
 
-	BunnySector_Map* activeMap = game.GetActiveMap();
+	BunnySector_Map* activeMap = game->GetActiveMap();
 
 	Viewport viewPort = mgdl_GetViewport();
 	// NOTE Must set GL_PROJECTION first then GL_MODELVIEW
@@ -479,7 +480,7 @@ void DrawSkyBox()
 	glDepthMask(GL_FALSE);
 	glDepthFunc(GL_ALWAYS);
 	glCullFace(GL_FRONT);
-	OpenGLRender_DrawSkybox(game.GetActiveMap());
+	OpenGLRender_DrawSkybox(game->GetActiveMap());
 	glCullFace(GL_BACK);
 	glDepthFunc(GL_LEQUAL);
 	glDepthMask(GL_TRUE);
@@ -498,7 +499,7 @@ void BunnySector_DrawActiveMap()
 
 		BunnySector_AlignCameraToPlayer(0);
 		BunnySector_StartMapDrawing();
-			RenderDoomMap( (DoomMap*)game.GetActiveMap());
+			RenderDoomMap( (DoomMap*)game->GetActiveMap());
 			BunnySector_DrawMapActorsForPlayer(0);
 		BunnySector_EndMapDrawing();
 	}
@@ -554,7 +555,7 @@ void BunnySector_StopPlayerAction(int playerIndex, ActorActionBit action)
 Actor* BunnySector_GetPlayerActor(int playerIndex)
 {
 
-	BunnySector_Map* activeMap = game.GetActiveMap();
+	BunnySector_Map* activeMap = game->GetActiveMap();
 	return activeMap->GetActorByTypeAndIndex(actor_player, playerIndex);
 }
 
@@ -581,13 +582,13 @@ Player* BunnySector_GetPlayer(int playerIndex)
 Actor* BunnySector_GetActorById(int actorId)
 {
 
-	BunnySector_Map* activeMap = game.GetActiveMap();
+	BunnySector_Map* activeMap = game->GetActiveMap();
 	return activeMap->GetActorById(actorId);
 }
 Actor* BunnySector_GetActorByIndex(int actorIndex)
 {
 
-	BunnySector_Map* activeMap = game.GetActiveMap();
+	BunnySector_Map* activeMap = game->GetActiveMap();
 	return activeMap->GetActorByIndex(actorIndex);
 }
 
@@ -615,20 +616,20 @@ void BunnySector_DrawWallF(float startx, float startz, float endx, float endz, f
 
 void BunnySector_StartFloorCeilingDrawing()
 {
-	BunnySector_Map* activeMap = game.GetActiveMap();
+	BunnySector_Map* activeMap = game->GetActiveMap();
 	OpenGLRender_StartDrawingFloorsFromBuffer(activeMap);
 }
 void BunnySector_DrawSectorFloorOrCeiling(s16 sectorNumber, bool floor)
 {
 
-	BunnySector_Map* activeMap = game.GetActiveMap();
+	BunnySector_Map* activeMap = game->GetActiveMap();
 	OpenGLRender_DrawFloorOrCeiling(activeMap, sectorNumber, activeMap->GetSectorShade(sectorNumber, floor), floor ? activeMap->GetFloory(sectorNumber) : activeMap->GetCeilingy(sectorNumber), activeMap->GetSectorMaterial(sectorNumber, floor), floor);
 }
 
 void BunnySector_DrawMapActorsForPlayer(int playerIndex)
 {
 
-	BunnySector_Map* activeMap = game.GetActiveMap();
+	BunnySector_Map* activeMap = game->GetActiveMap();
 	Viewpoint point = playerViews[playerIndex];
 	OpenGLRender_DrawActors(activeMap, Vector2New(point.position.x, point.position.z));
 }
@@ -661,7 +662,7 @@ MaterialId BunnySector_GetMaterialId(zstr* doomTextureFilename)
 
 DoomMap* BunnySector_GetDoomMap()
 {
-	BunnySector_Map* activeMap = game.GetActiveMap();
+	BunnySector_Map* activeMap = game->GetActiveMap();
 	return (DoomMap*)activeMap;
 }
 

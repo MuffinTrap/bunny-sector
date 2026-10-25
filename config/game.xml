@@ -26,8 +26,8 @@ This file configures game wide settings and map order and parameters
 <root>
 	<game>
 		<name>Hotel Everything</name>
-		<titlecolor>0xff44ccff</titlecolor>
-		<mainbgcolor>0x442244ff</mainbgcolor>
+		<titlecolor>0xfff8dcFF</titlecolor>
+		<mainbgcolor>0x556b2fFF</mainbgcolor>
 
 		<map>
 			<file>assets/hotel_valju.wad</file>
@@ -36,7 +36,7 @@ This file configures game wide settings and map order and parameters
 				<density>10</density>
 				<near>10</near>
 				<far>150</far>
-				<color>0x808080ff</color>
+				<color>0x556b2fFF</color>
 			</fog>
 			<skybox>
 				<zenith>0x0000ffff</zenith>
