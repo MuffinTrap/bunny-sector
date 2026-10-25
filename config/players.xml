@@ -44,20 +44,24 @@ If other players are configured they inherit from player 0
 	<player>
 		<number>0</number>
 
-		<height>42</height>
-		<size>16</size>
+		<height>52</height>
+		<size>34</size>
 
 		<movespeed>128</movespeed>
 		<moveacceleration>1600</moveacceleration>
 		<moveslowdown>1600</moveslowdown>
 
+		<strafespeed>128</strafespeed>
+		<strafeacceleration>1600</strafeacceleration>
+		<strafeslowdown>1600</strafeslowdown>
+
 		<climbheight>20</climbheight>
 
-		<turnspeed>720</turnspeed>
-		<turnacceleration>1024</turnacceleration>
-		<turnslowdown>1024</turnslowdown>
+		<turnspeed>80</turnspeed>
+		<turnacceleration>3024</turnacceleration>
+		<turnslowdown>6024</turnslowdown>
 
-	<headbobfreq>12.0</headbobfreq>
-	<headbobamplitude>4.0</headbobamplitude>
+		<headbobfreq>12.0</headbobfreq>
+		<headbobamplitude>4.0</headbobamplitude>
 	</player>
 </root>

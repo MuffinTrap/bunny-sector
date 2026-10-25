@@ -152,6 +152,8 @@ void OpenGLRender_SetTextureScale(float scale)
  */
 static void ActivateVertexBuffer()
 {
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
     glVertexPointer(3, GL_FLOAT, sizeof(float) * FULL_VERTEX_SIZE_FLOATS, &vertexBuffer[0]);
     glTexCoordPointer(2, GL_FLOAT, sizeof(float) * FULL_VERTEX_SIZE_FLOATS, &vertexBuffer[3]);
 }
@@ -205,12 +207,12 @@ void OpenGLRender_Line3(Vector3 start, Vector3 end)
 /**
  * @brief Changes Duke shade value to grayscale
  * brightness. Used to color the vertices
- * @param brightnessOffset 0 is black, 255 is full white
+ * @param brightnessOffset 0 is black, 160 is normal 255 is full white?
  */
 static float BrightnessToColor(u8 lightlevel)
 {
     static const float brightnessStep = 1.0/255.0f;
-    return clampF( ((lightlevel* brightnessStep)), 0.0f, 1.0f);
+    return clampF( 0.0f + ((lightlevel* brightnessStep)), 0.0f, 1.0f);
 }
 
 /**
@@ -329,6 +331,7 @@ void DrawMeshOnSprite(Actor* actor, MapMaterial* material, Vector3 position, flo
         glPushMatrix();
             glTranslatef(0.0f, yplus * actor->renderHeight, 0.0f);
             glScalef(actor->renderWidth, actor->renderHeight, actor->renderWidth);
+            glColor3f(1.0f, 1.0f, 1.0f);
             Mesh_DrawElements(mesh, mesh->indexCount);
         glPopMatrix();
     glPopMatrix();
@@ -366,6 +369,7 @@ void OpenGLRender_EndDrawingPolygons()
 
 void OpenGLRender_DrawActors(BunnySector_Map* map, Vector2 cameraPosition)
 {
+    mgdl_glSetAlphaTest(true);
     for (int i = 0; i < map->GetActorAmount(); i++)
     {
         Actor* actor = map->GetActorByIndex(i);
@@ -377,6 +381,9 @@ void OpenGLRender_DrawActors(BunnySector_Map* map, Vector2 cameraPosition)
 
         }
         // TODO don't draw player for himself
+
+        // TODO Get this!
+        // u8 lightlevel = map->GetSectorShade(actor->subSectorNumber)
 
         if (Handle_IsValid(actor->model))
         {
@@ -393,9 +400,11 @@ void OpenGLRender_DrawActors(BunnySector_Map* map, Vector2 cameraPosition)
                                     actor->yawRad, cameraPosition,
                                     SpriteAlignment::Sprite_FACE, Sprite_PivotFoot,
                                     actor->texture, // TODO Depends on facing
-                                    0); // Get from sector
+                                    255); // Get from sector
         }
     }
+
+    mgdl_glSetAlphaTest(false);
 }
 
 
@@ -653,6 +662,7 @@ void OpenGLRender_DrawSprite(Vector3 position, float width, float height, float 
         return;
     }
 
+    //picnum = RENDERER_DEFAULT_MATERIAL_ID;
     MapMaterial* material = OpenGLRender_GetMaterialForMaterialId(picnum);
 
     glPushMatrix();

@@ -203,7 +203,9 @@ bool BunnySector::ItemManager::LoadXML(const char* filename)
 		if (modelElement)
 		{
 			// This item is a model, try getting it from asset manager
-			prefab->model = AssetManager_LoadModel(modelElement->GetText());
+			// TODO Missing a material is not an assert
+			// or add mesh loading
+			prefab->model = AssetManager_LoadModel(modelElement->GetText(), false);
 		}
 
 		type_item_map_insert(&ItemConfigs, (DOOM_EDITOR_NUMBER)prefab->typeNumber, nextPrefabIndex);

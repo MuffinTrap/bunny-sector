@@ -210,13 +210,16 @@ void Player::ApplyDrive(Actor* actor, float deltaTime)
 	Vector2 forward = FLOOR_FORWARD;
 	actor->moveDirection.vectorDirection = Vector2Rotate(forward, actor->yawRad);
 
+	float bobdrive = 0.0f;
+
 	// TODO Strafing
 	if (abs(forwardDrive) > deadzone)
 	{
 		moveVelocity += forwardDrive * moveAcceleration * deltaTime;
 		moveVelocity = clampF(moveVelocity, -moveSpeed, moveSpeed);
 
-		headBobValue = sinf(mgdl_GetElapsedSeconds() * headBobFreq) * headBobAmplitude;
+		bobdrive += abs(forwardDrive);
+
 	}
 	else if (moveVelocity != 0)
 	{
@@ -243,6 +246,7 @@ void Player::ApplyDrive(Actor* actor, float deltaTime)
 	{
 		strafeVelocity += strafeDrive * strafeAcceleration * deltaTime;
 		strafeVelocity = clampF(strafeVelocity, -strafeSpeed, strafeSpeed);
+		bobdrive += abs(strafeDrive);
 	}
 	else if (strafeVelocity != 0)
 	{
@@ -264,6 +268,8 @@ void Player::ApplyDrive(Actor* actor, float deltaTime)
 			}
 		}
 	}
+
+	headBobValue = bobdrive * sinf(mgdl_GetElapsedSeconds() * headBobFreq) * headBobAmplitude;
 	actor->floorVelocity.y = walkSpeedMultiplier * moveVelocity;
 	actor->floorVelocity.x = walkSpeedMultiplier * strafeVelocity;
 }

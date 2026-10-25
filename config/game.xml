@@ -30,7 +30,7 @@ This file configures game wide settings and map order and parameters
 				<density>10</density>
 				<near>10</near>
 				<far>150</far>
-				<color>0x0a0a0aff</color>
+				<color>0x808080ff</color>
 			</fog>
 			<skybox>
 				<zenith>0x0000ffff</zenith>

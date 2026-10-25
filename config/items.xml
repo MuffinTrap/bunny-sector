@@ -37,6 +37,7 @@ The textures are looked from the same folder than material textures are. See @fo
 	<item>
 		<name>BlueCard</name>
 		<customname>Water Key</customname>
+	<texture>blu_key.png</texture>
 	</item>
 	<item>
 		<name>YellowCard</name>
@@ -52,7 +53,7 @@ The textures are looked from the same folder than material textures are. See @fo
 	<!--Powerpack is macaroni status -->
 	<item>
 		<name>CellPack</name>
-		<texture>Macaroni_texture.png</texture>
+		<texture>ylw_makr.png</texture>
 		<model>assets/Macaroni_01.fbx</model>
 		<renderheight>80</renderheight>
 		<renderwidth>80</renderwidth>
